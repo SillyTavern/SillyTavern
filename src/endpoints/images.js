@@ -7,6 +7,7 @@ import sanitize from 'sanitize-filename';
 
 import { clientRelativePath, removeFileExtension, getImages, isPathUnderParent } from '../util.js';
 import { MEDIA_EXTENSIONS, MEDIA_REQUEST_TYPE } from '../constants.js';
+import { UploadDirectoryError, resolveUploadPath } from '../upload-directories.js';
 
 /**
  * Ensure the directory for the provided file path exists.
@@ -34,7 +35,8 @@ export const router = express.Router();
  * @param {Object} request.body - The request payload.
  * @param {string} request.body.image - The base64 encoded image data.
  * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
- * @returns {Object} response - The response object containing the path where the image was saved.
+ * @param {string} [request.body.directory] - Relative directory under user images; overrides ch_name.
+ * @returns {Object} response - The storage path, plus an encoded URL when directory is provided.
  */
 router.post('/upload', async (request, response) => {
     try {
@@ -61,17 +63,23 @@ router.post('/upload', async (request, response) => {
             filename = `${Date.now()}.${format}`;
         }
 
-        // if character is defined, save to a sub folder for that character
+        // Use the explicit directory or the legacy single character folder.
         let pathToNewFile = path.join(request.user.directories.userImages, sanitize(filename));
-        if (request.body.ch_name) {
+        if (request.body.directory !== undefined) {
+            pathToNewFile = resolveUploadPath(request.user.directories.userImages, request.body.directory, sanitize(filename));
+        } else if (request.body.ch_name) {
             pathToNewFile = path.join(request.user.directories.userImages, sanitize(request.body.ch_name), sanitize(filename));
         }
 
         ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(image, 'base64');
         await fs.promises.writeFile(pathToNewFile, new Uint8Array(imageBuffer));
-        response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
+        const relativePath = clientRelativePath(request.user.directories.root, pathToNewFile);
+        response.send(request.body.directory === undefined
+            ? { path: relativePath }
+            : { path: relativePath, url: relativePath.split('/').map(encodeURIComponent).join('/') });
     } catch (error) {
+        if (error instanceof UploadDirectoryError) return response.status(400).send({ error: error.message });
         console.error(error);
         response.status(500).send({ error: 'Failed to save the image' });
     }
@@ -79,20 +87,24 @@ router.post('/upload', async (request, response) => {
 
 router.post('/list/:folder?', (request, response) => {
     try {
-        if (request.params.folder) {
-            if (request.body.folder) {
-                return response.status(400).send({ error: 'Folder specified in both URL and body' });
+        let directoryPath;
+        if (request.body.directory !== undefined) {
+            directoryPath = resolveUploadPath(request.user.directories.userImages, request.body.directory);
+        } else {
+            if (request.params.folder) {
+                if (request.body.folder) {
+                    return response.status(400).send({ error: 'Folder specified in both URL and body' });
+                }
+
+                console.warn('Deprecated: Use POST /api/images/list with folder in request body');
+                request.body.folder = request.params.folder;
             }
 
-            console.warn('Deprecated: Use POST /api/images/list with folder in request body');
-            request.body.folder = request.params.folder;
+            if (!request.body.folder) {
+                return response.status(400).send({ error: 'No folder specified' });
+            }
+            directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
         }
-
-        if (!request.body.folder) {
-            return response.status(400).send({ error: 'No folder specified' });
-        }
-
-        const directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
         const type = Number(request.body.type ?? MEDIA_REQUEST_TYPE.IMAGE);
         const sort = request.body.sortField || 'date';
         const order = request.body.sortOrder || 'asc';
@@ -107,6 +119,7 @@ router.post('/list/:folder?', (request, response) => {
         }
         return response.send(images);
     } catch (error) {
+        if (error instanceof UploadDirectoryError) return response.status(400).send({ error: error.message });
         console.error(error);
         return response.status(500).send({ error: 'Unable to retrieve files' });
     }
@@ -114,7 +127,9 @@ router.post('/list/:folder?', (request, response) => {
 
 router.post('/folders', (request, response) => {
     try {
-        const directoryPath = request.user.directories.userImages;
+        const directoryPath = request.body?.directory === undefined
+            ? request.user.directories.userImages
+            : resolveUploadPath(request.user.directories.userImages, request.body.directory);
         if (!fs.existsSync(directoryPath)) {
             fs.mkdirSync(directoryPath, { recursive: true });
         }
@@ -125,6 +140,7 @@ router.post('/folders', (request, response) => {
 
         return response.send(folders);
     } catch (error) {
+        if (error instanceof UploadDirectoryError) return response.status(400).send({ error: error.message });
         console.error(error);
         return response.status(500).send({ error: 'Unable to retrieve folders' });
     }
@@ -136,10 +152,12 @@ router.post('/delete', async (request, response) => {
             return response.status(400).send('No path specified');
         }
 
-        const pathToDelete = path.join(request.user.directories.root, request.body.path);
+        let pathToDelete = path.join(request.user.directories.root, request.body.path);
         if (!isPathUnderParent(request.user.directories.userImages, pathToDelete)) {
             return response.status(400).send('Invalid path');
         }
+        const directory = path.relative(request.user.directories.userImages, path.dirname(pathToDelete)).split(path.sep).join('/');
+        pathToDelete = resolveUploadPath(request.user.directories.userImages, directory, path.basename(pathToDelete));
 
         if (!fs.existsSync(pathToDelete)) {
             return response.status(404).send('File not found');
@@ -149,6 +167,7 @@ router.post('/delete', async (request, response) => {
         console.info(`Deleted image: ${request.body.path} from ${request.user.profile.handle}`);
         return response.sendStatus(200);
     } catch (error) {
+        if (error instanceof UploadDirectoryError) return response.status(400).send(error.message);
         console.error(error);
         return response.sendStatus(500);
     }
