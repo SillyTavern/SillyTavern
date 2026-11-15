@@ -438,7 +438,7 @@ const default_settings = {
     sort_models: 'alphabetically',
     group_models: false,
     openai_model: 'gpt-6-sol',
-    claude_model: 'claude-sonnet-5',
+    claude_model: 'claude-sonnet-5-5',
     google_model: 'gemini-3.8-flash',
     vertexai_model: 'gemini-3.8-flash',
     ai21_model: 'jamba-large',
