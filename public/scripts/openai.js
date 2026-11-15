@@ -6821,11 +6821,47 @@ function updateFeatureSupportFlags() {
 
 let customConnectionRevision = 0;
 let customConnectionTransition = 0;
+let settingsSaveDeferred = false;
 
-/** Suppress connection-dependent requests during a profile's final overlay. */
+/** Longest a transition may hold back settings saves and status updates before it is released for its owner. */
+const CUSTOM_CONNECTION_TRANSITION_TIMEOUT = 30000;
+
+/**
+ * Suppress connection-dependent requests during a profile's final overlay.
+ * @returns {() => void} Release function. Safe to call more than once.
+ */
 export function beginCustomConnectionTransition() {
     customConnectionTransition++;
-    return () => { customConnectionTransition--; };
+    let released = false;
+    let timer = null;
+    const release = () => {
+        if (released) return;
+        released = true;
+        clearTimeout(timer);
+        customConnectionTransition--;
+        // A save requested during the transition was held back, not dropped.
+        if (customConnectionTransition === 0 && settingsSaveDeferred) {
+            settingsSaveDeferred = false;
+            saveSettingsDebounced();
+        }
+    };
+    // Settings saves are held back while a transition is open, so one that never ends must not stay open.
+    timer = setTimeout(() => {
+        console.warn('A Custom connection transition was not released in time. Releasing it so settings can be saved again.');
+        release();
+    }, CUSTOM_CONNECTION_TRANSITION_TIMEOUT);
+    return release;
+}
+
+/**
+ * Holds a settings save back while a Custom connection transition is open.
+ * The save is repeated once the last open transition is released.
+ * @returns {boolean} True if the save was held back and the caller should not save now
+ */
+export function deferSettingsSaveForCustomConnection() {
+    if (!customConnectionTransition) return false;
+    settingsSaveDeferred = true;
+    return true;
 }
 
 /** Whether the active Custom tuple is being restored by a Profile. */

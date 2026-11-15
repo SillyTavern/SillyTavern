@@ -112,6 +112,7 @@ import {
     selected_proxy,
     initOpenAI,
     isCustomConnectionTransition,
+    deferSettingsSaveForCustomConnection,
 } from './scripts/openai.js';
 
 import {
@@ -8051,7 +8052,7 @@ export async function getSettings(initLoaderHandle = null) {
 
 //MARK: saveSettings()
 export async function saveSettings(loopCounter = 0) {
-    if (isCustomConnectionTransition()) return;
+    if (deferSettingsSaveForCustomConnection()) return;
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
         saveSettingsDebounced();
