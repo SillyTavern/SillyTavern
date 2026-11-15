@@ -6499,3 +6499,26 @@ body:not(.movingUI) .drawer-content.maximized {
         border-width: 2px;
     }
 }
+
+/* Additional Parameters: visible on the connection panel whenever a source sends fields of its own */
+#customize_additional_parameters.additional_parameters_active {
+    border-color: var(--golden);
+    box-shadow: 0 0 3px var(--golden);
+}
+
+#customize_additional_parameters .additional_parameters_count:not(:empty) {
+    margin-left: 5px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background-color: var(--golden);
+    color: var(--black90a, #000);
+    font-weight: bold;
+    font-size: 0.85em;
+}
+
+.additional_parameters_summary {
+    margin: 5px 0;
+    padding: 2px 8px;
+    border-left: 3px solid var(--golden);
+    font-size: 0.9em;
+}

@@ -1,5 +1,10 @@
 <div class="flex-container flexFlowColumn height100p">
-    <h3 data-i18n="Additional Parameters">Additional Parameters</h3>
+    <h3><span data-i18n="Additional Parameters">Additional Parameters</span>: <span id="additional_parameters_source"></span></h3>
+    <div class="neutral_warning">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span data-i18n="additional_parameters_warning">Power user feature: these values are applied last and sent exactly as written. Nothing is checked against the provider's API.</span>
+    </div>
+    <small data-i18n="additional_parameters_hint">If the provider rejects a request, remove these first. They are kept per source and saved with Connection Profiles. Objects are merged into the request, so you only write the fields you want to change. To remove a nested field, use a dotted path such as <code>generationConfig.thinkingConfig</code>.</small>
     <div class="flex1 flex-container flexFlowColumn">
         <h4 data-i18n="Include Body Parameters">Include Body Parameters</h4>
         <textarea id="custom_include_body" class="flex1" placeholder="Parameters to be included in the Chat Completion request body (YAML object)&#10;&#10;Example:&#10;top_k: 20&#10;repetition_penalty: 1.1" data-i18n="[placeholder]custom_include_body_desc"></textarea>
