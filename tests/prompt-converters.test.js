@@ -207,6 +207,12 @@ describe('calculateGoogleBudgetTokens', () => {
         expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3-pro-image')).toBe('high');
     });
 
+    test('later major Gemini versions use thinking levels', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-4-pro')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-4-pro')).toBe('high');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-4.1-flash')).toBe('medium');
+    });
+
     describe('gemini-3 pro', () => {
         test('auto returns null', () => expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.0-pro')).toBeNull());
         test('min returns low', () => expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.0-pro')).toBe('low'));

@@ -15,6 +15,7 @@ import {
     OPENAI_FIXED_REASONING_EFFORT,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
+    OPENAI_REASONING_EFFORT_PATTERN,
     OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
@@ -251,7 +252,8 @@ async function sendClaudeRequest(request, response) {
         // Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-fable-5'
         const isFableModel = /claude-fable/.test(request.body.model);
         const useNativeJsonOutput = /claude-(fable-5-1|opus-5-5)/.test(request.body.model);
-        const isClaude5Model = /claude-(opus-5|sonnet-5)/.test(request.body.model);
+        // Matched by major version so later releases work without an update
+        const isClaude5Model = /claude-(opus|sonnet)-[5-9](?!\d)/.test(request.body.model);
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model;
         const useWebSearch = (/^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6)/.test(request.body.model);
@@ -523,8 +525,8 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-3.1-flash-image',
         ];
 
-        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3[.\d]*-(flash|pro)/.test(m));
-        const isImageSizeModel = m => /^gemini-3/.test(m);
+        const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-[3-9](?!\d)[.\d]*-(flash|pro)/.test(m));
+        const isImageSizeModel = m => /^gemini-[3-9](?!\d)/.test(m);
         // https://ai.google.dev/gemini-api/docs/latest-model#api-changes-and-parameter-updates
         const noSamplingModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
 
@@ -1728,7 +1730,8 @@ async function sendAzureOpenAIRequest(request, response) {
     }
 
     // Do not send reasoning effort to models which do not support it
-    apiRequestBody['reasoning_effort'] = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)
+    const supportsReasoningEffort = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model) || OPENAI_REASONING_EFFORT_PATTERN.test(request.body.model);
+    apiRequestBody['reasoning_effort'] = supportsReasoningEffort
         ? OPENAI_FIXED_REASONING_EFFORT[request.body.model] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
         : undefined;
 
@@ -2598,7 +2601,7 @@ router.post('/generate', async function (request, response) {
 
         // A few of OpenAIs reasoning models support reasoning effort
         if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-            if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
+            if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model) || OPENAI_REASONING_EFFORT_PATTERN.test(request.body.model)) {
                 bodyParams['reasoning_effort'] = OPENAI_FIXED_REASONING_EFFORT[request.body.model] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
             }
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && /^koboldcpp\/(.+)$/.test(request.body.model)) {
