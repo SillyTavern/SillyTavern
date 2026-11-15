@@ -1,6 +1,7 @@
 import yaml from 'yaml';
 import { readSecret, SECRET_KEYS } from './endpoints/secrets.js';
-import { CUSTOM_CREDENTIAL_KEYS, captureCustomFields, normalizeCustomEndpoint, validateCustomSnapshot } from '../public/scripts/custom-providers.js';
+// A dependency-free module shared with the client, so both sides validate the same shapes.
+import { CUSTOM_CREDENTIAL_KEYS, captureCustomFields, normalizeCustomEndpoint, validateCustomSnapshot } from '../public/scripts/custom-connection.js';
 
 /** A local configuration error: never retry using an ambient credential. */
 export class CustomAuthError extends Error {
