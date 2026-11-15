@@ -9,7 +9,7 @@ import urlJoin from 'url-join';
 import _ from 'lodash';
 import mime from 'mime-types';
 
-import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
+import { delay, getBasicAuthHeader, getConfigValue, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 import { AIMLAPI_HEADERS } from '../constants.js';
@@ -1102,16 +1102,20 @@ stability.post('/generate', async (request, response) => {
             }
         }
 
+        // Stability AI image generation moved to Comfy: https://comfy.org/stability/
+        const baseUrl = getConfigValue('stability.baseUrl', 'https://stability.comfy.org').replace(/\/+$/, '');
+
         let apiUrl;
         switch (model) {
             case 'stable-image-ultra':
-                apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/ultra';
+                apiUrl = `${baseUrl}/v2beta/stable-image/generate/ultra`;
                 break;
             case 'stable-image-core':
-                apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/core';
+                apiUrl = `${baseUrl}/v2beta/stable-image/generate/core`;
                 break;
             case 'stable-diffusion-3':
-                apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
+                formData.set('model', payload.model || 'sd3.5-large');
+                apiUrl = `${baseUrl}/v2beta/stable-image/generate/sd3`;
                 break;
             default:
                 throw new Error('Invalid Stability AI model selected');
