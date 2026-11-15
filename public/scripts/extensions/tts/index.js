@@ -614,6 +614,12 @@ async function processTtsQueue() {
         console.log(`TTS (${segmentType}): ${segmentText}`);
 
         try {
+            // A voice map initialisation can still be running after a chat switch.
+            // Wait for it, so the lookup below does not use the previous chat's voices.
+            if (currentInitVoiceMapPromise) {
+                await currentInitVoiceMapPromise;
+            }
+
             let voiceMapKey = char;
 
             // If multi-voice is enabled, modify the voice map key based on segment type
@@ -1092,11 +1098,11 @@ export function saveTtsProviderSettings() {
 /**
  * Bounded wait for a voice map re-initialisation.
  *
- * A cloud provider's checkReady() is a real network round-trip (ElevenLabs and friends), so the
- * safety net has to be generous enough not to be tripped by ordinary API latency: giving up
- * early leaves the stale voice map in place for the rest of the chat switch.
+ * Chat change listeners run one after another, so this wait delays the whole chat switch when a
+ * provider is slow or unreachable. Keep it short: the initialisation keeps running afterwards,
+ * and narration waits for it before looking up a voice.
  */
-const VOICE_MAP_INIT_TIMEOUT = 10000;
+const VOICE_MAP_INIT_TIMEOUT = 3000;
 
 /**
  * Waits for an in-flight voice map initialisation, bounded so an unresponsive provider cannot
@@ -1115,7 +1121,7 @@ async function onChatChanged() {
     resetTtsPlayback();
     const voiceMapInit = initVoiceMap();
     if (!await waitForVoiceMapInit(voiceMapInit)) {
-        console.warn(`TTS: voice map initialisation exceeded ${VOICE_MAP_INIT_TIMEOUT}ms, voices may be stale for this chat`);
+        console.warn(`TTS: voice map initialisation exceeded ${VOICE_MAP_INIT_TIMEOUT}ms, it continues in the background`);
     }
     lastMessage = null;
 }
