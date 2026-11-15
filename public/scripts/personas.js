@@ -577,8 +577,7 @@ export async function convertCharacterToPersona(characterId = null) {
         }
     }
 
-    const thumbnailAvatar = getThumbnailUrl('avatar', avatarUrl);
-    await uploadUserAvatar(thumbnailAvatar, overwriteName);
+    await uploadUserAvatar(`/characters/${encodeURIComponent(avatarUrl)}`, overwriteName);
 
     power_user.personas[overwriteName] = name;
     power_user.persona_descriptions[overwriteName] = {
