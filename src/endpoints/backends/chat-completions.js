@@ -23,6 +23,7 @@ import {
     ZAI_ENDPOINT,
     POLLINATIONS_ENDPOINT,
 } from '../../constants.js';
+import { getCapabilityModel } from '../../model-capabilities.js';
 import {
     forwardFetchResponse,
     getConfigValue,
@@ -248,17 +249,18 @@ async function sendClaudeRequest(request, response) {
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
+        const capabilityModel = getCapabilityModel(request.body);
         // Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-fable-5'
-        const isFableModel = /claude-fable/.test(request.body.model);
-        const useNativeJsonOutput = /claude-(fable-5-1|opus-5-5)/.test(request.body.model);
-        const isClaude5Model = /claude-(opus-5|sonnet-5)/.test(request.body.model);
-        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model;
-        const useWebSearch = (/^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model) && Boolean(request.body.enable_web_search);
-        const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6)/.test(request.body.model);
-        const useVerbosity = /^claude-(opus-4-5|opus-4-6|sonnet-4-6|opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model;
-        const noPrefillModel = /^claude-(opus-4-6|sonnet-4-6|opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model;
-        const isAdaptiveModel = /^claude-(opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model || (enableAdaptiveThinking && /^claude-(opus-4-6|sonnet-4-6)/.test(request.body.model));
-        const noSamplingModel = /^claude-(opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model;
+        const isFableModel = /claude-fable/.test(capabilityModel);
+        const useNativeJsonOutput = /claude-(fable-5-1|opus-5-5)/.test(capabilityModel);
+        const isClaude5Model = /claude-(opus-5|sonnet-5)/.test(capabilityModel);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(capabilityModel) || isFableModel || isClaude5Model;
+        const useWebSearch = (/^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(capabilityModel) || isFableModel || isClaude5Model) && Boolean(request.body.enable_web_search);
+        const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6)/.test(capabilityModel);
+        const useVerbosity = /^claude-(opus-4-5|opus-4-6|sonnet-4-6|opus-4-7|opus-4-8)/.test(capabilityModel) || isFableModel || isClaude5Model;
+        const noPrefillModel = /^claude-(opus-4-6|sonnet-4-6|opus-4-7|opus-4-8)/.test(capabilityModel) || isFableModel || isClaude5Model;
+        const isAdaptiveModel = /^claude-(opus-4-7|opus-4-8)/.test(capabilityModel) || isFableModel || isClaude5Model || (enableAdaptiveThinking && /^claude-(opus-4-6|sonnet-4-6)/.test(capabilityModel));
+        const noSamplingModel = /^claude-(opus-4-7|opus-4-8)/.test(capabilityModel) || isFableModel || isClaude5Model;
         let fixThinkingPrefill = false;
         // Add custom stop sequences
         const stopSequences = [];
@@ -486,6 +488,8 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const model = String(request.body.model);
+    // Model whose settings a custom ID uses, for feature checks
+    const capabilityModel = getCapabilityModel(request.body);
     const stream = Boolean(request.body.stream);
     const enableWebSearch = Boolean(request.body.enable_web_search);
     const requestImages = Boolean(request.body.request_images);
@@ -493,8 +497,8 @@ async function sendMakerSuiteRequest(request, response) {
     const includeReasoning = Boolean(request.body.include_reasoning);
     const aspectRatio = String(request.body.request_image_aspect_ratio);
     const imageSize = String(request.body.request_image_resolution);
-    const isGemma3 = /gemma-3/.test(model);
-    const isLearnLM = model.includes('learnlm');
+    const isGemma3 = /gemma-3/.test(capabilityModel);
+    const isLearnLM = capabilityModel.includes('learnlm');
 
     const responseMimeType = request.body.responseMimeType ?? (request.body.json_schema ? 'application/json' : undefined);
     const responseSchema = request.body.responseSchema ?? (request.body.json_schema ? request.body.json_schema.value : undefined);
@@ -526,7 +530,7 @@ async function sendMakerSuiteRequest(request, response) {
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3[.\d]*-(flash|pro)/.test(m));
         const isImageSizeModel = m => /^gemini-3/.test(m);
         // https://ai.google.dev/gemini-api/docs/latest-model#api-changes-and-parameter-updates
-        const noSamplingModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
+        const noSamplingModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(capabilityModel);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -547,13 +551,13 @@ async function sendMakerSuiteRequest(request, response) {
             delete generationConfig.candidateCount;
         }
 
-        const enableImageModality = requestImages && imageGenerationModels.includes(model);
+        const enableImageModality = requestImages && imageGenerationModels.includes(capabilityModel);
         const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
             generationConfig.responseModalities = ['text', 'image'];
             if (enableImageConfig) {
                 generationConfig.imageConfig = {};
-                if (imageSize && isImageSizeModel(model)) {
+                if (imageSize && isImageSizeModel(capabilityModel)) {
                     generationConfig.imageConfig.imageSize = imageSize;
                 }
                 if (aspectRatio) {
@@ -565,7 +569,7 @@ async function sendMakerSuiteRequest(request, response) {
         const useSystemPrompt = !enableImageModality && !isGemma3 && request.body.use_sysprompt;
 
         const tools = [];
-        const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
+        const prompt = convertGooglePrompt(request.body.messages, capabilityModel, useSystemPrompt, getPromptNames(request));
         const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma3) {
@@ -593,17 +597,17 @@ async function sendMakerSuiteRequest(request, response) {
             }
         }
 
-        if (enableWebSearch && !enableImageModality && !isGemma3 && !isLearnLM && !noSearchModels.includes(model)) {
+        if (enableWebSearch && !enableImageModality && !isGemma3 && !isLearnLM && !noSearchModels.includes(capabilityModel)) {
             // Tool use with function calling is unsupported
             if (!tools.some(t => t.function_declarations)) {
                 tools.push({ google_search: {} });
             }
         }
 
-        if (isThinkingConfigModel(model)) {
+        if (isThinkingConfigModel(capabilityModel)) {
             const thinkingConfig = { includeThoughts: includeReasoning };
 
-            const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort, model);
+            const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort, capabilityModel);
             if (typeof thinkingBudget === 'number' && Number.isInteger(thinkingBudget)) {
                 thinkingConfig.thinkingBudget = thinkingBudget;
             }
@@ -1011,7 +1015,7 @@ async function sendCohereRequest(request, response) {
             tools: tools,
         };
 
-        const canDoSafetyMode = String(request.body.model).endsWith('08-2024');
+        const canDoSafetyMode = getCapabilityModel(request.body).endsWith('08-2024');
         if (canDoSafetyMode) {
             requestBody.safety_mode = 'OFF';
         }
@@ -1636,7 +1640,7 @@ async function sendMinimaxRequest(request, response) {
             'messages': messages,
             'model': request.body.model,
             'temperature': request.body.temperature,
-            'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
+            'max_tokens': getCapabilityModel(request.body) === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
             'stream': request.body.stream,
             'top_p': request.body.top_p,
             'stop': request.body.stop,
@@ -1728,8 +1732,9 @@ async function sendAzureOpenAIRequest(request, response) {
     }
 
     // Do not send reasoning effort to models which do not support it
-    apiRequestBody['reasoning_effort'] = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)
-        ? OPENAI_FIXED_REASONING_EFFORT[request.body.model] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
+    const capabilityModel = getCapabilityModel(request.body);
+    apiRequestBody['reasoning_effort'] = OPENAI_REASONING_EFFORT_MODELS.includes(capabilityModel)
+        ? OPENAI_FIXED_REASONING_EFFORT[capabilityModel] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
         : undefined;
 
     const controller = new AbortController();
@@ -2276,7 +2281,7 @@ router.post('/generate', async function (request, response) {
         let apiKey;
         let headers;
         let bodyParams;
-        const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
+        const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(getCapabilityModel(request.body))) || typeof request.body.messages === 'string';
 
         if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
@@ -2598,8 +2603,9 @@ router.post('/generate', async function (request, response) {
 
         // A few of OpenAIs reasoning models support reasoning effort
         if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-            if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
-                bodyParams['reasoning_effort'] = OPENAI_FIXED_REASONING_EFFORT[request.body.model] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+            const capabilityModel = getCapabilityModel(request.body);
+            if (OPENAI_REASONING_EFFORT_MODELS.includes(capabilityModel)) {
+                bodyParams['reasoning_effort'] = OPENAI_FIXED_REASONING_EFFORT[capabilityModel] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
             }
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && /^koboldcpp\/(.+)$/.test(request.body.model)) {
                 bodyParams['reasoning_effort'] = request.body.reasoning_effort;
@@ -2607,7 +2613,7 @@ router.post('/generate', async function (request, response) {
         }
 
         if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-            if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+            if (OPENAI_VERBOSITY_MODELS.test(getCapabilityModel(request.body))) {
                 bodyParams['verbosity'] = request.body.verbosity;
             }
         }

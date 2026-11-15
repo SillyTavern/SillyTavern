@@ -1450,5 +1450,7 @@
     "Deleting chat…": "Chat verwijderen…",
     "Loading chat…": "Chat laden…",
     "Bulk Delete": "Bulkverwijdering",
-    "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…"
+    "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…",
+    "Custom…": "Aangepast…",
+    "Enter a Model ID": "Voer een model-ID in"
 }

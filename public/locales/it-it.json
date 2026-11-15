@@ -1454,5 +1454,7 @@
     "Deleting chat…": "Eliminazione chat…",
     "Loading chat…": "Caricamento chat…",
     "Bulk Delete": "Eliminazione multipla",
-    "Deleting ${0} character(s)…": "Eliminazione di ${0} personaggio/i…"
+    "Deleting ${0} character(s)…": "Eliminazione di ${0} personaggio/i…",
+    "Custom…": "Personalizzato…",
+    "Enter a Model ID": "Inserisci un ID modello"
 }

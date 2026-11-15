@@ -1,7 +1,7 @@
 import { localforage } from '../lib.js';
 import { characters, event_types, eventSource, main_api, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
-import { chat_completion_sources, model_list, oai_settings } from './openai.js';
+import { chat_completion_sources, getChatCompletionCapabilityModel, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
 import { kai_flags, kai_settings } from './kai-settings.js';
@@ -567,9 +567,11 @@ function counterWrapperOpenAIAsync(text) {
 }
 
 export function getTokenizerModel() {
+    const capabilityModel = getChatCompletionCapabilityModel();
+
     // OpenAI models always provide their own tokenizer
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-        return oai_settings.openai_model;
+        return capabilityModel || oai_settings.openai_model;
     }
 
     const turboTokenizer = 'gpt-3.5-turbo';
@@ -722,7 +724,7 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
-        if (oai_settings.cohere_model.includes('command-a')) {
+        if (capabilityModel.includes('command-a')) {
             return commandATokenizer;
         }
         return commandRTokenizer;
@@ -756,31 +758,31 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
-        if (oai_settings.perplexity_model.includes('sonar-reasoning') || oai_settings.perplexity_model.includes('r1-1776')) {
+        if (capabilityModel.includes('sonar-reasoning') || capabilityModel.includes('r1-1776')) {
             return deepseekTokenizer;
         }
-        if (oai_settings.perplexity_model.includes('llama-3') || oai_settings.perplexity_model.includes('llama3')) {
+        if (capabilityModel.includes('llama-3') || capabilityModel.includes('llama3')) {
             return llama3Tokenizer;
         }
-        if (oai_settings.perplexity_model.includes('llama')) {
+        if (capabilityModel.includes('llama')) {
             return llamaTokenizer;
         }
-        if (oai_settings.perplexity_model.includes('mistral') || oai_settings.perplexity_model.includes('mixtral')) {
+        if (capabilityModel.includes('mistral') || capabilityModel.includes('mixtral')) {
             return mistralTokenizer;
         }
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
-        if (oai_settings.groq_model.includes('qwen')) {
+        if (capabilityModel.includes('qwen')) {
             return qwen2Tokenizer;
         }
-        if (oai_settings.groq_model.includes('llama-3') || oai_settings.groq_model.includes('llama3')) {
+        if (capabilityModel.includes('llama-3') || capabilityModel.includes('llama3')) {
             return llama3Tokenizer;
         }
-        if (oai_settings.groq_model.includes('mistral') || oai_settings.groq_model.includes('mixtral')) {
+        if (capabilityModel.includes('mistral') || capabilityModel.includes('mixtral')) {
             return mistralTokenizer;
         }
-        if (oai_settings.groq_model.includes('gemma')) {
+        if (capabilityModel.includes('gemma')) {
             return gemmaTokenizer;
         }
     }
@@ -794,7 +796,7 @@ export function getTokenizerModel() {
  * @deprecated Use countTokensOpenAIAsync instead.
  */
 export function countTokensOpenAI(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${encodeURIComponent(getTokenizerModel())}`;
     const cacheObject = getTokenCacheObject();
 
     if (!Array.isArray(messages)) {
@@ -844,7 +846,7 @@ export function countTokensOpenAI(messages, full = false) {
  * @returns {Promise<number>} Token count.
  */
 export async function countTokensOpenAIAsync(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${encodeURIComponent(getTokenizerModel())}`;
     const cacheObject = getTokenCacheObject();
 
     if (!Array.isArray(messages)) {
@@ -1176,7 +1178,7 @@ export function getTextTokens(tokenizerType, str) {
                 return [];
             }
             if (tokenizerType === tokenizers.OPENAI) {
-                endpointUrl += `?model=${getTokenizerModel()}`;
+                endpointUrl += `?model=${encodeURIComponent(getTokenizerModel())}`;
             }
             return getTextTokensFromServer(endpointUrl, str);
         }
@@ -1205,7 +1207,7 @@ export function decodeTextTokens(tokenizerType, ids) {
         return { text: '', chunks: [] };
     }
     if (tokenizerType === tokenizers.OPENAI) {
-        endpointUrl += `?model=${getTokenizerModel()}`;
+        endpointUrl += `?model=${encodeURIComponent(getTokenizerModel())}`;
     }
     return decodeTextTokensFromServer(endpointUrl, ids);
 }

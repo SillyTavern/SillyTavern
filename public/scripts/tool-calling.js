@@ -1,7 +1,7 @@
 import { DOMPurify } from '../lib.js';
 
 import { addOneMessage, chat, event_types, eventSource, getGeneratingApi, getGeneratingModel, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
-import { chat_completion_sources, custom_prompt_post_processing_types, getChatCompletionModel, model_list, oai_settings } from './openai.js';
+import { chat_completion_sources, custom_prompt_post_processing_types, getChatCompletionCapabilityModel, model_list, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
@@ -613,7 +613,7 @@ export class ToolManager {
      */
     static isToolCallingSupported(settings = null, model = null) {
         settings = settings ?? oai_settings;
-        model = model ?? getChatCompletionModel(settings);
+        model = model ?? getChatCompletionCapabilityModel(settings);
 
         if (main_api !== 'openai' || !settings.function_calling) {
             return false;
@@ -693,7 +693,7 @@ export class ToolManager {
      */
     static canPerformToolCalls(type, settings = null, model = null) {
         settings = settings ?? oai_settings;
-        model = model ?? getChatCompletionModel(settings);
+        model = model ?? getChatCompletionCapabilityModel(settings);
         const noToolCallTypes = ['impersonate', 'quiet', 'continue'];
         const isSupported = ToolManager.isToolCallingSupported(settings, model);
         return isSupported && !noToolCallTypes.includes(type);

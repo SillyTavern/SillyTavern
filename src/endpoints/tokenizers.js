@@ -438,6 +438,8 @@ function getWebTokenizersChunks(tokenizer, ids) {
  * @returns {string} Tokenizer model to use
  */
 export function getTokenizerModel(requestModel) {
+    requestModel = String(requestModel ?? '');
+
     if (requestModel === 'o1' || requestModel.includes('o1-preview') || requestModel.includes('o1-mini') || requestModel.includes('o3-mini')) {
         return 'o1';
     }
