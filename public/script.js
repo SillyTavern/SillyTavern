@@ -8408,6 +8408,8 @@ async function messageEditDone(div) {
 
     const updatedMessage = updateMessage(div);
     if (!updatedMessage) {
+        // The editor textarea is gone, so there is nothing to save. Close the editor instead of leaving it half open.
+        await messageEditCancel(this_edit_mes_id);
         return;
     }
     let { mesBlock, text, mes, bias } = updatedMessage;
