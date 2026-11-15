@@ -48,6 +48,9 @@ test.describe('Message edit source', () => {
             data.settings = JSON.stringify({ ...JSON.parse(data.settings), firstRun: false });
             await route.fulfill({ response, json: data });
         });
+        // These tests change power-user settings and install a global regex script.
+        // Keep those from being persisted, so they cannot leak into other specs or a real profile.
+        await page.route('**/api/settings/save', route => route.fulfill({ json: { result: 'ok' } }));
         await testSetup.awaitST({ page });
     });
 
