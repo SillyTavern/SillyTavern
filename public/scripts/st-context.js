@@ -86,7 +86,8 @@ import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { loader } from './action-loader.js';
 import { MacrosParser } from './macros.js';
-import { getChatCompletionModel, oai_settings } from './openai.js';
+import { getActiveCustomProviderId, getChatCompletionModel, oai_settings, selectCustomProvider } from './openai.js';
+import { CUSTOM_PROVIDER_API_VERSION, CUSTOM_PROVIDER_CONTROLS, registerCustomProvider, getCustomProvider, listCustomProviders } from './custom-providers.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { getPresetManager } from './preset-manager.js';
@@ -102,7 +103,7 @@ import { getTextGenServer, textgenerationwebui_settings } from './textgen-settin
 import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { timestampToMoment, uuidv4, importFromExternalUrl } from './utils.js';
+import { timestampToMoment, uuidv4, importFromExternalUrl, getCallingExtensionId } from './utils.js';
 import { addGlobalVariable, addLocalVariable, decrementGlobalVariable, decrementLocalVariable, deleteGlobalVariable, deleteLocalVariable, existsGlobalVariable, existsLocalVariable, getGlobalVariable, getLocalVariable, incrementGlobalVariable, incrementLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList, world_names } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
@@ -112,8 +113,32 @@ import { IGNORE_SYMBOL } from './constants.js';
 import { macros } from './macros/macro-system.js';
 import { MessageFormatter } from './message-formatter.js';
 
+/**
+ * Registers a Custom provider for the extension the call comes from.
+ * The owner is always read from the call stack and cannot be supplied: it is what the interface shows as the
+ * provider's origin, and what removes the provider when the extension is disabled.
+ * @param {string} providerId Short stable slug of the provider
+ * @param {import('./custom-providers.js').CustomProviderDefinition} definition Provider definition
+ * @returns {import('./custom-providers.js').Registration} Registration handle
+ */
+function registerCustomProviderFromContext(providerId, definition, ...rest) {
+    if (rest.length) {
+        throw new Error('register() takes a provider ID and a definition. The owning extension is detected, not passed.');
+    }
+    const owner = getCallingExtensionId();
+    if (!owner) {
+        throw new Error('A Custom provider can only be registered from an extension.');
+    }
+    return registerCustomProvider(owner, providerId, definition);
+}
+
 export function getContext() {
     return {
+        /**
+         * Custom providers: lets an extension add a named provider on top of the Custom (OpenAI-compatible) connection.
+         * @type {import('./custom-providers.js').CustomProvidersApi}
+         */
+        customProviders: { apiVersion: CUSTOM_PROVIDER_API_VERSION, register: registerCustomProviderFromContext, get: getCustomProvider, list: listCustomProviders, select: selectCustomProvider, active: getActiveCustomProviderId, controls: CUSTOM_PROVIDER_CONTROLS },
         accountStorage,
         chat,
         characters,

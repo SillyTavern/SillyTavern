@@ -2920,11 +2920,11 @@
                             Chat Completion Source
                         </h4>
                         <select id="chat_completion_source">
-                            <optgroup>
+                            <optgroup label="OpenAI-compatible" data-i18n="[label]OpenAI-compatible">
                                 <option value="openai">OpenAI</option>
                                 <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                             </optgroup>
-                            <optgroup>
+                            <optgroup label="Other Providers" data-i18n="[label]Other Providers">
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
                                 <option value="azure_openai">Azure OpenAI</option>
@@ -3818,6 +3818,30 @@
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">
+                            <div id="custom_provider_card" class="custom_provider_card displayNone">
+                                <div class="flex-container alignItemsCenter justifySpaceBetween">
+                                    <h3 id="custom_provider_name" class="margin0"></h3>
+                                    <div class="flex-container alignItemsCenter">
+                                        <a id="custom_provider_documentation" class="menu_button menu_button_icon margin0" target="_blank" rel="noopener noreferrer">
+                                            <i class="fa-solid fa-book"></i>
+                                            <span data-i18n="Documentation">Documentation</span>
+                                        </a>
+                                        <a id="custom_provider_support" class="menu_button menu_button_icon margin0" target="_blank" rel="noopener noreferrer">
+                                            <i class="fa-solid fa-life-ring"></i>
+                                            <span data-i18n="Support">Support</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="custom_provider_origin">
+                                    <i class="fa-solid fa-puzzle-piece"></i>
+                                    <span data-i18n="Added by the extension">Added by the extension</span>
+                                    <b id="custom_provider_owner"></b>
+                                </div>
+                                <small id="custom_provider_info"></small>
+                                <div id="custom_provider_extension_settings"></div>
+                            </div>
+                            <div id="custom_provider_error" role="status" aria-live="polite"></div>
+                            <div id="custom_endpoint_block">
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
                                 <input id="custom_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
@@ -3828,10 +3852,16 @@
                                     <b data-i18n="completions note prefix"></b><code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
                                 </small>
                             </div>
+                            </div>
+                            <div id="custom_key_block">
                             <h4>
-                                <span data-i18n="Custom API Key">Custom API Key</span>
-                                <small data-i18n="(Optional)">(Optional)</small>
+                                <span id="custom_key_title" data-i18n="Custom API Key">Custom API Key</span>
+                                <small id="custom_key_optional" data-i18n="(Optional)">(Optional)</small>
                             </h4>
+                            <div id="custom_credential_binding" class="displayNone">
+                                <select id="custom_credential_select" class="text_pole wide100p" aria-describedby="custom_credential_info"></select>
+                                <small id="custom_credential_info" data-i18n="Pick one of your saved keys, or enter a new one below and click Connect.">Pick one of your saved keys, or enter a new one below and click Connect.</small>
+                            </div>
                             <div class="flex-container">
                                 <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_custom"></div>
@@ -3839,14 +3869,31 @@
                             <div data-for="api_key_custom" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                 For privacy reasons, your API key will be hidden after you click 'Connect'.
                             </div>
+                            </div>
+                            <div id="custom_model_id_block">
                             <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
                             <div class="flex-container">
                                 <input list="model_custom_select_fill" id="custom_model_id" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-4o" placeholder="Example: gpt-4o">
                                 <datalist id="model_custom_select_fill" class="text_pole model_custom_select"></datalist>
                             </div>
-                            <h4 data-i18n="Available Models">Available Models</h4>
+                            </div>
+                            <div id="custom_model_select_block">
+                            <h4 id="custom_model_select_title" data-i18n="Available Models">Available Models</h4>
                             <div class="flex-container">
                                 <select id="model_custom_select" class="text_pole model_custom_select"></select>
+                            </div>
+                            </div>
+                            <div id="custom_provider_advanced" class="displayNone">
+                                <label id="custom_provider_details" class="checkbox_label" for="custom_provider_details_toggle">
+                                    <input id="custom_provider_details_toggle" type="checkbox" />
+                                    <span data-i18n="Advanced: show endpoint and connection details">Advanced: show endpoint and connection details</span>
+                                </label>
+                                <div id="custom_provider_actions" class="flex-container alignItemsCenter displayNone">
+                                    <small id="custom_provider_modified"></small>
+                                    <button id="custom_provider_reset" type="button" class="menu_button menu_button_icon" data-i18n="Reset provider defaults">Reset provider defaults</button>
+                                    <button id="custom_provider_detach" type="button" class="menu_button menu_button_icon" data-i18n="Use these settings manually">Use these settings manually</button>
+                                    <button id="custom_provider_forget" type="button" class="menu_button menu_button_icon" data-i18n="Forget saved setup">Forget saved setup</button>
+                                </div>
                             </div>
                         </form>
                         <div id="xai_form" data-source="xai">

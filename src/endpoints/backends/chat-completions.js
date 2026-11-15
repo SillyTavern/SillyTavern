@@ -5,6 +5,7 @@ import util from 'node:util';
 import express from 'express';
 import fetch from 'node-fetch';
 import urlJoin from 'url-join';
+import { CustomAuthError, redactCustomKey, resolveCustomAuth } from '../../custom-auth.js';
 
 import {
     AIMLAPI_HEADERS,
@@ -1779,6 +1780,8 @@ export const router = express.Router();
 router.post('/status', async function (request, statusResponse) {
     try {
         if (!request.body) return statusResponse.sendStatus(400);
+        const customAuth = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM
+            ? resolveCustomAuth(request.user.directories, request.body) : undefined;
 
         let apiUrl = '';
         let apiKey = '';
@@ -1799,8 +1802,8 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
-            apiUrl = request.body.custom_url;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);
+            apiUrl = customAuth?.endpoint ?? request.body.custom_url;
+            apiKey = customAuth?.key ?? readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);
             headers = {};
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
@@ -2077,9 +2080,10 @@ router.post('/status', async function (request, statusResponse) {
         const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
-                'Authorization': 'Bearer ' + apiKey,
+                ...(customAuth ? customAuth.headers : { Authorization: 'Bearer ' + apiKey }),
                 ...headers,
             },
+            redirect: customAuth?.redirect,
         });
 
         if (response.ok) {
@@ -2146,6 +2150,7 @@ router.post('/status', async function (request, statusResponse) {
             statusResponse.send({ error: true, data: { data: [] } });
         }
     } catch (e) {
+        if (e instanceof CustomAuthError) return statusResponse.status(400).send({ error: { message: e.message, code: e.code } });
         console.error(e);
 
         if (!statusResponse.headersSent) {
@@ -2241,8 +2246,12 @@ router.post('/bias', async function (request, response) {
 });
 
 router.post('/generate', async function (request, response) {
+    // Declared outside the try block: the error path below has to remove the key from what it logs and returns too.
+    let customAuth;
     try {
         if (!request.body) return response.status(400).send({ error: true });
+        customAuth = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM
+            ? resolveCustomAuth(request.user.directories, request.body) : undefined;
 
         const postProcessingType = request.body.custom_prompt_post_processing;
         if (Array.isArray(request.body.messages) && postProcessingType) {
@@ -2393,8 +2402,8 @@ router.post('/generate', async function (request, response) {
                 bodyParams['safety_settings'] = GEMINI_SAFETY;
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
-            apiUrl = request.body.custom_url;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);
+            apiUrl = customAuth?.endpoint ?? request.body.custom_url;
+            apiKey = customAuth?.key ?? readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);
             headers = {};
             bodyParams = {
                 logprobs: request.body.logprobs,
@@ -2687,26 +2696,27 @@ router.post('/generate', async function (request, response) {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey,
+                ...(customAuth ? customAuth.headers : { Authorization: 'Bearer ' + apiKey }),
                 ...headers,
             },
             body: JSON.stringify(requestBody),
             signal: controller.signal,
+            redirect: customAuth?.redirect,
         };
 
-        console.debug('Chat Completion request:', requestBody);
+        console.debug('Chat Completion request:', redactCustomKey(customAuth, requestBody));
 
         const fetchResponse = await fetch(endpointUrl, config);
 
         if (request.body.stream) {
             console.info('Streaming request in progress');
-            return await forwardFetchResponse(fetchResponse, response);
+            return await forwardFetchResponse(fetchResponse, response, { transformErrorText: text => redactCustomKey(customAuth, text) });
         }
 
         if (fetchResponse.ok) {
             /** @type {any} */
             const json = await fetchResponse.json();
-            console.debug('Chat Completion response:', json);
+            console.debug('Chat Completion response:', redactCustomKey(customAuth, json));
             return response.send(json);
         } else {
             const responseText = await fetchResponse.text();
@@ -2714,7 +2724,7 @@ router.post('/generate', async function (request, response) {
 
             const message = fetchResponse.statusText || 'Unknown error occurred';
             const quota_error = fetchResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
-            console.error('Chat completion request error: ', message, responseText);
+            console.error('Chat completion request error: ', message, redactCustomKey(customAuth, responseText));
 
             if (!response.headersSent) {
                 response.send({ error: { message }, quota_error: quota_error });
@@ -2725,13 +2735,20 @@ router.post('/generate', async function (request, response) {
             }
         }
     } catch (error) {
-        console.error('Generation failed', error);
+        if (error instanceof CustomAuthError) return response.status(400).send({ error: { message: error.message, code: error.code } });
+        // A managed Custom key must not reach the log or the client through an error either.
+        const errorMessage = redactCustomKey(customAuth, String(error.message ?? ''));
+        if (customAuth?.key) {
+            console.error('Generation failed', errorMessage, error.code ?? '');
+        } else {
+            console.error('Generation failed', error);
+        }
         const message = error.code === 'ECONNREFUSED'
-            ? `Connection refused: ${error.message}`
-            : error.message || 'Unknown error occurred';
+            ? `Connection refused: ${errorMessage}`
+            : errorMessage || 'Unknown error occurred';
 
         if (!response.headersSent) {
-            response.status(502).send({ error: { message, ...error } });
+            response.status(502).send({ error: customAuth?.key ? { message, code: error.code } : { message, ...error } });
         } else {
             response.end();
         }

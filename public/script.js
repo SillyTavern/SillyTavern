@@ -111,6 +111,8 @@ import {
     loadProxyPresets,
     selected_proxy,
     initOpenAI,
+    isCustomConnectionTransition,
+    deferSettingsSaveForCustomConnection,
 } from './scripts/openai.js';
 
 import {
@@ -804,6 +806,7 @@ function initStandaloneMode() {
 }
 
 export function cancelStatusCheck(reason = 'Manually cancelled status check') {
+    if (isCustomConnectionTransition()) return;
     abortStatusCheck?.abort(new AbortReason(reason));
     abortStatusCheck = new AbortController();
     setOnlineStatus('no_connection');
@@ -7171,6 +7174,7 @@ export function setCharacterName(value) {
  * @param {string|'no_connection'} value Connection status value
  */
 export function setOnlineStatus(value) {
+    if (isCustomConnectionTransition()) return;
     const previousStatus = online_status;
     online_status = value;
     displayOnlineStatus();
@@ -8071,6 +8075,7 @@ export async function getSettings(initLoaderHandle = null) {
 
 //MARK: saveSettings()
 export async function saveSettings(loopCounter = 0) {
+    if (deferSettingsSaveForCustomConnection()) return;
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
         saveSettingsDebounced();
@@ -11781,7 +11786,7 @@ jQuery(async function () {
         cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
-        await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
+        if (!isCustomConnectionTransition()) await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
     });
 
     ////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////
