@@ -103,7 +103,7 @@ import { getTextGenServer, textgenerationwebui_settings } from './textgen-settin
 import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { timestampToMoment, uuidv4, importFromExternalUrl } from './utils.js';
+import { timestampToMoment, uuidv4, importFromExternalUrl, getCallingExtensionId } from './utils.js';
 import { addGlobalVariable, addLocalVariable, decrementGlobalVariable, decrementLocalVariable, deleteGlobalVariable, deleteLocalVariable, existsGlobalVariable, existsLocalVariable, getGlobalVariable, getLocalVariable, incrementGlobalVariable, incrementLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList, world_names } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
@@ -113,9 +113,27 @@ import { IGNORE_SYMBOL } from './constants.js';
 import { macros } from './macros/macro-system.js';
 import { MessageFormatter } from './message-formatter.js';
 
+/**
+ * Registers a Custom provider for the extension the call comes from.
+ * Extensions call `register(providerId, definition)`; the owner is read from the call stack.
+ * The three-argument form with an explicit owner ID keeps working.
+ * @param {...any} args `(providerId, definition)` or `(ownerExtension, providerId, definition)`
+ * @returns {import('./custom-providers.js').Registration} Registration handle
+ */
+function registerCustomProviderFromContext(...args) {
+    if (args.length >= 3) {
+        return registerCustomProvider(args[0], args[1], args[2]);
+    }
+    const owner = getCallingExtensionId();
+    if (!owner) {
+        throw new Error('A Custom provider can only be registered from an extension.');
+    }
+    return registerCustomProvider(owner, args[0], args[1]);
+}
+
 export function getContext() {
     return {
-        customProviders: { apiVersion: CUSTOM_PROVIDER_API_VERSION, register: registerCustomProvider, get: getCustomProvider, list: listCustomProviders, select: selectCustomProvider },
+        customProviders: { apiVersion: CUSTOM_PROVIDER_API_VERSION, register: registerCustomProviderFromContext, get: getCustomProvider, list: listCustomProviders, select: selectCustomProvider },
         accountStorage,
         chat,
         characters,
