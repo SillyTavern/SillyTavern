@@ -1124,7 +1124,8 @@ export function cachingSystemPromptForOpenRouter(messages, ttl = undefined) {
 export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, isAdaptiveModel) {
     if (!reasoningEffort) {
         return null;
-    }    
+    }
+
     // Adaptive thinking for Opus 4.6+: return effort string (like Gemini 3)
     if (isAdaptiveModel) {
         switch (reasoningEffort) {
