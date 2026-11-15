@@ -722,6 +722,24 @@ function convertWorldInfoToCharacterBook(name, entries) {
 }
 
 /**
+ * Gets the avatar image for a character imported from a file without an embedded image.
+ * Keeps the current avatar if an existing character is being replaced.
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {string|undefined} preservedFileName Preserved file name
+ * @returns {string} Path to the avatar image
+ */
+function getImportAvatarPath(directories, preservedFileName) {
+    if (preservedFileName) {
+        const avatarPath = path.join(directories.characters, `${preservedFileName}.png`);
+        if (fs.existsSync(avatarPath)) {
+            return avatarPath;
+        }
+    }
+
+    return DEFAULT_AVATAR_PATH;
+}
+
+/**
  * Import a character from a YAML file.
  * @param {string} uploadPath Path to the uploaded file
  * @param {{ request: import('express').Request, response: import('express').Response }} context Express request and response objects
@@ -750,7 +768,8 @@ async function importFromYaml(uploadPath, context, preservedFileName) {
         'creator': '',
         'tags': '',
     }, context.request.user.directories);
-    const result = await writeCharacterData(DEFAULT_AVATAR_PATH, JSON.stringify(char), fileName, context.request);
+    const avatarPath = getImportAvatarPath(context.request.user.directories, preservedFileName);
+    const result = await writeCharacterData(avatarPath, JSON.stringify(char), fileName, context.request);
     return result ? fileName : '';
 }
 
@@ -885,6 +904,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
     fs.unlinkSync(uploadPath);
 
     let jsonData = JSON.parse(data);
+    const avatarPath = getImportAvatarPath(request.user.directories, preservedFileName);
 
     if (jsonData.spec !== undefined) {
         console.info(`Importing from ${jsonData.spec} json`);
@@ -898,7 +918,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         jsonData.create_date = new Date().toISOString();
         const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
         const char = JSON.stringify(jsonData);
-        const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
+        const result = await writeCharacterData(avatarPath, char, pngName, request);
         return result ? pngName : '';
     } else if (jsonData.name !== undefined) {
         console.info('Importing from v1 json');
@@ -924,7 +944,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         };
         char = convertToV2(char, request.user.directories);
         let charJSON = JSON.stringify(char);
-        const result = await writeCharacterData(DEFAULT_AVATAR_PATH, charJSON, pngName, request);
+        const result = await writeCharacterData(avatarPath, charJSON, pngName, request);
         return result ? pngName : '';
     } else if (jsonData.char_name !== undefined) {
         //json Pygmalion notepad
@@ -951,7 +971,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         };
         char = convertToV2(char, request.user.directories);
         const charJSON = JSON.stringify(char);
-        const result = await writeCharacterData(DEFAULT_AVATAR_PATH, charJSON, pngName, request);
+        const result = await writeCharacterData(avatarPath, charJSON, pngName, request);
         return result ? pngName : '';
     }
 
@@ -1035,13 +1055,19 @@ router.post('/create', getFileNameValidationFunction('file_name'), async functio
         if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
         if (!request.file) {
-            await writeCharacterData(DEFAULT_AVATAR_PATH, char, internalName, request);
+            const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, internalName, request);
+            if (!result) {
+                return response.sendStatus(500);
+            }
             return response.send(avatarName);
         } else {
             const crop = tryParse(request.query.crop);
             const uploadPath = path.join(request.file.destination, request.file.filename);
-            await writeCharacterData(uploadPath, char, internalName, request, crop);
+            const result = await writeCharacterData(uploadPath, char, internalName, request, crop);
             fs.unlinkSync(uploadPath);
+            if (!result) {
+                return response.sendStatus(500);
+            }
             return response.send(avatarName);
         }
     } catch (err) {
@@ -1076,8 +1102,9 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         _.set(oldData, 'name', newName);
         const newData = JSON.stringify(oldData);
 
-        // Write data to new location
-        await writeCharacterData(oldAvatarPath, newData, newInternalName, request);
+        // Write data to new location. The old card and its chats must stay untouched if this fails.
+        const result = await writeCharacterData(oldAvatarPath, newData, newInternalName, request);
+        if (!result) throw new Error('Failed to write renamed character file');
 
         // Rename chats folder
         if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
@@ -1120,15 +1147,21 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
     try {
         if (!request.file) {
             const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
-            await writeCharacterData(avatarPath, char, targetFile, request);
+            const result = await writeCharacterData(avatarPath, char, targetFile, request);
+            if (!result) {
+                return response.sendStatus(500);
+            }
         } else {
             const crop = tryParse(request.query.crop);
             const newAvatarPath = path.join(request.file.destination, request.file.filename);
-            invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
-            await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
+            const result = await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
             fs.unlinkSync(newAvatarPath);
+            if (!result) {
+                return response.sendStatus(500);
+            }
 
             // Bust cache to reload the new avatar
+            invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
             cacheBuster.bust(request, response);
         }
 
@@ -1164,10 +1197,14 @@ router.post('/edit-avatar', validateAvatarUrlMiddleware, async function (request
 
         const crop = tryParse(request.query.crop);
         const fileName = request.body.avatar_url.replace('.png', '');
-        await writeCharacterData(uploadPath, data, fileName, request, crop);
+        const result = await writeCharacterData(uploadPath, data, fileName, request, crop);
 
         // Remove uploaded temp file
         fs.unlinkSync(uploadPath);
+
+        if (!result) {
+            return response.sendStatus(500);
+        }
 
         // Reset images caches
         cacheBuster.bust(request, response);
@@ -1223,7 +1260,8 @@ router.post('/edit-attribute', validateAvatarUrlMiddleware, async function (requ
         char.data[request.body.field] = request.body.value;
         let newCharJSON = JSON.stringify(char);
         const targetFile = (request.body.avatar_url).replace('.png', '');
-        await writeCharacterData(avatarPath, newCharJSON, targetFile, request);
+        const result = await writeCharacterData(avatarPath, newCharJSON, targetFile, request);
+        if (!result) throw new Error('Failed to write character file');
         return response.sendStatus(200);
     } catch (err) {
         console.error('An error occurred, character edit invalidated.', err);
@@ -1299,7 +1337,8 @@ async function mergeCharacterUpdate(avatarPath, avatar, updateData, request, sho
     }
 
     const targetImg = avatar.replace('.png', '');
-    await writeCharacterData(avatarPath, JSON.stringify(character), targetImg, request);
+    const written = await writeCharacterData(avatarPath, JSON.stringify(character), targetImg, request);
+    if (!written) throw new Error(`Failed to write character file: ${avatar}`);
     return { ok: true };
 }
 

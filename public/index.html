@@ -2053,7 +2053,7 @@
                                             </em>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes,workers_ai">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes,workers_ai,deepseek">
                                         <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_media_inlining" type="checkbox" />
                                             <span data-i18n="Send inline media">Send inline media</span>
@@ -3067,6 +3067,8 @@
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
                                     <optgroup label="GPT-6">
+                                        <option value="gpt-6.1-sol">gpt-6.1-sol</option>
+                                        <option value="gpt-6.1-terra">gpt-6.1-terra</option>
                                         <option value="gpt-6-astra">gpt-6-astra</option>
                                         <option value="gpt-6-sol">gpt-6-sol</option>
                                         <option value="gpt-6-luna">gpt-6-luna</option>
@@ -3188,25 +3190,24 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-fable-5-2">claude-fable-5-2</option>
                                         <option value="claude-fable-5-1">claude-fable-5-1</option>
                                         <option value="claude-fable-5">claude-fable-5</option>
                                         <option value="claude-opus-5-5">claude-opus-5-5</option>
                                         <option value="claude-opus-5">claude-opus-5</option>
+                                        <option value="claude-sonnet-5-5">claude-sonnet-5-5</option>
                                         <option value="claude-sonnet-5">claude-sonnet-5</option>
+                                        <option value="claude-haiku-5-5">claude-haiku-5-5</option>
                                         <option value="claude-opus-4-8">claude-opus-4-8</option>
                                         <option value="claude-opus-4-7">claude-opus-4-7</option>
                                         <option value="claude-opus-4-6">claude-opus-4-6</option>
                                         <option value="claude-opus-4-5">claude-opus-4-5</option>
                                         <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                                         <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-                                        <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
-                                        <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929</option>
+                                        <option value="claude-sonnet-4-5">claude-sonnet-4-5 (deprecated)</option>
+                                        <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929 (deprecated)</option>
                                         <option value="claude-haiku-4-5">claude-haiku-4-5</option>
                                         <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
-                                        <option value="claude-opus-4-0">claude-opus-4-0 (deprecated)</option>
-                                        <option value="claude-opus-4-20250514">claude-opus-4-20250514 (deprecated)</option>
-                                        <option value="claude-sonnet-4-0">claude-sonnet-4-0 (deprecated)</option>
-                                        <option value="claude-sonnet-4-20250514">claude-sonnet-4-20250514 (deprecated)</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -3709,7 +3710,8 @@
                             <div>
                                 <h4 data-i18n="DeepSeek Model">DeepSeek Model</h4>
                                 <select id="model_deepseek_select">
-                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                    <option value="deepseek-flash">deepseek-flash</option>
+                                    <option value="deepseek-v4-pro">deepseek-v4-pro</option>
                                 </select>
                             </div>
                         </div>
@@ -7185,7 +7187,7 @@
                                 <div class="flex-container alignitemscenter wide100p">
                                     <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                         <div class="flex-container flex1">
-                                            <textarea class="text_pole" rows="1" name="comment" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                            <textarea class="text_pole" rows="1" name="comment" placeholder="Entry Title/Memo"></textarea>
                                         </div>
                                         <!-- <span class="world_entry_form_position_value"></span> -->
                                         <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized" name="entryStateSelector" class="text_pole widthNatural margin0">

@@ -4526,6 +4526,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         return {
             ...chatItem,
             mes: regexedMessage,
+            original_mes: message,
             index,
         };
     }));
@@ -4776,7 +4777,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = coreChat[j].mes;
             if (i === 0 && isContinue) {
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-                continue_mag = coreChat[j].mes;
+                continue_mag = coreChat[j].original_mes ?? coreChat[j].mes;
             }
             continue;
         }
@@ -4809,7 +4810,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = chat2[i].includes(FORMAT_TOKEN)
                 ? chat2[i].slice(0, chat2[i].lastIndexOf(FORMAT_TOKEN))
                 : chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-            continue_mag = coreChat[j].mes;
+            continue_mag = coreChat[j].original_mes ?? coreChat[j].mes;
         }
 
         if (coreChat[j].is_user) {
@@ -5385,7 +5386,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
         if (isStreamingEnabled() && type !== 'quiet') {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
             streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag, promptReasoning);
             if (isContinue) {
                 // Save reply does add cycle text to the prompt, so it's not needed here
@@ -5509,7 +5509,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         if (isContinue) {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
             getMessage = continue_mag + getMessage;
         }
 
@@ -8142,8 +8141,10 @@ export function setGenerationParamsFromPreset(preset) {
 // Common code for message editor done and auto-save
 function updateMessage(div) {
     const mesBlock = div.closest('.mes_block');
-    let text = mesBlock.find('.edit_textarea').val()
-        ?? mesBlock.find('.mes_text').text();
+    let text = mesBlock.find('.edit_textarea').val();
+    if (typeof text !== 'string') {
+        return;
+    }
     const mesElement = div.closest('.mes');
     const mes = chat[mesElement.attr('mesid')];
 
@@ -8220,7 +8221,11 @@ function openMessageDelete(fromSlashCommand, deleteToolCalls = true) {
 }
 
 function messageEditAuto(div) {
-    const { mesBlock, text, mes, bias } = updateMessage(div);
+    const updatedMessage = updateMessage(div);
+    if (!updatedMessage) {
+        return;
+    }
+    const { mesBlock, text, mes, bias } = updatedMessage;
 
     mesBlock.find('.mes_text').val('');
     mesBlock.find('.mes_text').val(messageFormatting(
@@ -8404,7 +8409,13 @@ async function messageEditDone(div) {
         return;
     }
 
-    let { mesBlock, text, mes, bias } = updateMessage(div);
+    const updatedMessage = updateMessage(div);
+    if (!updatedMessage) {
+        // The editor textarea is gone, so there is nothing to save. Close the editor instead of leaving it half open.
+        await messageEditCancel(this_edit_mes_id);
+        return;
+    }
+    let { mesBlock, text, mes, bias } = updatedMessage;
 
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
     text = chat[this_edit_mes_id]?.mes ?? text;
