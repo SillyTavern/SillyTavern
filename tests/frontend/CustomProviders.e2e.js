@@ -557,12 +557,6 @@ test('Custom setup and Profile journey through the installed extension', async (
         for (const replacement of ['synthetic-b', '']) {
             await page.selectOption('#connection_profiles', 'synthetic-b');
             await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('synthetic-b');
-            await page.evaluate(() => {
-                const context = SillyTavern.getContext();
-                window.heldProfileLoads = [];
-                window.heldProfileListener = name => window.heldProfileLoads.push(name);
-                context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_LOADED, window.heldProfileListener);
-            });
             let release;
             let intercepted;
             let responded;
@@ -584,6 +578,14 @@ test('Custom setup and Profile journey through the installed extension', async (
             try {
                 await page.selectOption('#connection_profiles', 'synthetic-a');
                 await started;
+                // Selections are applied one after another, so the setup selection above has emitted its load event
+                // by the time A's status request starts. Listening from here on only sees A and its replacement.
+                await page.evaluate(() => {
+                    const context = SillyTavern.getContext();
+                    window.heldProfileLoads = [];
+                    window.heldProfileListener = name => window.heldProfileLoads.push(name);
+                    context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_LOADED, window.heldProfileListener);
+                });
                 await page.selectOption('#connection_profiles', replacement);
                 // The held A response is still unreleased when the replacement finishes and emits its load event.
                 await expect.poll(() => page.evaluate(() => window.heldProfileLoads)).toEqual([replacement ? 'Synthetic b' : '<None>']);
