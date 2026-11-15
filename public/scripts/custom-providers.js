@@ -75,6 +75,14 @@ export const CUSTOM_PROVIDER_API_VERSION = 1;
  */
 
 /**
+ * Second argument of the `CHAT_COMPLETION_SETTINGS_READY` event.
+ * @typedef {object} ChatCompletionRequestContext
+ * @property {string|null} customProviderId Full ID of the Custom provider this request was built for, fixed when
+ * the request started. `null` for the Manual connection and for every other source. Compare it with your
+ * registration's `id` before changing the request.
+ */
+
+/**
  * Everything that describes a Custom provider. Pass it to `customProviders.register()`.
  * A definition is data only: registering never selects the provider, connects, stores a key or sends a request.
  * Unknown fields are rejected with an error that names the field.
@@ -113,7 +121,9 @@ export const CUSTOM_PROVIDER_API_VERSION = 1;
  * @property {(id: string|null) => Promise<void>} select Selects a provider by full ID, or the Manual connection with
  * `null`. Only works while Chat Completion with the Custom source is selected. Does not connect.
  * @property {() => string|null} active Returns the full ID of the provider that is the selected connection, or `null`
- * for Manual and for every other source. Use it to act only while your provider is in use.
+ * for Manual and for every other source. Use it for the interface, for example to show your own inputs.
+ * Do not use it to decide whether a request is yours: `CHAT_COMPLETION_SETTINGS_READY` passes a second argument,
+ * `{ customProviderId }`, with the provider the request was built for. The selection can change while a request is prepared.
  * @property {readonly CustomProviderControl[]} controls The control names accepted in `controls.show` and `controls.hide`.
  */
 
@@ -172,13 +182,13 @@ function notify(id, ownerExtension, operation) {
 /**
  * Register declarative defaults. Duplicate IDs and suspended owners throw.
  * @param {string} ownerExtension Exact loader ID, including third-party/ where applicable
- * @param {string} localProviderId Stable lowercase slug, at most 64 characters
+ * @param {string} localProviderId Stable slug: lowercase letters, digits and dashes, at most 64 characters
  * @param {CustomProviderDefinition} definition Complete descriptor; omitted connection fields are neutral
  * @returns {Registration} Owner handle; invalid updates are atomic and unregister is idempotent
  */
 export function registerCustomProvider(ownerExtension, localProviderId, definition) {
     if (typeof ownerExtension !== 'string' || !/^(?:third-party\/)?[A-Za-z0-9][A-Za-z0-9._-]*$/.test(ownerExtension)) throw new Error('Use the exact extension loader ID.');
-    if (typeof localProviderId !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,63}$/.test(localProviderId)) throw new Error('Use a stable lowercase provider slug.');
+    if (typeof localProviderId !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(localProviderId)) throw new Error('Use a stable provider ID: lowercase letters, digits and dashes, at most 64 characters.');
     if (suspendedOwners.has(ownerExtension)) throw new Error('This extension lifetime is suspended.');
     const id = `${ownerExtension}:${localProviderId}`;
     if (registrations.has(id)) throw new Error(`Provider ${id} is already registered.`);

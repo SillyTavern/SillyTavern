@@ -174,3 +174,26 @@ test('header authentication sends the bare key under the provider header and res
     const optional = { mode: 'header', name: 'api-key', required: false };
     expect(resolveCustomAuth({ root: directory }, { custom_url: endpoint, custom_auth: { version: 1, auth: optional, credential: { mode: 'none' } } }).headers).toEqual({});
 });
+
+test('a key echoed by a failing upstream never reaches the client or the log, streaming or not', async () => {
+    const echoed = 'Incorrect API key provided: synthetic-selected. Check your key.';
+    const body = { chat_completion_source: 'custom', custom_url: endpoint, custom_auth: envelope(reference()), messages: [{ role: 'user', content: 'Hi' }], model: 'model' };
+    const logged = [];
+    const spies = ['warn', 'error', 'info', 'debug', 'log'].map(level => jest.spyOn(console, level).mockImplementation((...args) => { logged.push(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ')); }));
+    try {
+        for (const stream of [true, false]) {
+            upstream.mockResolvedValue({ ok: false, status: 401, statusText: 'Unauthorized', text: async () => echoed, json: async () => ({ error: { message: echoed } }) });
+            const text = await (await post('/chat/generate', { ...body, stream })).text();
+            expect(text).not.toContain('synthetic-selected');
+            // Only the streaming path passes the upstream text on; the other one answers with the status text.
+            expect(text.includes('[redacted key]')).toBe(stream);
+        }
+        upstream.mockRejectedValue(new Error('request to https://provider.test/?key=synthetic-selected failed'));
+        const failed = await (await post('/chat/generate', { ...body, stream: true })).text();
+        expect(failed).not.toContain('synthetic-selected');
+    } finally {
+        for (const spy of spies) spy.mockRestore();
+    }
+    expect(logged.join('\n')).not.toContain('synthetic-selected');
+    expect(logged.join('\n')).toContain('[redacted key]');
+});

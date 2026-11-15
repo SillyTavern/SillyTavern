@@ -2691,6 +2691,9 @@ function getVerbosity(settings = null) {
  */
 export async function createGenerationParameters(settings, model, type, messages, { jsonSchema = null } = {}) {
     if (settings === oai_settings && customConnectionTransition) throw new Error('A connection profile is still being applied.');
+    // The provider this request belongs to, fixed now: by the time the request is ready, another one may be selected.
+    const customProviderId = settings.chat_completion_source === chat_completion_sources.CUSTOM
+        ? settings.custom_provider_state?.active?.provider?.id ?? null : null;
     // Tool/bias preparation can await; freeze a managed tuple before another selection can change it.
     if (settings === oai_settings && settings.chat_completion_source === chat_completion_sources.CUSTOM && settings.custom_provider_state?.active) settings = settingsForCustomRequest(settings, captureCurrentCustomConnection());
     // HACK: Filter out null and non-object messages
@@ -3130,7 +3133,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.json_schema = jsonSchema;
     }
 
-    return { generate_data, stream, canMultiSwipe };
+    return { generate_data, stream, canMultiSwipe, customProviderId };
 }
 
 /**
@@ -3149,8 +3152,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     const model = getChatCompletionModel(oai_settings);
-    const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
-    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
+    const { generate_data, stream, canMultiSwipe, customProviderId } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
+    // The second argument tells a provider extension whose request this is. The selected provider may have changed since.
+    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data, { customProviderId });
 
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
@@ -7099,7 +7103,8 @@ function renderCustomProviderSetup() {
     $('#custom_provider_info').text(named ? definition ? definition.note ?? '' : t`extension unavailable` : '');
     // A place for the provider's own inputs. It is emptied whenever another connection takes over.
     const slot = document.getElementById('custom_provider_extension_settings');
-    if (slot && slot.dataset.provider !== id) {
+    // Also when the provider's extension is gone: its inputs would look alive without doing anything.
+    if (slot && (slot.dataset.provider !== id || !definition)) {
         slot.replaceChildren();
         slot.dataset.provider = id;
     }

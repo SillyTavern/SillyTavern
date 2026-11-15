@@ -46,7 +46,9 @@ describe('Custom provider registration', () => {
         expect(getCustomProvider(registerCustomProvider(owner, 'plain', definition()).id).controls).toBeUndefined();
         expect(() => registerCustomProvider(owner, 'unknown', { ...definition(), controls: { hide: ['no_such_control'] } })).toThrow('known control names');
         expect(() => registerCustomProvider(owner, 'both', { ...definition(), controls: { hide: ['seed'], show: ['seed'] } })).toThrow('both shown and hidden');
-        expect(() => registerCustomProvider(owner, 'shape', { ...definition(), controls: { remove: [] } })).toThrow('unsupported field');
+        expect(() => registerCustomProvider(owner, 'shape', { ...definition(), controls: { remove: [] } })).toThrow('Provider controls contains an unsupported field "remove"');
+        expect(() => registerCustomProvider(owner, 'with.dot', definition())).toThrow('lowercase letters, digits and dashes');
+        expect(() => registerCustomProvider(owner, 'with_underscore', definition())).toThrow('lowercase letters, digits and dashes');
     });
 
     test('keeps the root path and HTTP support', () => {

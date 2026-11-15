@@ -22,7 +22,8 @@ export const copy = value => structuredClone(value);
 
 export function object(value, name, keys) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${name} must be an object.`);
-    if (Object.keys(value).some(key => !keys.includes(key))) throw new Error(`${name} contains an unsupported field.`);
+    const unknown = Object.keys(value).find(key => !keys.includes(key));
+    if (unknown !== undefined) throw new Error(`${name} contains an unsupported field "${unknown}".`);
 }
 
 export function text(value, name, nonempty = false) {

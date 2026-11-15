@@ -82,6 +82,19 @@ async function openCustom(page) {
 const setupOption = id => id ? `custom:${id}` : 'custom';
 const pickSetup = (page, id) => page.selectOption('#chat_completion_source', setupOption(id));
 
+/** Sends one aborted request and returns the provider ID its ready event carried. Needs a usable connection. */
+async function requestProvider(page) {
+    return await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        const seen = [];
+        const listener = (_data, info) => seen.push(info?.customProviderId);
+        context.eventSource.on(context.eventTypes.CHAT_COMPLETION_SETTINGS_READY, listener);
+        try { await (await import('/scripts/openai.js')).sendOpenAIRequest('quiet', [{ role: 'user', content: 'Hi' }], AbortSignal.abort()); } catch { /* The request is aborted on purpose: only the event matters. */ }
+        context.eventSource.removeListener(context.eventTypes.CHAT_COMPLETION_SETTINGS_READY, listener);
+        return seen;
+    });
+}
+
 async function syntheticKey(page, provider, key) {
     const id = await page.evaluate(async ({ key, provider }) => {
         const { writeSecret } = await import('/scripts/secrets.js');
@@ -148,6 +161,18 @@ test('Custom setup and Profile journey through the installed extension', async (
             slot: document.getElementById('custom_provider_extension_settings').childElementCount,
         }));
         expect(await context()).toEqual({ active: `${owner}:b`, seedHidden: true, temperatureHidden: false, slot: 0 });
+        // The owner is detected, never passed: neither a third argument nor a call from outside an extension registers anything.
+        const refused = await page.evaluate(owner => {
+            const { register, list } = SillyTavern.getContext().customProviders;
+            const definition = { label: 'Spoof', defaults: { custom_url: 'https://spoof.invalid/v1' }, models: { mode: 'manual' }, auth: { mode: 'none' } };
+            const errors = [];
+            // @ts-expect-error The extra argument is the point of this check.
+            try { register(owner, 'spoof', definition); } catch (error) { errors.push(error.message); }
+            try { register('spoof', definition); } catch (error) { errors.push(error.message); }
+            return { errors, listed: list().map(item => item.id) };
+        }, owner);
+        expect(refused.errors).toEqual([expect.stringContaining('detected, not passed'), expect.stringContaining('only be registered from an extension')]);
+        expect(refused.listed.some(id => id.endsWith(':spoof'))).toBe(false);
         await page.evaluate(() => { document.getElementById('custom_provider_extension_settings').append(document.createElement('select')); });
         await page.evaluate(() => { $('#chat_completion_source').trigger('change'); });
         expect((await context()).slot).toBe(1);
@@ -160,6 +185,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(''));
         await expect(page.locator('#custom_model_id')).toHaveValue('manual-model');
         expect(await context()).toEqual({ active: null, seedHidden: false, temperatureHidden: false, slot: 0 });
+        expect(await requestProvider(page)).toEqual([null]);
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
     });
 
@@ -232,8 +258,11 @@ test('Custom setup and Profile journey through the installed extension', async (
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
         await openCustom(page);
         await expect(page.locator('#custom_model_id')).toHaveValue('explicit-model');
+        await page.evaluate(() => { document.getElementById('custom_provider_extension_settings').append(document.createElement('select')); });
         await page.evaluate(async owner => { await (await import('/scripts/extensions.js')).disableExtension(owner, false); }, owner);
         await expect(page.locator('#custom_provider_info')).toContainText('extension unavailable');
+        // The provider stays selected, but inputs of a disabled extension must not stay behind looking alive.
+        await expect(page.locator('#custom_provider_extension_settings > *')).toHaveCount(0);
         expect(await page.evaluate(async () => (await import('/scripts/custom-providers.js')).getCustomAuth((await import('/scripts/openai.js')).oai_settings).credential.key)).toBe('api_key_openai');
         await page.evaluate(async owner => { await (await import('/scripts/extensions.js')).enableExtension(owner, false); }, owner);
     });
@@ -289,6 +318,8 @@ test('Custom setup and Profile journey through the installed extension', async (
         await syntheticKey(page, 'a', 'api_key_custom');
         await page.locator('#api_button_openai').click();
         await expect.poll(() => keyHeaders.findLast(item => item.path === '/a/v1/models')).toEqual({ path: '/a/v1/models', authorization: undefined, apiKey: 'synthetic-a' });
+        // A request carries the provider it was built for; an extension compares that, not the current selection.
+        expect(await requestProvider(page)).toEqual([`${owner}:a`]);
         await reset({ mode: 'none' });
         await expect(page.locator('#api_key_custom')).toBeDisabled();
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('none');

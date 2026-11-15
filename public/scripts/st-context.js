@@ -115,20 +115,21 @@ import { MessageFormatter } from './message-formatter.js';
 
 /**
  * Registers a Custom provider for the extension the call comes from.
- * Extensions call `register(providerId, definition)`; the owner is read from the call stack.
- * The three-argument form with an explicit owner ID keeps working.
- * @param {...any} args `(providerId, definition)` or `(ownerExtension, providerId, definition)`
+ * The owner is always read from the call stack and cannot be supplied: it is what the interface shows as the
+ * provider's origin, and what removes the provider when the extension is disabled.
+ * @param {string} providerId Short stable slug of the provider
+ * @param {import('./custom-providers.js').CustomProviderDefinition} definition Provider definition
  * @returns {import('./custom-providers.js').Registration} Registration handle
  */
-function registerCustomProviderFromContext(...args) {
-    if (args.length >= 3) {
-        return registerCustomProvider(args[0], args[1], args[2]);
+function registerCustomProviderFromContext(providerId, definition, ...rest) {
+    if (rest.length) {
+        throw new Error('register() takes a provider ID and a definition. The owning extension is detected, not passed.');
     }
     const owner = getCallingExtensionId();
     if (!owner) {
         throw new Error('A Custom provider can only be registered from an extension.');
     }
-    return registerCustomProvider(owner, args[0], args[1]);
+    return registerCustomProvider(owner, providerId, definition);
 }
 
 export function getContext() {

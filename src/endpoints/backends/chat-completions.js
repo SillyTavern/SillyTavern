@@ -2246,9 +2246,11 @@ router.post('/bias', async function (request, response) {
 });
 
 router.post('/generate', async function (request, response) {
+    // Declared outside the try block: the error path below has to remove the key from what it logs and returns too.
+    let customAuth;
     try {
         if (!request.body) return response.status(400).send({ error: true });
-        const customAuth = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM
+        customAuth = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM
             ? resolveCustomAuth(request.user.directories, request.body) : undefined;
 
         const postProcessingType = request.body.custom_prompt_post_processing;
@@ -2708,7 +2710,7 @@ router.post('/generate', async function (request, response) {
 
         if (request.body.stream) {
             console.info('Streaming request in progress');
-            return await forwardFetchResponse(fetchResponse, response);
+            return await forwardFetchResponse(fetchResponse, response, { transformErrorText: text => redactCustomKey(customAuth, text) });
         }
 
         if (fetchResponse.ok) {
@@ -2734,13 +2736,19 @@ router.post('/generate', async function (request, response) {
         }
     } catch (error) {
         if (error instanceof CustomAuthError) return response.status(400).send({ error: { message: error.message, code: error.code } });
-        console.error('Generation failed', error);
+        // A managed Custom key must not reach the log or the client through an error either.
+        const errorMessage = redactCustomKey(customAuth, String(error.message ?? ''));
+        if (customAuth?.key) {
+            console.error('Generation failed', errorMessage, error.code ?? '');
+        } else {
+            console.error('Generation failed', error);
+        }
         const message = error.code === 'ECONNREFUSED'
-            ? `Connection refused: ${error.message}`
-            : error.message || 'Unknown error occurred';
+            ? `Connection refused: ${errorMessage}`
+            : errorMessage || 'Unknown error occurred';
 
         if (!response.headersSent) {
-            response.status(502).send({ error: { message, ...error } });
+            response.status(502).send({ error: customAuth?.key ? { message, code: error.code } : { message, ...error } });
         } else {
             response.end();
         }
