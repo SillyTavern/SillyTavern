@@ -118,6 +118,25 @@ test('Custom setup and Profile journey through the installed extension', async (
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
     });
 
+    await test.step('named setups are listed as Custom Providers in the source list', async () => {
+        const source = page.locator('#chat_completion_source');
+        await expect(source.locator('optgroup#chat_completion_custom_providers option')).toHaveText(['<b>Provider A</b>', 'Provider B']);
+        await page.selectOption('#chat_completion_source', 'claude');
+        await page.selectOption('#chat_completion_source', `custom:${owner}:b`);
+        await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/b/v1`);
+        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:b`);
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).oai_settings.chat_completion_source)).toBe('custom');
+        // Presets and settings loads only re-trigger the source event. That keeps the active setup.
+        await page.evaluate(() => { $('#chat_completion_source').trigger('change'); });
+        await expect(source).toHaveValue(`custom:${owner}:b`);
+        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:b`);
+        // Picking plain Custom is the remembered Manual connection.
+        await page.selectOption('#chat_completion_source', 'custom');
+        await expect(page.locator('#custom_provider_select')).toHaveValue('');
+        await expect(page.locator('#custom_model_id')).toHaveValue('manual-model');
+        await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
+    });
+
     await test.step('same-source ordinary Profile preserves Connect and a URL Profile qualifies once', async () => {
         await openCustom(page);
         await page.evaluate(async endpoint => {

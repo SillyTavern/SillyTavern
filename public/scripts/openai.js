@@ -6968,6 +6968,51 @@ export async function bindCustomCredential(key, id) {
     customConnectionChanged('edit', { invalidateStatus: true });
 }
 
+/** Prefix of a source dropdown option that stands for a named Custom provider setup. */
+const CUSTOM_PROVIDER_OPTION_PREFIX = 'custom:';
+
+/**
+ * Splits a source dropdown value into the Chat Completion source and, for a named setup, its provider ID.
+ * @param {string} value Selected option value
+ * @returns {{source: string, providerId?: string}} The source to use and the provider ID if the option names a setup
+ */
+function parseSourceOption(value) {
+    return value.startsWith(CUSTOM_PROVIDER_OPTION_PREFIX)
+        ? { source: chat_completion_sources.CUSTOM, providerId: value.slice(CUSTOM_PROVIDER_OPTION_PREFIX.length) }
+        : { source: value };
+}
+
+/**
+ * Lists the named Custom provider setups in the source dropdown, in their own group, and shows the active one as selected.
+ * They stay Custom connections: the group only makes them findable by name where every other provider is picked.
+ * @param {Map<string, {label: string, owner: string}>} entries Setups by provider ID, including unavailable saved ones
+ * @param {string[]} labels Labels of the registered setups, to tell apart equal names
+ * @param {string} activeId Provider ID of the active setup, or an empty string for Manual
+ */
+function renderCustomProviderSourceOptions(entries, labels, activeId) {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('chat_completion_source'));
+    if (!select) return;
+    const groupId = 'chat_completion_custom_providers';
+    document.getElementById(groupId)?.remove();
+
+    // Saved setups of removed extensions are only listed while they are the active connection.
+    const listed = [...entries].filter(([key, entry]) => entry.registered || key === activeId)
+        .sort((a, b) => a[1].label.localeCompare(b[1].label) || a[0].localeCompare(b[0]));
+    if (listed.length) {
+        const group = document.createElement('optgroup');
+        group.id = groupId;
+        group.label = t`Custom Providers`;
+        for (const [key, entry] of listed) {
+            const label = labels.filter(label => label === entry.label).length > 1 ? `${entry.label} (${entry.owner})` : entry.label;
+            group.append(new Option(label, CUSTOM_PROVIDER_OPTION_PREFIX + key));
+        }
+        select.querySelector('optgroup')?.after(group);
+    }
+
+    const isCustom = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    select.value = isCustom && activeId ? CUSTOM_PROVIDER_OPTION_PREFIX + activeId : oai_settings.chat_completion_source;
+}
+
 function renderCustomProviderSetup() {
     const state = oai_settings.custom_provider_state;
     const select = document.getElementById('custom_provider_select');
@@ -6985,9 +7030,9 @@ function renderCustomProviderSetup() {
     const id = active?.provider?.id ?? '';
     const saved = Object.values(state?.drafts ?? {});
     if (active?.provider) saved.push({ provider: active.provider });
-    const entries = new Map(registrations.map(entry => [entry.id, { label: entry.definition.label, owner: entry.ownerExtension }]));
+    const entries = new Map(registrations.map(entry => [entry.id, { label: entry.definition.label, owner: entry.ownerExtension, registered: true }]));
     for (const slot of saved) {
-        if (!entries.has(slot.provider.id)) entries.set(slot.provider.id, { label: `${slot.provider.label} (${t`extension unavailable`})`, owner: slot.provider.id });
+        if (!entries.has(slot.provider.id)) entries.set(slot.provider.id, { label: `${slot.provider.label} (${t`extension unavailable`})`, owner: slot.provider.id, registered: false });
     }
     select.replaceChildren(new Option(t`Manual`, ''));
     const labels = registrations.map(entry => entry.definition.label);
@@ -6996,6 +7041,7 @@ function renderCustomProviderSetup() {
         select.add(new Option(label, key));
     }
     select.value = id;
+    renderCustomProviderSourceOptions(entries, labels, id);
     $('#custom_provider_setup').toggleClass('hidden', !entries.size);
     const definition = getCustomProvider(id);
     const modified = definition && CUSTOM_CONNECTION_FIELDS.some(field => definition.defaults[field] !== oai_settings[field]);
@@ -7283,18 +7329,31 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#chat_completion_source').on('change', function () {
+    $('#chat_completion_source').on('change', function (event) {
+        const { source, providerId } = parseSourceOption(String($(this).find(':selected').val()));
         if (customConnectionTransition) {
-            oai_settings.chat_completion_source = String($(this).find(':selected').val());
+            oai_settings.chat_completion_source = source;
             toggleChatCompletionForms();
             return;
         }
         cancelStatusCheck('Chat Completion source changed');
         model_list = [];
-        oai_settings.chat_completion_source = String($(this).find(':selected').val());
+        oai_settings.chat_completion_source = source;
         toggleChatCompletionForms();
         saveSettingsDebounced();
-        reconnectOpenAi();
+
+        // A named setup was picked, or the user picked plain Custom, which means the Manual connection.
+        // Code that only re-triggers this event keeps whichever setup is active.
+        const pickedByUser = Boolean(event.originalEvent);
+        const targetProvider = providerId ?? (pickedByUser && source === chat_completion_sources.CUSTOM ? null : undefined);
+        const activeProvider = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+        if (targetProvider !== undefined && targetProvider !== activeProvider) {
+            // Selecting a setup never connects on its own: the user chooses a key and clicks Connect.
+            void selectCustomProvider(targetProvider).catch(error => { showCustomProviderError(error); renderCustomProviderSetup(); });
+        } else {
+            reconnectOpenAi();
+            renderCustomProviderSetup();
+        }
         forceCharacterEditorTokenize();
         updateFeatureSupportFlags();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
