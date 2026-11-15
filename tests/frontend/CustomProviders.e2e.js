@@ -71,8 +71,14 @@ async function openCustom(page) {
         await context.executeSlashCommandsWithOptions('/api custom');
         $('#rm_api_block').removeClass('closedDrawer').addClass('openDrawer').show();
     }, root);
-    await expect(page.locator('#custom_provider_select')).toBeVisible();
+    await expect(page.locator('#custom_form')).toBeVisible();
+    // The journey edits endpoints and model IDs of named setups, which are tucked away by default.
+    await page.evaluate(() => { $('#custom_provider_details_toggle').prop('checked', true).trigger('input'); });
 }
+
+/** Source dropdown value of a named setup; an empty ID is the Manual connection. */
+const setupOption = id => id ? `custom:${id}` : 'custom';
+const pickSetup = (page, id) => page.selectOption('#chat_completion_source', setupOption(id));
 
 async function syntheticKey(page, provider, key) {
     const id = await page.evaluate(async ({ key, provider }) => {
@@ -101,18 +107,20 @@ test('Custom setup and Profile journey through the installed extension', async (
             $('#custom_model_id').val('manual-model').trigger('input');
             oai_settings.custom_include_headers = 'X-Manual: preserved';
         });
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/a/v1`);
         await expect(page.locator('#custom_model_id')).toHaveValue('');
-        await expect(page.locator('#custom_provider_select option').filter({ hasText: '<b>Provider A</b>' })).toHaveCount(1);
-        await expect(page.locator('#custom_provider_info b')).toHaveCount(0);
+        await expect(page.locator('#chat_completion_source option').filter({ hasText: '<b>Provider A</b>' })).toHaveCount(1);
+        await expect(page.locator('#custom_provider_name')).toHaveText('<b>Provider A</b>');
+        await expect(page.locator('#custom_provider_name b')).toHaveCount(0);
+        await expect(page.locator('#custom_provider_owner')).toHaveText('custom-provider-extension');
         await page.locator('#api_button_openai').click();
         await expect(page.locator('#custom_provider_error')).toContainText('Choose a stored key');
         await page.locator('#custom_model_id').fill('deliberate-model');
-        await page.selectOption('#custom_provider_select', `${owner}:b`);
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:b`);
+        await pickSetup(page, `${owner}:a`);
         await expect(page.locator('#custom_model_id')).toHaveValue('deliberate-model');
-        await page.selectOption('#custom_provider_select', '');
+        await pickSetup(page, '');
         await expect(page.locator('#custom_model_id')).toHaveValue('manual-model');
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).oai_settings.custom_include_headers)).toBe('X-Manual: preserved');
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
@@ -124,15 +132,15 @@ test('Custom setup and Profile journey through the installed extension', async (
         await page.selectOption('#chat_completion_source', 'claude');
         await page.selectOption('#chat_completion_source', `custom:${owner}:b`);
         await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/b/v1`);
-        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:b`);
+        await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(`${owner}:b`));
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).oai_settings.chat_completion_source)).toBe('custom');
         // Presets and settings loads only re-trigger the source event. That keeps the active setup.
         await page.evaluate(() => { $('#chat_completion_source').trigger('change'); });
         await expect(source).toHaveValue(`custom:${owner}:b`);
-        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:b`);
+        await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(`${owner}:b`));
         // Picking plain Custom is the remembered Manual connection.
         await page.selectOption('#chat_completion_source', 'custom');
-        await expect(page.locator('#custom_provider_select')).toHaveValue('');
+        await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(''));
         await expect(page.locator('#custom_model_id')).toHaveValue('manual-model');
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
     });
@@ -193,16 +201,16 @@ test('Custom setup and Profile journey through the installed extension', async (
 
     await test.step('masked core picker, discovery, edits, reload and missing helper retain the generic connection', async () => {
         await openCustom(page);
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_openai');
         await page.locator('#custom_model_id').fill('explicit-model');
         await page.locator('#api_button_openai').click();
         await expect(page.locator('#model_custom_select option[value="discovered-model"]')).toHaveCount(1);
         await expect(page.locator('#custom_model_id')).toHaveValue('explicit-model');
         await page.locator('#api_key_custom').fill('pending-unsaved-synthetic');
-        await page.selectOption('#custom_provider_select', `${owner}:b`);
+        await pickSetup(page, `${owner}:b`);
         await expect(page.locator('#api_key_custom')).toHaveValue('');
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
         await openCustom(page);
         await expect(page.locator('#custom_model_id')).toHaveValue('explicit-model');
@@ -213,7 +221,7 @@ test('Custom setup and Profile journey through the installed extension', async (
     });
 
     await test.step('Manual without helpers retains discovery, pending key and online status on ordinary edits', async () => {
-        await page.selectOption('#custom_provider_select', '');
+        await pickSetup(page, '');
         await page.evaluate(async owner => { await (await import('/scripts/extensions.js')).disableExtension(owner, false); }, owner);
         await page.evaluate(async () => {
             // Exercise legacy Manual, with no opted-in state or registered helper.
@@ -242,7 +250,7 @@ test('Custom setup and Profile journey through the installed extension', async (
     });
 
     await test.step('endpoint edits and descriptor policy resets immediately reconcile credentials', async () => {
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_custom');
         await page.locator('#custom_api_url_text').fill(`${root}/changed/v1`);
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('unbound');
@@ -276,7 +284,7 @@ test('Custom setup and Profile journey through the installed extension', async (
     });
 
     await test.step('choosing unbound removes the effective key and blocks status and generation', async () => {
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_openai');
         const before = upstreamRequests;
         await page.selectOption('#custom_credential_select', 'unbound');
@@ -300,7 +308,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         await openCustom(page);
         const profiles = [];
         for (const provider of ['a', 'b']) {
-            await page.selectOption('#custom_provider_select', `${owner}:${provider}`);
+            await pickSetup(page, `${owner}:${provider}`);
             await syntheticKey(page, provider, 'api_key_custom');
             await page.locator('#custom_model_id').fill(`model-${provider}`);
             const profile = await page.evaluate(async provider => {
@@ -317,7 +325,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             }, provider);
             profiles.push(profile);
         }
-        await page.selectOption('#custom_provider_select', '');
+        await pickSetup(page, '');
         const before = await page.locator('#custom_api_url_text').inputValue();
         const result = await page.evaluate(async () => {
             const context = SillyTavern.getContext();
@@ -364,7 +372,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         });
         expect(response).toBe('Synthetic completion');
         await page.selectOption('#connection_profiles', 'synthetic-b');
-        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:b`);
+        await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(`${owner}:b`));
         await expect.poll(async () => page.evaluate(async () => (await import('/script.js')).online_status)).toBe('Valid');
         expect(checks).toBe(2);
         expect(await page.evaluate(() => window.customEvents.map(({ oldProviderId, newProviderId }) => ({ oldProviderId, newProviderId })))).toEqual([
@@ -410,7 +418,7 @@ test('Custom setup and Profile journey through the installed extension', async (
 
     await test.step('legacy Custom Profiles resolve independently of no-auth and OpenAI-key named setups', async () => {
         for (const auth of [{ mode: 'none' }, { mode: 'bearer', required: true }]) {
-            await page.selectOption('#custom_provider_select', '');
+            await pickSetup(page, '');
             await page.locator('#custom_api_url_text').fill(`${root}/b/v1`);
             await page.evaluate(async () => {
                 const { oai_settings } = await import('/scripts/openai.js');
@@ -428,7 +436,7 @@ test('Custom setup and Profile journey through the installed extension', async (
                 (await import('/scripts/extensions/third-party/custom-provider-extension/index.js')).configure(`${root}/a/v1`, `${root}/b/v1`, auth);
                 return profile.id;
             }, { root, auth });
-            await page.selectOption('#custom_provider_select', `${owner}:a`);
+            await pickSetup(page, `${owner}:a`);
             await page.locator('#custom_provider_reset').click();
             await page.locator('dialog[open] .popup-button-ok').click();
             await expect(page.locator('dialog[open]')).toHaveCount(0);
@@ -437,7 +445,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             if (auth.mode === 'bearer') await syntheticKey(page, 'a', 'api_key_openai');
             await page.selectOption('#connection_profiles', profileId);
             await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe(profileId);
-            await expect(page.locator('#custom_provider_select')).toHaveValue('');
+            await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(''));
             await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/b/v1`);
             await expect(page.locator('#custom_model_id')).toHaveValue('legacy-model');
             expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('legacy-custom');
@@ -451,7 +459,7 @@ test('Custom setup and Profile journey through the installed extension', async (
     });
 
     await test.step('keyless legacy replay changes roots and equivalent roots retain an approved key', async () => {
-        await page.selectOption('#custom_provider_select', '');
+        await pickSetup(page, '');
         await page.evaluate(async root => {
             const { oai_settings } = await import('/scripts/openai.js');
             const { applyCustomSnapshot, captureCustomConnection, captureCustomFields } = await import('/scripts/custom-providers.js');
@@ -462,7 +470,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             SillyTavern.getContext().extensionSettings.connectionManager.profiles.push(profile);
             $('#connection_profiles').append(new Option(profile.name, profile.id));
         }, root);
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await page.selectOption('#connection_profiles', 'legacy-keyless');
         await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('legacy-keyless');
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential)).toEqual({ mode: 'legacy-custom', id: null });
@@ -484,7 +492,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             SillyTavern.getContext().extensionSettings.connectionManager.profiles.push(profile);
             $('#connection_profiles').append(new Option(profile.name, profile.id));
         }, root);
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await page.selectOption('#connection_profiles', 'legacy-equivalent');
         await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('legacy-equivalent');
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential)).toEqual({ mode: 'reference', key: 'api_key_openai', id, endpoint: `${root}/b/v1` });
@@ -689,7 +697,7 @@ test('Custom setup and Profile journey through the installed extension', async (
 
     await test.step('real Profile create/update/reload preserves empty values and atomic exclusions', async () => {
         await openCustom(page);
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_openai');
         await page.locator('#custom_model_id').fill('same-provider-one');
         const first = await createProfile(page, 'UI first');
@@ -708,7 +716,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         await expect(page.locator('#custom_model_id')).toHaveValue('');
         const excluded = await createProfile(page, 'UI excluded', true);
         expect(excluded['custom-connection']).toEqual({ version: 1, excluded: true });
-        await page.selectOption('#custom_provider_select', `${owner}:b`);
+        await pickSetup(page, `${owner}:b`);
         await page.locator('#custom_model_id').fill('kept-current');
         await page.selectOption('#connection_profiles', first.id);
         await expect(page.locator('#custom_model_id')).toHaveValue('same-provider-one');
@@ -731,7 +739,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             window.customEvents = [];
             context.eventSource.on(context.eventTypes.CUSTOM_CONNECTION_CHANGED, value => window.customEvents.push(value));
         });
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_custom');
         const saved = await page.evaluate(async () => {
             const { getPresetManager } = await import('/scripts/preset-manager.js');
@@ -747,7 +755,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             oai_settings.bind_preset_to_connection = false;
             await SillyTavern.getContext().executeSlashCommandsWithOptions(`/preset "${preset}"`);
         }, saved);
-        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:a`);
+        await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(`${owner}:a`));
         await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/a/v1`);
         const included = await createProfile(page, 'UI bound included');
         const excluded = await createProfile(page, 'UI bound excluded', true);
@@ -775,7 +783,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             await manager.selectPreset(manager.findPreset(preset));
             await (await import('/scripts/openai.js')).getPresetApplicationPromise();
         }, saved);
-        await expect(page.locator('#custom_provider_select')).toHaveValue('');
+        await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(''));
         await expect(page.locator('#custom_api_url_text')).toHaveValue('https://preset.invalid/v1');
         expect(await page.evaluate(() => window.customEvents)).toEqual([{ oldProviderId: `${owner}:a`, newProviderId: null, reason: 'preset' }]);
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).oai_settings.custom_provider_state.active.credential.mode)).toBe('unbound');
@@ -795,7 +803,7 @@ test('Custom setup and Profile journey through the installed extension', async (
 
     await test.step('a late status result cannot populate the next provider', async () => {
         await openCustom(page);
-        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await pickSetup(page, `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_custom');
         let finish;
         let intercepted;
@@ -807,7 +815,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         });
         await page.locator('#api_button_openai').click();
         await started;
-        await page.selectOption('#custom_provider_select', `${owner}:b`);
+        await pickSetup(page, `${owner}:b`);
         const model = await page.locator('#custom_model_id').inputValue();
         finish();
         await expect(page.locator('#model_custom_select option[value="late-model"]')).toHaveCount(0);

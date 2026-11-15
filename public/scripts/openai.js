@@ -5656,7 +5656,7 @@ async function onModelChange() {
         oai_settings.deepseek_model = value;
     }
 
-    if (value && $(this).is('#model_custom_select')) {
+    if (value && $(this).is('#model_custom_select') && value !== oai_settings.custom_model) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
         $('#custom_model_id').val(value).trigger('input');
@@ -6189,6 +6189,7 @@ function toggleChatCompletionForms() {
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
         $('#model_nanogpt_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
+        syncCustomModelSelect();
         $('#model_custom_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').trigger('change');
@@ -7013,15 +7014,26 @@ function renderCustomProviderSourceOptions(entries, labels, activeId) {
     select.value = isCustom && activeId ? CUSTOM_PROVIDER_OPTION_PREFIX + activeId : oai_settings.chat_completion_source;
 }
 
+/**
+ * Makes the Custom model dropdown show the model in use, adding it to the list if it is not there.
+ * The dropdown is the model picker of a named provider, and a stale selection must never be read back as a choice.
+ */
+function syncCustomModelSelect() {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('model_custom_select'));
+    if (!select) return;
+    const model = oai_settings.custom_model ?? '';
+    if (model && ![...select.options].some(option => option.value === model)) {
+        select.add(new Option(model, model));
+    }
+    select.value = model;
+}
+
 function renderCustomProviderSetup() {
     const state = oai_settings.custom_provider_state;
-    const select = document.getElementById('custom_provider_select');
-    if (!select) return;
-    select.disabled = Boolean(state && state.version !== 1);
-    if (select.disabled) {
-        select.replaceChildren(new Option(t`Unsupported saved setup`, ''));
-        $('#custom_provider_setup').removeClass('hidden');
-        $('#custom_credential_binding').addClass('hidden');
+    const card = document.getElementById('custom_provider_card');
+    if (!card) return;
+    if (state && state.version !== 1) {
+        $('#custom_provider_card, #custom_credential_binding, #custom_provider_advanced').addClass('displayNone');
         showCustomProviderError(new Error('Unsupported Custom provider state version. Keep this record and use a supporting build.'));
         return;
     }
@@ -7032,34 +7044,55 @@ function renderCustomProviderSetup() {
     if (active?.provider) saved.push({ provider: active.provider });
     const entries = new Map(registrations.map(entry => [entry.id, { label: entry.definition.label, owner: entry.ownerExtension, registered: true }]));
     for (const slot of saved) {
-        if (!entries.has(slot.provider.id)) entries.set(slot.provider.id, { label: `${slot.provider.label} (${t`extension unavailable`})`, owner: slot.provider.id, registered: false });
+        if (!entries.has(slot.provider.id)) entries.set(slot.provider.id, { label: `${slot.provider.label} (${t`extension unavailable`})`, owner: slot.provider.id.split(':')[0], registered: false });
     }
-    select.replaceChildren(new Option(t`Manual`, ''));
     const labels = registrations.map(entry => entry.definition.label);
-    for (const [key, entry] of [...entries].sort((a, b) => a[1].label.localeCompare(b[1].label) || a[0].localeCompare(b[0]))) {
-        const label = labels.filter(label => label === entry.label).length > 1 ? `${entry.label} (${entry.owner})` : entry.label;
-        select.add(new Option(label, key));
-    }
-    select.value = id;
     renderCustomProviderSourceOptions(entries, labels, id);
-    $('#custom_provider_setup').toggleClass('hidden', !entries.size);
+
+    // The provider card: who this is and which extension added it. Hidden for the Manual connection.
+    const named = Boolean(active?.provider);
     const definition = getCustomProvider(id);
-    const modified = definition && CUSTOM_CONNECTION_FIELDS.some(field => definition.defaults[field] !== oai_settings[field]);
-    $('#custom_provider_info').text(id ? `${entries.get(id)?.owner} · ${oai_settings.custom_url} · ${definition ? modified ? t`modified` : t`defaults` : t`extension unavailable`}${definition?.note ? ` · ${definition.note}` : ''}` : t`Your remembered Manual Custom connection.`);
-    for (const [selector, url] of [['#custom_provider_documentation', definition?.documentationUrl], ['#custom_provider_support', definition?.supportUrl]]) $(selector).attr('href', url ?? '').toggleClass('hidden', !url);
-    $('#custom_provider_reset').prop('disabled', !definition);
-    $('#custom_provider_detach').prop('disabled', !active?.provider);
-    $('#custom_provider_forget').prop('disabled', !saved.some(slot => slot.provider.id !== id));
+    const entry = entries.get(id);
+    $('#custom_provider_card').toggleClass('displayNone', !named);
+    $('#custom_provider_name').text(entry?.label ?? '');
+    $('#custom_provider_owner').text((entry?.owner ?? '').replace(/^third-party\//, ''));
+    $('#custom_provider_info').text(named ? definition ? definition.note ?? '' : t`extension unavailable` : '');
+    for (const [selector, url] of [['#custom_provider_documentation', definition?.documentationUrl], ['#custom_provider_support', definition?.supportUrl]]) $(selector).attr('href', url ?? '').toggleClass('displayNone', !url);
+
     for (const [field, selector] of [['custom_url', '#custom_api_url_text'], ['custom_model', '#custom_model_id'], ['custom_prompt_post_processing', '#custom_prompt_post_processing'], ['custom_include_headers', '#custom_include_headers'], ['custom_include_body', '#custom_include_body'], ['custom_exclude_body', '#custom_exclude_body']]) $(selector).val(oai_settings[field]);
     if (active?.models.suggestions?.length && !model_list.length) {
-        const models = document.getElementById('model_custom_select');
+        const models = /** @type {HTMLSelectElement} */ (document.getElementById('model_custom_select'));
         models.replaceChildren(new Option(t`None`, ''), ...active.models.suggestions.map(model => new Option(model.label ?? model.id, model.id)));
     }
-    $('#custom_credential_binding').toggleClass('hidden', !active);
+    syncCustomModelSelect();
+    $('#custom_credential_binding').toggleClass('displayNone', !active);
     $('#api_key_custom').prop('disabled', active?.auth.mode === 'none');
+
+    // A named provider brings its own endpoint and model source, so the manual fields step back.
+    // The Advanced switch brings them back, together with the actions that change the setup itself.
+    const details = !named || Boolean($('#custom_provider_details_toggle').prop('checked'));
+    const otherDrafts = saved.some(slot => slot.provider.id !== id);
+    $('#custom_provider_advanced').toggleClass('displayNone', !named && !otherDrafts);
+    $('#custom_provider_details').toggleClass('displayNone', !named);
+    $('#custom_provider_actions').toggleClass('displayNone', !details || (!named && !otherDrafts));
+    $('#custom_endpoint_block').toggleClass('displayNone', !details);
+    $('#custom_key_block').toggleClass('displayNone', named && active.auth.mode === 'none');
+    $('#custom_key_optional').toggleClass('displayNone', named && active.auth.mode === 'bearer' && active.auth.required);
+    $('#custom_model_id_block').toggleClass('displayNone', !details && active.models.mode === 'discover');
+    $('#custom_model_select_block').toggleClass('displayNone', !details && active.models.mode === 'manual' && !active.models.suggestions?.length);
+    $('#custom_key_title').text(named ? t`API Key` : t`Custom API Key`);
+    $('#custom_model_select_title').text(named ? t`Model` : t`Available Models`);
+    // Prompt post-processing is shared by several sources. For a named provider it is one of the connection details.
+    const isCustomSource = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    $('#prompt_post_processing_form').toggleClass('displayNone', isCustomSource && !details);
+    const modified = definition && CUSTOM_CONNECTION_FIELDS.some(field => definition.defaults[field] !== oai_settings[field]);
+    $('#custom_provider_modified').text(named && definition ? modified ? t`Changed from the provider defaults.` : t`Using the provider defaults.` : '');
+    $('#custom_provider_reset').prop('disabled', !definition).toggleClass('displayNone', !named);
+    $('#custom_provider_detach').prop('disabled', !named).toggleClass('displayNone', !named);
+    $('#custom_provider_forget').prop('disabled', !otherDrafts);
     const credentialSelect = document.getElementById('custom_credential_select');
     if (!credentialSelect) return;
-    const unbound = new Option(t`Choose a stored key (unbound)`, 'unbound');
+    const unbound = new Option(t`Choose a saved key`, 'unbound');
     unbound.disabled = active?.auth.mode === 'none';
     credentialSelect.replaceChildren(unbound);
     if (active && (active.auth.mode === 'none' || !active.auth.required)) credentialSelect.add(new Option(t`No key`, 'none'));
@@ -7070,7 +7103,7 @@ function renderCustomProviderSetup() {
 
 function initCustomProviderSetup() {
     const handleError = error => { showCustomProviderError(error); renderCustomProviderSetup(); };
-    $('#custom_provider_select').on('change', function () { void selectCustomProvider(String($(this).val()) || null).catch(handleError); });
+    $('#custom_provider_details_toggle').on('input', renderCustomProviderSetup);
     $('#custom_credential_select').on('change', async function () {
         const value = String($(this).val());
         try {
