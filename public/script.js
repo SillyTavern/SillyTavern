@@ -3744,15 +3744,14 @@ class StreamingProcessor {
     }
 
     /**
-     * Gets the final message token count, returning promptly if generation is stopped.
+     * Gets the final message token count, returning promptly if generation is stopped while the count is pending.
+     * A generation that was stopped before this point still gets counted: Stop aborts first and finalizes after,
+     * so bailing out on an already aborted signal would drop the count of every stopped message.
      * @param {string} text Message text to count
-     * @returns {Promise<number>} Token count, or 0 if generation was aborted
+     * @returns {Promise<number>} Token count, or 0 if generation was aborted while counting
      */
     async #getTokenCount(text) {
         const signal = this.abortController.signal;
-        if (signal.aborted) {
-            return 0;
-        }
 
         let onAbort;
         const aborted = new Promise(resolve => {
