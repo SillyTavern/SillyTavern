@@ -140,3 +140,13 @@ describe('exact per-account Custom credentials', () => {
         expect(upstream.mock.calls[0][1].redirect).toBe('error');
     });
 });
+
+// The list lives in a module without imports so the client can share it, which means nothing derives it.
+// This keeps it honest: adding a keyed Chat Completion source without listing it here fails.
+test('eligible keys cover every Chat Completion source that has a key category', async () => {
+    const { CHAT_COMPLETION_SOURCES } = await import('../src/constants.js');
+    const { CUSTOM_CREDENTIAL_KEYS } = await import('../public/scripts/custom-connection.js');
+    const categories = new Set(Object.values(SECRET_KEYS));
+    const expected = Object.values(CHAT_COMPLETION_SOURCES).map(source => `api_key_${source}`).filter(key => categories.has(key));
+    expect([...CUSTOM_CREDENTIAL_KEYS].sort()).toEqual(expected.sort());
+});
