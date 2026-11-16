@@ -202,6 +202,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    OPENCODE_GO: 'opencode_go',
 };
 
 const character_names_behavior = {
@@ -330,6 +331,7 @@ export const settingsToUpdate = {
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
+    opencode_go_model: ['#model_opencode_go_select', 'opencode_go_model', false, true],
     chutes_model: ['#model_chutes_select', 'chutes_model', false, true],
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     siliconflow_endpoint: ['#siliconflow_endpoint', 'siliconflow_endpoint', false, true],
@@ -447,6 +449,7 @@ const default_settings = {
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
+    opencode_go_model: 'glm-5.3-flash',
     chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
@@ -1746,6 +1749,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.perplexity_model;
         case chat_completion_sources.GROQ:
             return settings.groq_model;
+        case chat_completion_sources.OPENCODE_GO:
+            return settings.opencode_go_model;
         case chat_completion_sources.SILICONFLOW:
             return settings.siliconflow_model;
         case chat_completion_sources.MINIMAX:
@@ -2286,6 +2291,24 @@ function saveModelList(data) {
         $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.OPENCODE_GO) {
+        $('#model_opencode_go_select').empty();
+        model_list.forEach((model) => {
+            $('#model_opencode_go_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.opencode_go_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.opencode_go_model)) {
+            oai_settings.opencode_go_model = model_list[0].id;
+        }
+
+        $('#model_opencode_go_select').val(oai_settings.opencode_go_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
         $('#model_siliconflow_select').empty();
         model_list.forEach((model) => {
@@ -2562,6 +2585,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.FIREWORKS,
+        chat_completion_sources.OPENCODE_GO,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2740,6 +2764,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.OPENCODE_GO,
     ];
 
     // Sources that support proxying
@@ -2753,6 +2778,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.XAI,
         chat_completion_sources.ZAI,
         chat_completion_sources.MOONSHOT,
+        chat_completion_sources.OPENCODE_GO,
     ];
 
     // Sources that support logprobs
@@ -2906,6 +2932,12 @@ export async function createGenerationParameters(settings, model, type, messages
     }
 
     if (settings.chat_completion_source === chat_completion_sources.FIREWORKS && type !== 'quiet') {
+        generate_data.chat_id = getCurrentChatId();
+    }
+
+    // OpenCode Go uses a stable session header per conversation for routing
+    // and prompt caching; the backend hashes this ID into x-opencode-session.
+    if (settings.chat_completion_source === chat_completion_sources.OPENCODE_GO) {
         generate_data.chat_id = getCurrentChatId();
     }
 
@@ -3297,7 +3329,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.OPENCODE_GO].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -4525,6 +4557,7 @@ async function getStatusOpen() {
         chat_completion_sources.XAI,
         chat_completion_sources.ZAI,
         chat_completion_sources.MOONSHOT,
+        chat_completion_sources.OPENCODE_GO,
     ];
     if (oai_settings.reverse_proxy && validateProxySources.includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
@@ -5738,6 +5771,15 @@ async function onModelChange() {
         oai_settings.workers_ai_model = value;
     }
 
+    if ($(this).is('#model_opencode_go_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null OpenCode Go model selected. Ignoring.');
+            return;
+        }
+        console.log('OpenCode Go model changed to', value);
+        oai_settings.opencode_go_model = value;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         const contextSize = getGeminiMaxContext(value, oai_settings.max_context_unlocked);
         const maxTemp = getGeminiMaxTemp(value);
@@ -5856,6 +5898,18 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         const maxContext = getGroqMaxContext(oai_settings.groq_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENCODE_GO) {
+        const currentModel = model_list.find(m => m.id === oai_settings.opencode_go_model);
+        const maxContext = oai_settings.max_context_unlocked
+            ? unlocked_max
+            : (currentModel?.context_length || currentModel?.context_window || max_128k);
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -6110,6 +6164,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.OPENCODE_GO]: { key: SECRET_KEYS.OPENCODE_GO, selector: '#api_key_opencode_go', proxy: true },
     };
 
     // Vertex AI Express version - use API key
@@ -6216,6 +6271,8 @@ function toggleChatCompletionForms() {
         $('#model_zai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.OPENCODE_GO) {
+        $('#model_opencode_go_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -7833,6 +7890,7 @@ export function initOpenAI() {
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
+    $('#model_opencode_go_select').on('change', onModelChange);
     $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_minimax_select').on('change', onModelChange);
