@@ -2089,7 +2089,7 @@ async function loadStabilityModels() {
     return [
         { value: 'stable-image-ultra', text: 'Stable Image Ultra' },
         { value: 'stable-image-core', text: 'Stable Image Core' },
-        { value: 'stable-diffusion-3', text: 'Stable Diffusion 3' },
+        { value: 'stable-diffusion-3', text: 'Stable Diffusion 3.5 Large' },
     ];
 }
 
