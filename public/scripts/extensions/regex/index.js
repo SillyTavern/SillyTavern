@@ -182,10 +182,7 @@ class RegexPresetManager {
                 }
             }
 
-            await this.applyPreset(selectedPresetId);
-            extension_settings.regex_presets.forEach(p => { p.isSelected = p.id === selectedPresetId; });
-            saveSettingsDebounced();
-            this.updateStoredState(selectedPresetId);
+            await this.selectPreset(selectedPresetId);
         });
 
         this.presetCreateButton = document.getElementById('regex_preset_create');
@@ -265,7 +262,7 @@ class RegexPresetManager {
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'regex-preset',
             helpString: t`Selects a regex preset by name or ID. Gets the current regex preset ID if no argument is provided.`,
-            callback: (args, name) => {
+            callback: async (args, name) => {
                 if (!this.presetSelect) {
                     return '';
                 }
@@ -278,7 +275,7 @@ class RegexPresetManager {
 
                     if (foundId) {
                         this.presetSelect.value = foundId;
-                        this.presetSelect.dispatchEvent(new CustomEvent('change', { detail: { fromSlashCommand: true } }));
+                        await this.selectPreset(foundId);
                         return foundId;
                     }
 
@@ -306,6 +303,18 @@ class RegexPresetManager {
                 }),
             ],
         }));
+    }
+
+    /**
+     * Applies the selected preset and records its state after the chat reload finishes.
+     * @param {string} presetId - The ID of the preset to select
+     * @returns {Promise<void>}
+     */
+    async selectPreset(presetId) {
+        await this.applyPreset(presetId);
+        extension_settings.regex_presets.forEach(p => { p.isSelected = p.id === presetId; });
+        saveSettingsDebounced();
+        this.updateStoredState(presetId);
     }
 
     /**
