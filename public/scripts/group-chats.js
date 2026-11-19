@@ -60,6 +60,7 @@ import {
     sendMessageAsUser,
     getBiasStrings,
     saveChatConditional,
+    saveChatRequest,
     deactivateSendButtons,
     activateSendButtons,
     eventSource,
@@ -634,40 +635,9 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
         user_name: 'unused',
         character_name: 'unused',
     };
-    const saveGroupChatRequest = await compressRequest({
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force }),
-    });
-    const response = await fetch('/api/chats/group/save', saveGroupChatRequest);
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        const isIntegrityError = errorData?.error === 'integrity' && !force;
-        if (!isIntegrityError) {
-            toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group Chat could not be saved`);
-            console.error('Group chat could not be saved', response);
-            return;
-        }
-
-        const popupResult = await Popup.show.input(
-            t`ERROR: Chat integrity check failed while saving the file.`,
-            t`<p>After you click OK, the page will be reloaded to prevent data corruption.</p>
-              <p>To confirm an overwrite (and potentially <b>LOSE YOUR DATA</b>), enter <code>OVERWRITE</code> (in all caps) in the box below before clicking OK.</p>`,
-            '',
-            { okButton: 'OK', cancelButton: false },
-        );
-
-        const forceSaveConfirmed = popupResult === 'OVERWRITE';
-
-        if (!forceSaveConfirmed) {
-            console.warn('Chat integrity check failed, and user did not confirm the overwrite. Reloading the page.');
-            window.location.reload();
-            return;
-        }
-
-        await saveGroupChat(groupId, shouldSaveGroup, true);
-    }
+    await saveChatRequest('/api/chats/group/save', {
+        id: chatId, chat: [chatHeader, ...chat], force: force,
+    }, t`Group Chat could not be saved`);
 
     if (shouldSaveGroup) {
         await editGroup(groupId, false, false);
@@ -2363,8 +2333,6 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
         return;
     }
 
-    group.chats.push(name);
-
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata, ...(metadata || {}) },
@@ -2379,19 +2347,12 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
             ? chat.slice(0, Number(mesId) + 1)
             : chat;
 
+    await saveChatRequest('/api/chats/group/save', {
+        id: name, chat: [chatHeader, ...trimmedChat], force: false,
+    }, t`Group chat could not be saved`);
+
+    group.chats.push(name);
     await editGroup(groupId, true, false);
-
-    const saveChatRequest = await compressRequest({
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ id: name, chat: [chatHeader, ...trimmedChat] }),
-    });
-    const response = await fetch('/api/chats/group/save', saveChatRequest);
-
-    if (!response.ok) {
-        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group chat could not be saved`);
-        console.error('Group chat could not be saved', response);
-    }
 }
 
 function onSendTextareaInput() {
