@@ -170,6 +170,7 @@
 }
 
 #rm_group_members .right_menu_button[data-action="speak"],
+#rm_group_members .right_menu_button[data-action="queue"],
 #rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="disable"] {
     opacity: 0.4;
     filter: brightness(0.5);
@@ -190,6 +191,11 @@
 #rm_group_members .right_menu_button[data-action="speak"]:hover {
     opacity: inherit;
     filter: drop-shadow(0px 0px 5px rgb(153, 255, 153));
+}
+
+#rm_group_members .right_menu_button[data-action="queue"]:hover {
+    opacity: inherit;
+    filter: drop-shadow(0px 0px 5px rgb(153, 200, 255));
 }
 
 /* Rules for icon display */
