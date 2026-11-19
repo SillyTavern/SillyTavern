@@ -190,7 +190,7 @@ class PrivateRequestAgent extends Agent {
                 return connect(ip);
             }
 
-            return raiseError(`Blocked request to private IP address: ${ip}`, this.logBlocked);
+            return raiseError(`Blocked request to private IP address: ${ip}. To allow it, add the address or its range to privateAddressWhitelist.allowedRanges in config.yaml.`, this.logBlocked);
         };
 
         /**
