@@ -50,7 +50,7 @@
 }
 
 .select2-container .select2-results>.select2-results__options {
-    max-height: 300px;
+    max-height: min(300px, var(--select2-results-max-height, 300px));
 }
 
 .select2-container .select2-selection--multiple .select2-selection__choice__remove {
