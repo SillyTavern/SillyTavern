@@ -429,9 +429,64 @@ router.post('/generate-native-tts', async (request, response) => {
     }
 });
 
+/**
+ * Generates an image with a Gemini image model (e.g. gemini-2.5-flash-image) via generateContent.
+ * Gemini image models have no negative prompt or seed parameters, so those are not sent.
+ * @param {import('express').Request} request Express request
+ * @param {import('express').Response} response Express response
+ * @param {string} model Gemini image model name
+ * @returns {Promise<any>} Express response
+ */
+async function generateGeminiImage(request, response, model) {
+    const { url, headers, apiName, safetySettings } = await getGoogleApiConfig(request, model, 'generateContent');
+
+    const requestBody = {
+        contents: [{ role: 'user', parts: [{ text: request.body.prompt || '' }] }],
+        generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE'],
+            imageConfig: { aspectRatio: String(request.body.aspect_ratio || '1:1') },
+        },
+        safetySettings: safetySettings,
+    };
+
+    console.debug(`${apiName} image generation request:`, model, requestBody);
+
+    const result = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(requestBody),
+    });
+
+    if (!result.ok) {
+        const errorText = await result.text();
+        console.warn(`${apiName} image generation error: ${result.status} ${result.statusText}`, errorText);
+        return response.status(500).send('Image generation request failed');
+    }
+
+    /** @type {any} */
+    const data = await result.json();
+    const parts = data?.candidates?.[0]?.content?.parts ?? [];
+    const inlineData = parts.find(part => part?.inlineData?.data)?.inlineData;
+
+    if (!inlineData) {
+        console.warn(`${apiName} image generation error: No image data found in response`, data?.candidates?.[0]?.finishReason);
+        return response.status(500).send('No image data found in response');
+    }
+
+    const mimeSubtype = String(inlineData.mimeType || 'image/png').split('/')[1];
+    const format = mimeSubtype === 'jpeg' ? 'jpg' : mimeSubtype;
+    return response.send({ image: inlineData.data, format });
+}
+
 router.post('/generate-image', async (request, response) => {
     try {
         const model = request.body.model || 'imagen-3.0-generate-002';
+
+        // Gemini image models ("Nano Banana") use generateContent instead of the Imagen predict endpoint.
+        if (/^gemini-.*-image(-preview)?$/.test(model)) {
+            return await generateGeminiImage(request, response, model);
+        }
+
         const { url, headers, apiName } = await getGoogleApiConfig(request, model, 'predict');
 
         // AI Studio is stricter than Vertex AI.
