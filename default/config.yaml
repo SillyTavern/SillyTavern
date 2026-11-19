@@ -78,10 +78,9 @@ enableCorsProxy: false
 cors:
   # Enable or disable CORS middleware
   enabled: true
-  # Allowed origins. Use "null" to match the default browser file origin.
+  # Allowed origins. Empty list = no cross-origin access (recommended).
   # You can set "*" to allow any origin, or a list of allowed origins.
-  origin:
-    - "null"
+  origin: []
   # Allowed methods
   methods:
     - "OPTIONS"
@@ -138,10 +137,11 @@ sso:
     - ::1
     - 127.0.0.1
 
-# Host whitelist configuration. Recommended if you're using a listen mode
+# Host whitelist configuration. Protects against DNS rebinding attacks.
+# Requests with "localhost", "*.localhost" or an IP address in the Host header are always allowed.
 hostWhitelist:
   # Enable or disable host whitelisting
-  enabled: false
+  enabled: true
   # Scan incoming requests for potential host header spoofing
   scan: true
   # List of allowed hosts. Do not include localhost or IPs, these are safe.

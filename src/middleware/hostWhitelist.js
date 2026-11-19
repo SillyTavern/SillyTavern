@@ -5,7 +5,7 @@ import { isHostAllowed, hostValidationMiddleware } from 'host-validation-middlew
 const knownHosts = new Set();
 const maxKnownHosts = 1000;
 
-const hostWhitelistEnabled = !!getConfigValue('hostWhitelist.enabled', false);
+const hostWhitelistEnabled = !!getConfigValue('hostWhitelist.enabled', true);
 const hostWhitelist = Object.freeze(getConfigValue('hostWhitelist.hosts', []));
 const hostWhitelistScan = !!getConfigValue('hostWhitelist.scan', false, 'boolean');
 
