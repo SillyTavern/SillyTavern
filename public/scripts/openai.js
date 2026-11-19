@@ -3,7 +3,7 @@
 * By CncAnon (@CncAnon1)
 * https://github.com/CncAnon1/TavernAITurbo
 */
-import { Fuse, DOMPurify } from '../lib.js';
+import { Fuse, DOMPurify, yaml } from '../lib.js';
 
 import {
     abortStatusCheck,
@@ -477,6 +477,7 @@ const default_settings = {
     custom_include_body: '',
     custom_exclude_body: '',
     custom_include_headers: '',
+    additional_parameters: {},
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
     openrouter_providers: [],
@@ -2932,6 +2933,12 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.custom_exclude_body = substituteParams(settings.custom_exclude_body);
         generate_data.custom_include_headers = substituteParams(settings.custom_include_headers);
         generate_data.custom_auth = getCustomAuth(settings);
+    } else {
+        // Every other source: the user's own request fields, applied last on the server
+        const additionalParameters = getAdditionalParameters(settings);
+        if (Object.values(additionalParameters).some(Boolean)) {
+            generate_data.additional_parameters = Object.fromEntries(Object.entries(additionalParameters).map(([field, value]) => [field, substituteParams(value)]));
+        }
     }
 
     if (settings.chat_completion_source === chat_completion_sources.COHERE) {
@@ -6227,6 +6234,7 @@ function toggleChatCompletionForms() {
 
     applyCustomProviderControls();
     setToolReasoningControls();
+    renderAdditionalParametersSummary();
 }
 
 /**
@@ -6298,28 +6306,127 @@ function onProxyAccessKeyShowClick() {
     $(this).toggleClass('fa-eye-slash fa-eye');
 }
 
+/** The three additional parameter fields of a connection. Each one holds YAML text. */
+export const ADDITIONAL_PARAMETER_FIELDS = Object.freeze(['include_body', 'exclude_body', 'include_headers']);
+
+/**
+ * Gets the additional parameters of a Chat Completion source.
+ * Custom keeps them in its own three settings; every other source has an entry in `additional_parameters`.
+ * @param {object} [settings] Chat Completion settings
+ * @param {string} [source] Chat Completion source, defaults to the selected one
+ * @returns {{include_body: string, exclude_body: string, include_headers: string}} YAML text per field, empty if unset
+ */
+export function getAdditionalParameters(settings = oai_settings, source = settings.chat_completion_source) {
+    const stored = source === chat_completion_sources.CUSTOM
+        ? { include_body: settings.custom_include_body, exclude_body: settings.custom_exclude_body, include_headers: settings.custom_include_headers }
+        : settings.additional_parameters?.[source];
+    return {
+        include_body: String(stored?.include_body ?? ''),
+        exclude_body: String(stored?.exclude_body ?? ''),
+        include_headers: String(stored?.include_headers ?? ''),
+    };
+}
+
+/**
+ * Sets the additional parameters of a Chat Completion source. Fields that are not passed keep their value.
+ * @param {{include_body?: string, exclude_body?: string, include_headers?: string}} values YAML text per field
+ * @param {string} [source] Chat Completion source, defaults to the selected one
+ */
+export function setAdditionalParameters(values, source = oai_settings.chat_completion_source) {
+    const next = { ...getAdditionalParameters(oai_settings, source) };
+    for (const field of ADDITIONAL_PARAMETER_FIELDS) {
+        if (values[field] !== undefined) next[field] = String(values[field] ?? '');
+    }
+
+    if (source === chat_completion_sources.CUSTOM) {
+        for (const field of ADDITIONAL_PARAMETER_FIELDS) {
+            const key = `custom_${field}`;
+            if (oai_settings[key] === next[field]) continue;
+            oai_settings[key] = next[field];
+            customConnectionEdited(key);
+        }
+    } else {
+        if (!oai_settings.additional_parameters || typeof oai_settings.additional_parameters !== 'object') oai_settings.additional_parameters = {};
+        if (Object.values(next).some(Boolean)) {
+            oai_settings.additional_parameters[source] = next;
+        } else {
+            delete oai_settings.additional_parameters[source];
+        }
+    }
+
+    renderAdditionalParametersSummary();
+    saveSettingsDebounced();
+}
+
+/**
+ * Counts what a set of additional parameters does, for display.
+ * @param {{include_body: string, exclude_body: string, include_headers: string}} parameters YAML text per field
+ * @returns {{added: number, removed: number, headers: number, invalid: string[]}} Counts, and the fields that are not valid YAML
+ */
+export function countAdditionalParameters(parameters) {
+    const result = { added: 0, removed: 0, headers: 0, invalid: [] };
+    const parse = (field) => {
+        const text = parameters[field];
+        if (!text.trim()) return undefined;
+        try {
+            return yaml.parse(text);
+        } catch {
+            result.invalid.push(field);
+            return undefined;
+        }
+    };
+    const countKeys = (value) => (Array.isArray(value) ? value : [value])
+        .filter(item => item && typeof item === 'object' && !Array.isArray(item))
+        .reduce((count, item) => count + Object.keys(item).length, 0);
+
+    result.added = countKeys(parse('include_body'));
+    const removed = parse('exclude_body');
+    result.removed = Array.isArray(removed) ? removed.length : removed && typeof removed === 'object' ? Object.keys(removed).length : typeof removed === 'string' ? 1 : 0;
+    result.headers = countKeys(parse('include_headers'));
+    return result;
+}
+
+/**
+ * Shows on the connection panel whether the selected source has additional parameters, without opening the dialog.
+ * A screenshot of the panel is then enough to see that a connection sends something of its own.
+ */
+export function renderAdditionalParametersSummary() {
+    const button = document.getElementById('customize_additional_parameters');
+    const summary = document.getElementById('additional_parameters_summary');
+    if (!button || !summary) return;
+
+    const counts = countAdditionalParameters(getAdditionalParameters());
+    const total = counts.added + counts.removed + counts.headers;
+    const active = total > 0 || counts.invalid.length > 0;
+
+    button.classList.toggle('additional_parameters_active', active);
+    const badge = button.querySelector('.additional_parameters_count');
+    if (badge) badge.textContent = active ? String(total) : '';
+
+    const parts = [];
+    if (counts.added) parts.push(t`body added: ${counts.added}`);
+    if (counts.removed) parts.push(t`body removed: ${counts.removed}`);
+    if (counts.headers) parts.push(t`headers: ${counts.headers}`);
+    if (counts.invalid.length) parts.push(t`invalid YAML, ignored`);
+    summary.textContent = active ? t`Additional parameters:` + ' ' + parts.join(', ') : '';
+    summary.classList.toggle('displayNone', !active);
+}
+
 async function onCustomizeParametersClick() {
+    const source = oai_settings.chat_completion_source;
     const template = $(await renderTemplateAsync('customEndpointAdditionalParameters'));
+    const sourceName = $(`#chat_completion_source option[value="${source}"]`).first().text() || source;
+    template.find('#additional_parameters_source').text(source === chat_completion_sources.CUSTOM ? $('#chat_completion_source option:selected').text() || sourceName : sourceName);
 
-    template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
-        oai_settings.custom_include_body = String($(this).val());
-        customConnectionEdited('custom_include_body');
-        saveSettingsDebounced();
-    });
-
-    template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function () {
-        oai_settings.custom_exclude_body = String($(this).val());
-        customConnectionEdited('custom_exclude_body');
-        saveSettingsDebounced();
-    });
-
-    template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function () {
-        oai_settings.custom_include_headers = String($(this).val());
-        customConnectionEdited('custom_include_headers');
-        saveSettingsDebounced();
-    });
+    const current = getAdditionalParameters(oai_settings, source);
+    for (const field of ADDITIONAL_PARAMETER_FIELDS) {
+        template.find(`#custom_${field}`).val(current[field]).on('input', function () {
+            setAdditionalParameters({ [field]: String($(this).val()) }, source);
+        });
+    }
 
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+    renderAdditionalParametersSummary();
 }
 
 /**

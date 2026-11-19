@@ -23,7 +23,7 @@ import { beginCustomConnectionTransition, captureCurrentCustomConnection, commit
 import { CUSTOM_CONNECTION_FIELDS, getCustomProvider, getProfileCustomConnection, resolveLegacyCustomConnection } from '../../custom-providers.js';
 import { getPresetManager } from '../../preset-manager.js';
 
-const CUSTOM_CONNECTION_COMMANDS = ['api', 'api-url', 'model', 'prompt-post-processing', 'secret-id'];
+const CUSTOM_CONNECTION_COMMANDS = ['api', 'api-url', 'model', 'prompt-post-processing', 'additional-parameters', 'secret-id'];
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -38,6 +38,8 @@ const DEFAULT_SETTINGS = {
 const ALLOW_EMPTY = [
     'stop-strings',
     'start-reply-with',
+    // A profile without additional parameters has to remove the ones of the previous connection
+    'additional-parameters',
 ];
 
 const CC_COMMANDS = [
@@ -52,6 +54,7 @@ const CC_COMMANDS = [
     'start-reply-with',
     'reasoning-template',
     'prompt-post-processing',
+    'additional-parameters',
     'secret-id',
     'regex-preset',
 ];
@@ -91,6 +94,7 @@ const FANCY_NAMES = {
     'start-reply-with': 'Start Reply With',
     'reasoning-template': 'Reasoning Template',
     'prompt-post-processing': 'Prompt Post-Processing',
+    'additional-parameters': 'Additional Parameters',
     'secret-id': 'Secret',
     'regex-preset': 'Regex Preset',
 };

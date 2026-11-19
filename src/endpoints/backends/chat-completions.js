@@ -6,6 +6,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import urlJoin from 'url-join';
 import { CustomAuthError, redactCustomKey, resolveCustomAuth } from '../../custom-auth.js';
+import { applyAdditionalBodyParameters, getAdditionalHeaders, getAdditionalParameters } from '../../additional-parameters.js';
 
 import {
     AIMLAPI_HEADERS,
@@ -30,7 +31,6 @@ import {
     tryParse,
     uuidv4,
     mergeObjectWithYaml,
-    excludeKeysByYaml,
     color,
     trimTrailingSlash,
     flattenSchema,
@@ -412,12 +412,13 @@ async function sendClaudeRequest(request, response) {
         const generateResponse = await fetch(apiUrl + '/messages', {
             method: 'POST',
             signal: controller.signal,
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             headers: {
                 'Content-Type': 'application/json',
                 'anthropic-version': '2023-06-01',
                 'x-api-key': apiKey,
                 ...additionalHeaders,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
         });
 
@@ -733,9 +734,9 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const generateResponse = await fetch(url, {
-            body: JSON.stringify(body),
+            body: JSON.stringify(applyAdditionalBodyParameters(body, getAdditionalParameters(request.body))),
             method: 'POST',
-            headers: headers,
+            headers: { ...headers, ...getAdditionalHeaders(getAdditionalParameters(request.body)) },
             signal: controller.signal,
         });
 
@@ -843,8 +844,9 @@ async function sendAI21Request(request, response) {
             accept: 'application/json',
             'content-type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
+            ...getAdditionalHeaders(getAdditionalParameters(request.body)),
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(applyAdditionalBodyParameters(body, getAdditionalParameters(request.body))),
         signal: controller.signal,
     };
 
@@ -933,8 +935,9 @@ async function sendMistralAIRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
             timeout: 0,
         };
@@ -1032,8 +1035,9 @@ async function sendCohereRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
             timeout: 0,
         };
@@ -1145,8 +1149,9 @@ async function sendDeepSeekRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
         };
 
@@ -1251,8 +1256,9 @@ async function sendXaiRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
         };
 
@@ -1356,8 +1362,9 @@ async function sendAimlapiRequest(request, response) {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
                 ...AIMLAPI_HEADERS,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
         };
 
@@ -1468,8 +1475,9 @@ async function sendElectronHubRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
         };
 
@@ -1569,8 +1577,9 @@ async function sendChutesRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
         };
 
@@ -1650,8 +1659,9 @@ async function sendMinimaxRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
+                ...getAdditionalHeaders(getAdditionalParameters(request.body)),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body))),
             signal: controller.signal,
         };
 
@@ -1743,8 +1753,9 @@ async function sendAzureOpenAIRequest(request, response) {
         headers: {
             'Content-Type': 'application/json',
             'api-key': apiKey,
+            ...getAdditionalHeaders(getAdditionalParameters(request.body)),
         },
-        body: JSON.stringify(apiRequestBody),
+        body: JSON.stringify(applyAdditionalBodyParameters(apiRequestBody, getAdditionalParameters(request.body))),
         signal: controller.signal,
     };
 
@@ -2416,7 +2427,6 @@ router.post('/generate', async function (request, response) {
                 bodyParams.logprobs = true;
             }
 
-            mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
             embedOpenRouterMedia(request.body.messages, { audio: true, video: false });
             if (request.body.json_schema) {
@@ -2687,9 +2697,8 @@ router.post('/generate', async function (request, response) {
             ...bodyParams,
         };
 
-        if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
-            excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
-        }
+        // The user's additional parameters come last and win over everything built above.
+        applyAdditionalBodyParameters(requestBody, getAdditionalParameters(request.body));
 
         /** @type {import('node-fetch').RequestInit} */
         const config = {
@@ -2698,6 +2707,8 @@ router.post('/generate', async function (request, response) {
                 'Content-Type': 'application/json',
                 ...(customAuth ? customAuth.headers : { Authorization: 'Bearer ' + apiKey }),
                 ...headers,
+                // Custom merged its own headers above: a Manual connection may set any header.
+                ...(request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM ? {} : getAdditionalHeaders(getAdditionalParameters(request.body))),
             },
             body: JSON.stringify(requestBody),
             signal: controller.signal,
