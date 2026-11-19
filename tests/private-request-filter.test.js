@@ -1,3 +1,4 @@
+/* eslint-disable playwright/no-standalone-expect -- Jest test.each is not recognized by the shared Playwright rule. */
 import { describe, test, expect, jest, beforeAll, beforeEach, afterAll } from '@jest/globals';
 
 const mockNetConnect = jest.fn(() => ({ type: 'net-socket' }));
@@ -86,6 +87,56 @@ describe('private request filter', () => {
         await expect(blockedAgent.connect({}, { host: '127.0.0.1', secureEndpoint: false }))
             .rejects
             .toThrow('Blocked request to private IP address: 127.0.0.1');
+    });
+
+    test.each([
+        '::ffff:127.0.0.1',
+        '::ffff:7f00:1',
+        '0:0:0:0:0:ffff:c0a8:108',
+        '::ffff:169.254.169.254',
+        '64:ff9b::7f00:1',
+        '64:ff9b::10.0.0.1',
+        '0.0.0.0',
+        '0.1.2.3',
+        '::',
+        '100.64.0.1',
+    ])('blocks the private address form %s', async (address) => {
+        const agent = initAgent();
+
+        await expect(agent.connect({}, { host: address, secureEndpoint: false }))
+            .rejects
+            .toThrow(`Blocked request to private IP address: ${address}`);
+
+        mockLookup.mockResolvedValue({ address });
+        await expect(agent.connect({}, { host: 'example.com', secureEndpoint: false }))
+            .rejects
+            .toThrow(`Blocked request to private IP address: ${address}`);
+        expect(mockNetConnect).not.toHaveBeenCalled();
+    });
+
+    test.each([
+        '::ffff:93.184.216.34',
+        '64:ff9b::5db8:d822',
+        '2001:4860:4860::8888',
+        '100.128.0.1',
+        '1.0.0.1',
+    ])('connects to the public address form %s as given', async (address) => {
+        const agent = initAgent();
+
+        await agent.connect({}, { host: address, secureEndpoint: false });
+
+        expect(mockNetConnect).toHaveBeenCalledWith(expect.objectContaining({ host: address }));
+    });
+
+    test('applies the whitelist to the IPv4 address carried by an IPv6 address', async () => {
+        const agent = initAgent({ privateAddressWhitelist: ['127.0.0.0/8'] });
+
+        await agent.connect({}, { host: '::ffff:127.0.0.1', secureEndpoint: false });
+        expect(mockNetConnect).toHaveBeenCalledWith(expect.objectContaining({ host: '::ffff:127.0.0.1' }));
+
+        await expect(agent.connect({}, { host: '::ffff:10.0.0.1', secureEndpoint: false }))
+            .rejects
+            .toThrow('Blocked request to private IP address: ::ffff:10.0.0.1');
     });
 
     test('resolves hostnames and blocks when DNS returns private IP', async () => {
