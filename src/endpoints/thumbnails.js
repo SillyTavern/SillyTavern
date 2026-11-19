@@ -84,10 +84,15 @@ export function invalidateThumbnail(directories, type, file) {
     const folder = getThumbnailFolder(directories, type);
     if (folder === undefined) throw new Error('Invalid thumbnail type');
 
-    const pathToThumbnail = path.join(folder, sanitize(file));
+    const sanitizedFile = sanitize(file);
+    const pathToThumbnail = path.join(folder, sanitizedFile);
+    const pathToPreview = path.join(folder, `preview_${sanitizedFile}`);
 
     if (fs.existsSync(pathToThumbnail)) {
         fs.unlinkSync(pathToThumbnail);
+    }
+    if (fs.existsSync(pathToPreview)) {
+        fs.unlinkSync(pathToPreview);
     }
 }
 
@@ -98,9 +103,10 @@ export function invalidateThumbnail(directories, type, file) {
  * @param {string} file - The filename of the image.
  * @param {boolean} [forceGenerate=false] - Whether to force generation even if a thumbnail exists.
  * @param {boolean|null} [isKnownAnimated=null] - If true, skips generation. If false, assumes static. If null, checks.
+ * @param {boolean} [isPreview=false] - Whether to generate a high-DPI preview thumbnail.
  * @returns {Promise<{path: string|null, aspectRatio: number|null, resolution: number|null}>} Path to thumbnail, its aspect ratio, and resolution.
  */
-export async function generateThumbnail(directories, type, file, forceGenerate = false, isKnownAnimated = null) {
+export async function generateThumbnail(directories, type, file, forceGenerate = false, isKnownAnimated = null, isPreview = false) {
     // If the caller has already determined the file is animated, skip processing.
     if (isKnownAnimated) {
         return { path: null, aspectRatio: null, resolution: null };
@@ -109,7 +115,8 @@ export async function generateThumbnail(directories, type, file, forceGenerate =
     const thumbnailFolder = getThumbnailFolder(directories, type);
     const originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
-    const pathToCachedFile = path.join(thumbnailFolder, file);
+    const cachedFileName = isPreview ? `preview_${file}` : file;
+    const pathToCachedFile = path.join(thumbnailFolder, cachedFileName);
 
     try {
         const pathToOriginalFile = path.join(originalFolder, file);
@@ -174,7 +181,7 @@ export async function generateThumbnail(directories, type, file, forceGenerate =
         }
 
         // Process the image to generate thumbnail
-        const result = await processSingleImage(file, originalFolder, thumbnailFolder, type);
+        const result = await processSingleImage(file, originalFolder, thumbnailFolder, type, isPreview);
         if (result.success) {
             return { path: pathToCachedFile, aspectRatio: result.aspectRatio ?? null, resolution: result.resolution ?? null };
         } else {
@@ -193,11 +200,13 @@ export async function generateThumbnail(directories, type, file, forceGenerate =
  * @param {string} originalFolder - Path to the original image folder.
  * @param {string} thumbnailFolder - Path to the thumbnail output folder.
  * @param {ThumbnailType} type - The type of thumbnail to generate.
+ * @param {boolean} [isPreview=false] - Whether to generate a high-DPI preview thumbnail.
  * @returns {Promise<{success: boolean, filename?: string, error?: string, aspectRatio?: number, resolution?: number}>} Result of the processing.
  */
-async function processSingleImage(file, originalFolder, thumbnailFolder, type) {
+async function processSingleImage(file, originalFolder, thumbnailFolder, type, isPreview = false) {
     const pathToOriginalFile = path.join(originalFolder, file);
-    const pathToCachedFile = path.join(thumbnailFolder, file);
+    const cachedFileName = isPreview ? `preview_${file}` : file;
+    const pathToCachedFile = path.join(thumbnailFolder, cachedFileName);
 
     try {
         const fileBuffer = fs.readFileSync(pathToOriginalFile);
@@ -223,9 +232,20 @@ async function processSingleImage(file, originalFolder, thumbnailFolder, type) {
 
             thumbImage.resize({ w: thumbWidth, h: thumbHeight, mode: ResizeStrategy.BILINEAR });
         } else if (type === 'avatar' || type === 'persona') {
-            // Crop and resize to fixed dimensions
-            const [configWidth, configHeight] = dimensions[type];
-            thumbImage.cover({ w: configWidth, h: configHeight });
+            if (isPreview) {
+                const [maxWidth, maxHeight] = dimensions.avatarPreview || [512, 768];
+                if (originalWidth > maxWidth || originalHeight > maxHeight) {
+                    if ((originalWidth / originalHeight) >= (maxWidth / maxHeight)) {
+                        thumbImage.resize({ w: maxWidth, h: Math.round(maxWidth / aspectRatio), mode: ResizeStrategy.BILINEAR });
+                    } else {
+                        thumbImage.resize({ w: Math.round(maxHeight * aspectRatio), h: maxHeight, mode: ResizeStrategy.BILINEAR });
+                    }
+                }
+            } else {
+                // Crop and resize to fixed dimensions
+                const [configWidth, configHeight] = dimensions[type];
+                thumbImage.cover({ w: configWidth, h: configHeight });
+            }
         }
 
         const buffer = pngFormat
@@ -248,7 +268,7 @@ async function processSingleImage(file, originalFolder, thumbnailFolder, type) {
  */
 publicRouter.get('/', async function (request, response) {
     try {
-        const { file: rawFile, type, animated } = request.query;
+        const { file: rawFile, type, animated, size } = request.query;
         if (typeof rawFile !== 'string' || typeof type !== 'string') return response.sendStatus(400);
         if (!(type === 'bg' || type === 'avatar' || type === 'persona')) {
             return response.sendStatus(400);
@@ -256,6 +276,8 @@ publicRouter.get('/', async function (request, response) {
 
         const file = sanitize(rawFile);
         if (file !== rawFile) return response.sendStatus(403);
+        // High-resolution previews only apply to avatars/personas. Other types ignore the size parameter.
+        const isPreview = size === 'preview' && (type === 'avatar' || type === 'persona');
 
         const serveOriginal = () => {
             const folder = getOriginalFolder(request.user.directories, type);
@@ -283,11 +305,12 @@ publicRouter.get('/', async function (request, response) {
         }
 
         const thumbnailFolder = getThumbnailFolder(request.user.directories, type);
-        const pathToCachedFile = path.join(thumbnailFolder, file);
+        const cachedFileName = isPreview ? `preview_${file}` : file;
+        const pathToCachedFile = path.join(thumbnailFolder, cachedFileName);
 
         // Try to generate thumbnail if it doesn't exist
         if (!fs.existsSync(pathToCachedFile)) {
-            const thumbResult = await generateThumbnail(request.user.directories, type, file, false);
+            const thumbResult = await generateThumbnail(request.user.directories, type, file, false, null, isPreview);
             // If generation failed (path is null), serve the original file
             if (!thumbResult.path) {
                 return serveOriginal();
@@ -296,7 +319,7 @@ publicRouter.get('/', async function (request, response) {
 
         if (fs.existsSync(pathToCachedFile)) {
             invalidateFirefoxCache(pathToCachedFile, request, response);
-            return response.sendFile(file, { root: thumbnailFolder, dotfiles: 'allow' });
+            return response.sendFile(cachedFileName, { root: thumbnailFolder, dotfiles: 'allow' });
         }
 
         // Send a 404 so the frontend can display a placeholder
