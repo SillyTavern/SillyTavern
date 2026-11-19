@@ -621,7 +621,9 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             if (sheet) {
                 sanitizeRuleSet(ast.stylesheet);
             }
-            return `<style>${css.stringify(ast)}</style>`;
+            // The CSS is placed into HTML as text, so it must not be able to end the style element
+            const styleText = css.stringify(ast).replace(/<\//g, '<\\/');
+            return `<style>${styleText}</style>`;
         } catch (error) {
             return `CSS ERROR: ${error}`;
         }
