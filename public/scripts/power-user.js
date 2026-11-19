@@ -50,7 +50,7 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, getSanitizedFilename, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, getSanitizedFilename, getStringHash, isFalseBoolean, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -168,6 +168,7 @@ export const power_user = {
     border_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBorderColor').trim()}`,
 
     custom_css: '',
+    custom_css_enabled: true,
 
     waifuMode: false,
     movingUI: false,
@@ -1145,7 +1146,10 @@ function applyThemeColor(type) {
 }
 
 function applyCustomCSS() {
+    // Only an explicit false turns it off, so settings saved before the toggle existed keep their CSS
+    const enabled = power_user.custom_css_enabled !== false;
     $('#customCSS').val(power_user.custom_css);
+    $('#customCSSEnabled').prop('checked', enabled);
     var styleId = 'custom-style';
     var style = document.getElementById(styleId);
     if (!style) {
@@ -1154,7 +1158,17 @@ function applyCustomCSS() {
         style.setAttribute('id', styleId);
         document.head.appendChild(style);
     }
-    style.innerHTML = power_user.custom_css;
+    style.innerHTML = enabled ? power_user.custom_css : '';
+}
+
+/**
+ * Turns the Custom CSS on or off without changing its text.
+ * @param {boolean} enabled Whether the Custom CSS is applied
+ */
+function setCustomCssEnabled(enabled) {
+    power_user.custom_css_enabled = !!enabled;
+    saveSettingsDebounced();
+    applyCustomCSS();
 }
 
 function applyBlurStrength() {
@@ -3354,6 +3368,10 @@ jQuery(() => {
         applyCustomCSS();
     });
 
+    $('#customCSSEnabled').on('input', function () {
+        setCustomCssEnabled(!!$(this).prop('checked'));
+    });
+
     $('#movingUImode').on('change', function () {
         power_user.movingUI = $(this).prop('checked');
         switchMovingUI();
@@ -4112,6 +4130,41 @@ jQuery(() => {
         browser_has_focus = false;
     });
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'custom-css',
+        callback: (_, value) => {
+            const state = String(value ?? '').trim().toLowerCase();
+            if (state === 'toggle') {
+                setCustomCssEnabled(power_user.custom_css_enabled === false);
+            } else if (isTrueBoolean(state)) {
+                setCustomCssEnabled(true);
+            } else if (isFalseBoolean(state)) {
+                setCustomCssEnabled(false);
+            }
+            return String(power_user.custom_css_enabled !== false);
+        },
+        returns: 'whether the Custom CSS is applied: true or false',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'the state to set. Without it, only the current state is returned',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.boolean('onOffToggle'),
+            }),
+        ],
+        helpString: `
+            <div>
+                Turns the Custom CSS of the User Settings on or off, or returns whether it is applied. The CSS text itself is kept.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li><pre><code class="language-stscript">/custom-css off</code></pre></li>
+                    <li><pre><code class="language-stscript">/custom-css toggle</code></pre></li>
+                    <li><pre><code class="language-stscript">/custom-css | /echo</code></pre></li>
+                </ul>
+            </div>
+        `,
+    }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'vn',
         callback: toggleWaifu,
