@@ -342,8 +342,8 @@ export class CommandLineParser {
             },
             getBrowserLaunchHostname: async function ({ useIPv6, useIPv4 }) {
                 if (this.browserLaunchHostname === 'auto') {
-                    if (useIPv6 && useIPv4) {
-                        return this.browserLaunchAvoidLocalhost ? '[::1]' : 'localhost';
+                    if (!this.browserLaunchAvoidLocalhost) {
+                        return 'localhost';
                     }
 
                     if (useIPv6) {
