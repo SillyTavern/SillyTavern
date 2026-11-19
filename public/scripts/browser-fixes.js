@@ -1,4 +1,4 @@
-import { getParsedUA, isMobile } from './RossAscends-mods.js';
+import { getParsedUA } from './RossAscends-mods.js';
 
 const isFirefox = () => /firefox/i.test(navigator.userAgent);
 
@@ -70,23 +70,11 @@ function applyBrowserFixes() {
         sanitizeInlineQuotationOnCopy();
     }
 
-    if (isMobile()) {
-        const fixFunkyPositioning = () => {
-            if (isFirefox()) {
-                const active = document.activeElement;
-                if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
-                    // The positioning hack below breaks GBoard candidate replacement
-                    // in Firefox Mobile on Android.
-                    return;
-                }
-            }
-            console.debug('[Mobile] Device viewport change detected.');
-            document.documentElement.style.position = 'fixed';
-            requestAnimationFrame(() => document.documentElement.style.position = '');
-        };
-        window.addEventListener('resize', fixFunkyPositioning);
-        window.addEventListener('orientationchange', fixFunkyPositioning);
-    }
+    // NOTE: The previous implementation forced two full-document style/layout passes
+    // (html position: fixed -> reset) on every resize, including keyboard open/close on
+    // Android. That workaround for legacy Chrome viewport bugs is obsolete on modern
+    // Chrome (dvh + interactive-widget=resizes-content handle viewport changes), and it
+    // measurably worsened keyboard-transition jank. Removed for performance.
 
     addSafariPatch();
 }
