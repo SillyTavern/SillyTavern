@@ -28,6 +28,8 @@ const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
     'kayra-v1': 'Carefree-Kayra',
     'llama-3-erato-v1': 'Erato-Dragonfruit',
+    'glm-4-6': 'GLM-Chat',
+    'xialong-v1': 'GLM-Chat',
 };
 
 export let novelai_settings;
@@ -145,6 +147,15 @@ export function convertNovelPreset(data) {
         order: Array.isArray(data.parameters.order) ? data.parameters.order.filter(s => s.enabled && Object.keys(samplers).includes(s.id)).map(s => samplers[s.id]) : default_order,
         extensions: {},
     };
+}
+
+/**
+ * GLM-4.6 and Xialong are only served through NovelAI's OpenAI-compatible chat endpoint.
+ * @param {string} model NovelAI model identifier
+ * @returns {boolean} Whether the model uses the chat-completions request/response shape
+ */
+export function isNovelChatModel(model) {
+    return model === 'glm-4-6' || model === 'xialong-v1';
 }
 
 export function getNovelTier() {
@@ -568,7 +579,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         finalPrompt = '<|startoftext|><|reserved_special_token81|>' + finalPrompt;
     }
 
-    const adjustedMaxLength = (isKayra || isErato) ? getNovelMaxResponseTokens() : maximum_output_length;
+    const adjustedMaxLength = (isKayra || isErato || isNovelChatModel(nai_settings.model_novel)) ? getNovelMaxResponseTokens() : maximum_output_length;
 
     return {
         'input': finalPrompt,
@@ -755,15 +766,24 @@ export async function generateNovelWithStreaming(generate_data, signal) {
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();
 
+    const isChatModel = isNovelChatModel(generate_data.model);
+
     return async function* streamData() {
         let text = '';
         while (true) {
             const { done, value } = await reader.read();
             if (done) return;
 
+            // The chat-completions endpoint terminates the stream with a literal "[DONE]" payload, not JSON.
+            if (isChatModel && value.data === '[DONE]') {
+                continue;
+            }
+
             const data = JSON.parse(value.data);
 
-            if (data.token) {
+            if (isChatModel) {
+                text += data?.choices?.[0]?.delta?.content ?? '';
+            } else if (data.token) {
                 text += data.token;
             }
 
@@ -904,11 +924,13 @@ export function initNovelAISettings() {
         nai_settings.model_novel = String($('#model_novel_select').find(':selected').val());
         saveSettingsDebounced();
 
-        // Update the selected preset to something appropriate
+        // Update the selected preset to something appropriate, if this model has a default one.
         const default_preset = default_presets[nai_settings.model_novel];
-        $('#settings_preset_novel').val(novelai_setting_names[default_preset]);
-        $(`#settings_preset_novel option[value=${novelai_setting_names[default_preset]}]`).attr('selected', 'true');
-        $('#settings_preset_novel').trigger('change');
+        if (default_preset !== undefined) {
+            $('#settings_preset_novel').val(novelai_setting_names[default_preset]);
+            $(`#settings_preset_novel option[value=${novelai_setting_names[default_preset]}]`).attr('selected', 'true');
+            $('#settings_preset_novel').trigger('change');
+        }
     });
 
     $('#nai_prefix').on('change', function () {
