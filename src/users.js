@@ -462,7 +462,11 @@ export async function migrateSystemPrompts() {
                 if (path.extname(instruct) === '.json' && !fs.existsSync(sysPromptPath)) {
                     const instructData = JSON.parse(fs.readFileSync(instructPath, 'utf8'));
                     if ('system_prompt' in instructData && 'name' in instructData) {
-                        const backupPath = path.join(backupsPath, `${instructData.name}.json`);
+                        const backupName = sanitize(`${instructData.name}.json`);
+                        if (!backupName) {
+                            continue;
+                        }
+                        const backupPath = path.join(backupsPath, backupName);
                         fs.cpSync(instructPath, backupPath, { force: true });
                         const syspromptData = { name: instructData.name, content: instructData.system_prompt };
                         migratedPrompts.push(syspromptData);
@@ -477,7 +481,7 @@ export async function migrateSystemPrompts() {
             migratedPrompts = migratedPrompts.filter(x => !defaultPrompts.some(y => y.content === x.content));
             for (const sysPromptData of migratedPrompts) {
                 sysPromptData.name = `[Migrated] ${sysPromptData.name}`;
-                const syspromptPath = path.join(directory.sysprompt, `${sysPromptData.name}.json`);
+                const syspromptPath = path.join(directory.sysprompt, sanitize(`${sysPromptData.name}.json`));
                 writeFileAtomicSync(syspromptPath, JSON.stringify(sysPromptData, null, 4));
                 console.log(`Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`);
             }

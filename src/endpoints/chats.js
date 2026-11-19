@@ -994,7 +994,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             // Find group chat files for given group ID
             const groupChatsDir = path.join(request.user.directories.groupChats);
             chatFiles = targetGroup.chats
-                .map(chatId => path.join(groupChatsDir, `${chatId}.jsonl`))
+                .map(chatId => path.join(groupChatsDir, sanitize(`${chatId}.jsonl`)))
                 .filter(fileName => fs.existsSync(fileName));
         } else {
             // Regular character chat directory
@@ -1110,7 +1110,7 @@ router.post('/recent', async function (request, response) {
 
                     if (Array.isArray(groupData.chats)) {
                         for (const chat of groupData.chats) {
-                            const filePath = path.join(request.user.directories.groupChats, `${chat}.jsonl`);
+                            const filePath = path.join(request.user.directories.groupChats, sanitize(`${chat}.jsonl`));
                             if (!fs.existsSync(filePath)) {
                                 continue;
                             }
