@@ -75,6 +75,45 @@ router.post('/delete', async (request, response) => {
     }
 });
 
+router.post('/patch-json', async (request, response) => {
+    try {
+        if (!request.body.name) {
+            return response.status(400).send('No file name specified');
+        }
+
+        if (!request.body.data || typeof request.body.data !== 'object' || Array.isArray(request.body.data)) {
+            return response.status(400).send('Patch data must be a plain object');
+        }
+
+        const validation = validateAssetFileName(request.body.name);
+        if (validation.error)
+            return response.status(400).send(validation.message);
+
+        const pathToFile = path.join(request.user.directories.files, request.body.name);
+
+        let existing = {};
+        if (fs.existsSync(pathToFile)) {
+            try {
+                const parsed = JSON.parse(fs.readFileSync(pathToFile, 'utf8'));
+                if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+                    return response.status(400).send('Existing file is not a JSON object');
+                }
+                existing = parsed;
+            } catch {
+                return response.status(400).send('Existing file is not valid JSON');
+            }
+        }
+
+        writeFileSyncAtomic(pathToFile, JSON.stringify(Object.assign(existing, request.body.data)));
+        const url = clientRelativePath(request.user.directories.root, pathToFile);
+        console.info(`Patched file: ${url} from ${request.user.profile.handle}`);
+        return response.send({ path: url });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/verify', async (request, response) => {
     try {
         if (!Array.isArray(request.body.urls)) {
