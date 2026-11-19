@@ -34,6 +34,7 @@ import {
     color,
     trimTrailingSlash,
     flattenSchema,
+    inlineLocalVideoMedia,
 } from '../../util.js';
 import {
     convertClaudeMessages,
@@ -2252,6 +2253,13 @@ router.post('/generate', async function (request, response) {
         if (!request.body) return response.status(400).send({ error: true });
         customAuth = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM
             ? resolveCustomAuth(request.user.directories, request.body) : undefined;
+
+        // Inline local video files into base64 data URLs on the server so that
+        // large videos never enter the browser JS heap at generation time.
+        // Runs before provider branching so downstream converters see data URLs.
+        if (Array.isArray(request.body.messages)) {
+            inlineLocalVideoMedia(request.body.messages, request.user.directories);
+        }
 
         const postProcessingType = request.body.custom_prompt_post_processing;
         if (Array.isArray(request.body.messages) && postProcessingType) {
