@@ -39,4 +39,18 @@ test.describe('Style blocks in messages', () => {
         expect(result.css).toContain('a < b');
         expect(result.tags).toEqual(['style']);
     });
+
+    test('the content of a style block stays inside the style element', async ({ page }) => {
+        const blocks = [
+            '<style>\n/* </st<br/>yle><img src="x" onerror="1"> */\n.box { color: red; }\n</style>',
+            '<style>.box { content: \'</st<br/>yle><img src=x onerror=1>\'; }</style>',
+            '<style></st<br/>yle><img/src=x/onerror=1>{ color: red; }</style>',
+        ];
+
+        for (const block of blocks) {
+            const result = await render(page, block);
+            expect(result.handlers, block).toEqual([]);
+            expect(result.tags.filter(x => x !== 'style'), block).toEqual([]);
+        }
+    });
 });
