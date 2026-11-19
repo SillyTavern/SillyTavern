@@ -1082,6 +1082,41 @@
                                         <input class="neo-range-slider" type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope" id="rep_pen_slope_counter">
                                     </div>
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                        <small>
+                                            <span data-i18n="Smoothing Factor">Smoothing Factor</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Smoothing Factor is quadratic sampling value." data-i18n="[title]Smoothing_Factor_desc"></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="smoothing_factor" name="volume" min="0" max="10.0" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="10.0" step="0.01" data-for="smoothing_factor" id="smoothing_factor_counter">
+                                    </div>
+                                    <div class="wide100p flex-container flexFlowRow gap10px flexShrink">
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                            <small>
+                                                <span data-i18n="Dynamic Temp. Range">Dynamic Temp. Range</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Dynamic temperature range value." data-i18n="[title]Dynatemp_Range_desc"></div>
+                                            </small>
+                                            <input class="neo-range-slider" type="range" id="dynatemp_range" name="volume" min="0" max="5.0" step="0.01">
+                                            <input class="neo-range-input" type="number" min="0" max="5.0" step="0.01" data-for="dynatemp_range" id="dynatemp_range_counter">
+                                        </div>
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                            <small>
+                                                <span data-i18n="Dynamic Temp. Range">Dynamic Temp. Exponent</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Dynamic temperature exponent value." data-i18n="[title]Dynatemp_Exponent_desc"></div>
+                                            </small>
+                                            <input class="neo-range-slider" type="range" id="dynatemp_exponent" name="volume" min="0" max="5.0" step="0.01">
+                                            <input class="neo-range-input" type="number" min="0" max="5.0" step="0.01" data-for="dynatemp_exponent" id="dynatemp_exponent_counter">
+                                        </div>
+                                    </div>
+                                    <div class="alignitemscenter justifyCenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                        <label class="checkbox_label alignItemsBaseline" for="use_default_badwordsids">
+                                            <input id="singleline" type="checkbox" />
+                                            <span>
+                                                <span data-i18n="Singleline">Singleline</span>
+                                                <small class="fa-solid fa-circle-info opacity50p" title="Output formatting option. When enabled, removes everything after the first line of the output, including the newline." data-i18n="[title]Singleline_desc"></small>
+                                            </span>
+                                        </label>
+                                    </div>
                                     <div name="miroStatBlock-kobold" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="Mirostat">Mirostat</h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
