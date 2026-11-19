@@ -846,7 +846,7 @@
     "Show tagged character folders in the character list": "在角色列表中显示已标记的角色文件夹",
     "Tags as Folders": "标签作为文件夹",
     "Tags_as_Folders_desc": "最近更改：标签必须在标签管理菜单中标记为文件夹才能显示。单击此处将其调出。",
-    "Click the message text in the chat log to edit it.": "单机聊天记录中的消息就可以直接编辑。",
+    "Click the message text in the chat log to edit it.": "单击聊天记录中的消息即可编辑。",
     "Click to Edit": "单击编辑消息",
     "Character Handling": "角色处理",
     "If set in the advanced character definitions, this field will be displayed in the characters list.": "如果在高级角色定义中设置，此字段将显示在角色列表中。",
