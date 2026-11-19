@@ -1452,5 +1452,18 @@
     "Deleting chat…": "Видалення чату…",
     "Loading chat…": "Завантаження чату…",
     "Bulk Delete": "Масове видалення",
-    "Deleting ${0} character(s)…": "Видалення ${0} персонажа(ів)…"
+    "Deleting ${0} character(s)…": "Видалення ${0} персонажа(ів)…",
+    "Service Tier": "Рівень обслуговування",
+    "Flex (cheap, slower)": "Flex (дешевше, повільніше)",
+    "Priority (fast, expensive)": "Priority (швидко, дорого)",
+    "${0} — currently unavailable": "${0} — наразі недоступний",
+    "${0} — supported by fallback providers only": "${0} — підтримується лише резервними постачальниками",
+    "${0} — supported by some selected providers": "${0} — підтримується лише деякими вибраними постачальниками",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} недоступний для поточних постачальників і моделі. Запити обслуговуються за стандартними тарифами.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Жоден із вибраних постачальників не пропонує ${0}. Оскільки резервні постачальники дозволені, запит може обслужити інший постачальник.",
+    "${0} is only offered by: ${1}.": "${0} доступний лише в: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (базова ціна)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Оцінку розраховано на основі базової ціни моделі. Тарифи постачальників і рівнів обслуговування не враховано.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Вибраний рівень обслуговування OpenRouter, ${0}, недоступний для поточних постачальників і моделі. Запити обслуговуються за стандартними тарифами. Змінити рівень обслуговування можна в меню З'єднання з API."
 }
