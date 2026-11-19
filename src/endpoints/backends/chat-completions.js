@@ -67,7 +67,7 @@ import {
     webTokenizers,
     getWebTokenizer,
 } from '../tokenizers.js';
-import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
+import { getVertexAIAuth, getProjectIdFromServiceAccount, getVertexAIOrigin, isVertexAIMultiRegion } from '../google.js';
 import { getCookieSecret } from '../../users.js';
 import { fetchGoogleModels, GoogleModelsHttpError } from './google-models.js';
 
@@ -692,11 +692,12 @@ async function sendMakerSuiteRequest(request, response) {
                 const keyParam = authHeader.replace('Bearer ', '');
                 const region = request.body.vertexai_region || 'us-central1';
                 const projectId = request.body.vertexai_express_project_id;
-                const baseUrl = region === 'global'
-                    ? 'https://aiplatform.googleapis.com'
-                    : `https://${region}-aiplatform.googleapis.com`;
+                const baseUrl = getVertexAIOrigin(region);
+                // Project-scoped Express requests use the global host, except for multi-region
+                // locations, which are only served from their own regional endpoint host.
+                const projectBaseUrl = isVertexAIMultiRegion(region) ? baseUrl : 'https://aiplatform.googleapis.com';
                 url = projectId
-                    ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`
+                    ? `${projectBaseUrl}/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`
                     : `${baseUrl}/v1/publishers/google/models/${model}:${responseType}?key=${keyParam}${stream ? '&alt=sse' : ''}`;
             } else if (authType === 'full') {
                 // For Full mode (service account authentication), use project-specific URL
@@ -716,12 +717,7 @@ async function sendMakerSuiteRequest(request, response) {
                     return response.status(400).send({ error: true });
                 }
                 const region = request.body.vertexai_region || 'us-central1';
-                // Handle global region differently - no region prefix in hostname
-                if (region === 'global') {
-                    url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}${stream ? '?alt=sse' : ''}`;
-                } else {
-                    url = `https://${region}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}${stream ? '?alt=sse' : ''}`;
-                }
+                url = `${getVertexAIOrigin(region)}/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}${stream ? '?alt=sse' : ''}`;
                 headers['Authorization'] = authHeader;
             } else {
                 // For proxy mode, use the original URL with Authorization header
