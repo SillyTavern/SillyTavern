@@ -544,6 +544,57 @@ export function encodeStyleTags(text) {
 }
 
 /**
+ * Checks if a URL points to a resource outside of this origin.
+ * @param {string} url URL to check
+ * @returns {boolean} True if the URL is external
+ */
+function isExternalUrl(url) {
+    const value = String(url ?? '').trim();
+    if (!value) {
+        return false;
+    }
+
+    try {
+        // Resolve it like the browser would, so that every spelling of a URL is compared the same way
+        const resolved = new URL(value, window.location.href);
+        const networkProtocols = ['http:', 'https:', 'ws:', 'wss:', 'ftp:'];
+        return networkProtocols.includes(resolved.protocol) && resolved.origin !== window.location.origin;
+    } catch {
+        return true;
+    }
+}
+
+/**
+ * Checks if a CSS value references a resource outside of this origin.
+ * This does not parse CSS. It looks at everything that could be a resource reference, and rather reports one too many.
+ * @param {string} value CSS declaration value, or the text of a style attribute
+ * @param {object} [options] Options
+ * @param {boolean} [options.allStrings=false] Check every string. Needed for custom properties, as a string in them can be used as a reference elsewhere through var().
+ * @returns {boolean} True if the value contains an external reference
+ */
+export function hasExternalCssReference(value, { allStrings = false } = {}) {
+    // Resolve CSS escapes first, as they can be used anywhere, including in function names
+    const text = String(value ?? '').replace(/\\(?:([0-9a-f]{1,6})\s?|([\s\S]))/gi, (_, hex, char) => {
+        if (!hex) return char === '\n' ? '' : char;
+        const codePoint = parseInt(hex, 16);
+        return codePoint > 0 && codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : '\uFFFD';
+    });
+    const leadingNoise = /^(?:\s|\/\*[\s\S]*?\*\/)*/;
+
+    // url(...) with a quoted or unquoted argument. The start of the argument decides where it points to.
+    for (const match of text.matchAll(/url\(([^)]*)/gi)) {
+        const reference = match[1].replace(leadingNoise, '').replace(/^["']/, '');
+        if (isExternalUrl(reference)) {
+            return true;
+        }
+    }
+
+    // Functions that accept a plain string as a resource reference. Other strings are just text.
+    const stringSources = allStrings ? [text] : [...text.matchAll(/(?:image-set|image|src)\(([\s\S]*)/gi)].map(match => match[1]);
+    return stringSources.some(source => source.split(/["']/).some(part => isExternalUrl(part.replace(leadingNoise, ''))));
+}
+
+/**
  * Sanitizes custom style tags in the message text to prevent DOM pollution.
  * @param {string} text Message text
  * @param {object} options Options object
@@ -565,7 +616,7 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             }
         }
         if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
-            rule.declarations = rule.declarations.filter(declaration => !declaration.value.includes('://'));
+            rule.declarations = rule.declarations.filter(declaration => !hasExternalCssReference(declaration.value, { allStrings: String(declaration.property ?? '').startsWith('--') }));
         }
     }
 
@@ -1936,6 +1987,33 @@ export function addDOMPurifyHooks() {
                 }
                 break;
             }
+            case 'style': {
+                // A style attribute can define custom properties, which is where a string can become a reference
+                if (data.attrValue && !isExternalMediaAllowed() && hasExternalCssReference(data.attrValue, { allStrings: data.attrValue.includes('--') })) {
+                    console.warn('External media blocked', data.attrValue);
+                    data.keepAttr = false;
+                }
+                break;
+            }
+            case 'background':
+            case 'poster': {
+                if (data.attrValue && !isExternalMediaAllowed() && isExternalUrl(data.attrValue)) {
+                    console.warn('External media blocked', data.attrValue);
+                    data.keepAttr = false;
+                }
+                break;
+            }
+            case 'src':
+            case 'href':
+            case 'xlink:href': {
+                // Elements that load what they point to, other than the media elements that are removed as a whole
+                const loadingElements = ['image', 'feimage', 'use', 'input'];
+                if (data.attrValue && loadingElements.includes(node.nodeName.toLowerCase()) && !isExternalMediaAllowed() && isExternalUrl(data.attrValue)) {
+                    console.warn('External media blocked', data.attrValue);
+                    data.keepAttr = false;
+                }
+                break;
+            }
         }
     });
 
@@ -1995,7 +2073,6 @@ export function addDOMPurifyHooks() {
             case 'EMBED':
             case 'OBJECT':
             case 'IMG': {
-                const isExternalUrl = (url) => (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
                 const src = node.getAttribute('src');
                 const data = node.getAttribute('data');
                 const srcset = node.getAttribute('srcset');
