@@ -27,6 +27,7 @@ import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, l
 import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, getTokenizerBestMatch, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual, isObject } from './utils.js';
+import { applyOpenRouterRoutingKey, openrouter_routing_key_modes, openrouter_routing_key_sources } from './openrouter-routing.js';
 
 export const textgen_types = {
     OOBA: 'ooba',
@@ -213,6 +214,8 @@ export const textgenerationwebui_settings = {
     openrouter_model: 'openrouter/auto',
     openrouter_providers: [],
     openrouter_quantizations: [],
+    openrouter_routing_key_mode: openrouter_routing_key_modes.OFF,
+    openrouter_routing_key_source: openrouter_routing_key_sources.CHAT_ID,
     vllm_model: '',
     aphrodite_model: '',
     dreamgen_model: 'lucid-v1-extra-large/text',
@@ -593,6 +596,8 @@ export async function loadTextGenSettings(data, loadedSettings) {
     $('#textgen_type').val(textgenerationwebui_settings.type);
     $('#openrouter_providers_text').val(textgenerationwebui_settings.openrouter_providers).trigger('change');
     $('#openrouter_quantizations_text').val(textgenerationwebui_settings.openrouter_quantizations).trigger('change');
+    $('#openrouter_routing_key_mode_text').val(textgenerationwebui_settings.openrouter_routing_key_mode);
+    $('#openrouter_routing_key_source_text').val(textgenerationwebui_settings.openrouter_routing_key_source);
     showSamplerControls(textgenerationwebui_settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(textgenerationwebui_settings.logit_bias, BIAS_KEY);
@@ -1088,6 +1093,16 @@ export function initTextGenSettings() {
 
         textgenerationwebui_settings.openrouter_quantizations = selectedQuantizations;
 
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_routing_key_mode_text').on('input', function () {
+        textgenerationwebui_settings.openrouter_routing_key_mode = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_routing_key_source_text').on('input', function () {
+        textgenerationwebui_settings.openrouter_routing_key_source = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -1753,6 +1768,7 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
         params.provider = settings.openrouter_providers;
         params.quantizations = settings.openrouter_quantizations;
         params.allow_fallbacks = settings.openrouter_allow_fallbacks;
+        applyOpenRouterRoutingKey(params, settings.openrouter_routing_key_mode, settings.openrouter_routing_key_source);
     }
 
     if (settings.type === KOBOLDCPP) {
