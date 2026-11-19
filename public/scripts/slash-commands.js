@@ -6251,6 +6251,7 @@ function getModelOptions(quiet) {
         { id: 'tabby_model', api: 'textgenerationwebui', type: textgen_types.TABBY },
         { id: 'llamacpp_model', api: 'textgenerationwebui', type: textgen_types.LLAMACPP },
         { id: 'featherless_model', api: 'textgenerationwebui', type: textgen_types.FEATHERLESS },
+        { id: 'mlx_lm_model', api: 'textgenerationwebui', type: textgen_types.MLXLM },
         { id: 'model_openai_select', api: 'openai', type: chat_completion_sources.OPENAI },
         { id: 'model_claude_select', api: 'openai', type: chat_completion_sources.CLAUDE },
         { id: 'model_openrouter_select', api: 'openai', type: chat_completion_sources.OPENROUTER },

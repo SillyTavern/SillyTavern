@@ -199,6 +199,20 @@ function getGenericHeaders(directories, secretId = null) {
     }) : {};
 }
 
+/**
+ * Gets the headers for the MLX-LM API.
+ * @param {import('./users.js').UserDirectoryList} directories
+ * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
+ * @returns {object} Headers for the request
+ */
+function getMlxLmHeaders(directories, secretId = null) {
+    const apiKey = readSecret(directories, SECRET_KEYS.MLXLM, secretId);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 export function getOverrideHeaders(urlHost) {
     const requestOverrides = getConfigValue('requestOverrides', []);
     const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
@@ -243,6 +257,7 @@ export function setAdditionalHeadersByType(requestHeaders, type, server, directo
         [TEXTGEN_TYPES.FEATHERLESS]: getFeatherlessHeaders,
         [TEXTGEN_TYPES.HUGGINGFACE]: getHuggingFaceHeaders,
         [TEXTGEN_TYPES.GENERIC]: getGenericHeaders,
+        [TEXTGEN_TYPES.MLXLM]: getMlxLmHeaders,
     };
 
     const getHeaders = headerGetters[type];
