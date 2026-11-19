@@ -14,6 +14,49 @@
             <span data-i18n="Scan">Scan</span>
         </button>
     </div>
+    <div class="dataMaidAutoDeleteSettings">
+        <strong data-i18n="Automatically delete selected categories when scanning">Automatically delete selected categories when scanning</strong>
+        <small data-i18n="Checked categories will be automatically deleted when you run Clean-Up. This helps prevent unnecessary storage growth, but deleted items cannot be restored.">
+            Checked categories will be automatically deleted when you run Clean-Up. This helps prevent unnecessary storage growth, but deleted items cannot be restored.
+        </small>
+        <div class="dataMaidAutoDeleteOptions">
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="files"><span data-i18n="Files">Files</span></label>
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="images"><span data-i18n="Images">Images</span></label>
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="chats"><span data-i18n="Chats">Chats</span></label>
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="groupChats"><span data-i18n="Group Chats">Group Chats</span></label>
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="avatarThumbnails"><span data-i18n="Avatar Thumbnails">Avatar Thumbnails</span></label>
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="backgroundThumbnails"><span data-i18n="Background Thumbnails">Background Thumbnails</span></label>
+            <label><input class="dataMaidAutoDelete" type="checkbox" data-category="personaThumbnails"><span data-i18n="Persona Thumbnails">Persona Thumbnails</span></label>
+            <label class="dataMaidBackupRetentionOption">
+                <input class="dataMaidAutoDelete" type="checkbox" data-category="chatBackups">
+                <span data-i18n="Chat Backups">Chat Backups</span>
+                <span data-i18n="Keep per character">Keep per character</span>
+                <input class="neo-range-input dataMaidBackupRetention" type="number" data-category="chatBackups" min="0" max="1000" step="1" aria-label="Chat backups to keep per character" data-i18n="[aria-label]Chat backups to keep per character">
+            </label>
+            <label class="dataMaidBackupRetentionOption">
+                <input class="dataMaidAutoDelete" type="checkbox" data-category="settingsBackups">
+                <span data-i18n="Settings Backups">Settings Backups</span>
+                <span data-i18n="Keep newest">Keep newest</span>
+                <input class="neo-range-input dataMaidBackupRetention" type="number" data-category="settingsBackups" min="0" max="1000" step="1" aria-label="Settings backups to keep" data-i18n="[aria-label]Settings backups to keep">
+            </label>
+        </div>
+        <hr>
+        <div class="dataMaidStartupAutoDeleteSettings">
+            <label>
+                <input class="dataMaidStartupAutoDelete" type="checkbox">
+                <span data-i18n="Run automatic Clean-Up on startup when the interval has elapsed since the last automatic deletion">
+                    Run automatic Clean-Up on startup when the interval has elapsed since the last automatic deletion
+                </span>
+            </label>
+            <div class="dataMaidStartupIntervalSettings">
+                <span data-i18n="Automatic Clean-Up interval">Automatic Clean-Up interval</span>
+                <input class="neo-range-input dataMaidStartupInterval" type="number" data-interval="intervalDays" min="0" max="3650" step="1" aria-label="Days" data-i18n="[aria-label]Days">
+                <span data-i18n="Days">Days</span>
+                <input class="neo-range-input dataMaidStartupInterval" type="number" data-interval="intervalHours" min="0" max="23" step="1" aria-label="Hours" data-i18n="[aria-label]Hours">
+                <span data-i18n="Hours">Hours</span>
+            </div>
+        </div>
+    </div>
     <hr>
     <div class="dataMaidPlaceholder" data-i18n="No results yet. Tap 'Scan' to start scanning.">
         No results yet. Tap 'Scan' to start scanning.
