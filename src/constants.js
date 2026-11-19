@@ -369,6 +369,8 @@ export const AIMLAPI_HEADERS = {
     'X-Title': 'SillyTavern',
 };
 
+export const VENICE_ENDPOINT = 'https://api.venice.ai/api/v1';
+
 export const FEATHERLESS_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
     'X-Title': 'SillyTavern',

@@ -92,6 +92,22 @@ router.post('/models/embedding', async (_req, res) => {
 
 router.post('/models/image', async (_req, res) => {
     try {
+        const response = await fetch(`${API_OPENROUTER}/images/models`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+        });
+
+        if (response.ok) {
+            /** @type {any} */
+            const data = await response.json();
+            if (Array.isArray(data?.data) && data.data.length > 0) {
+                const models = data.data
+                    .map(m => ({ value: m.id, text: m.name || m.id }))
+                    .sort((a, b) => a.text.localeCompare(b.text));
+                return res.json(models);
+            }
+        }
+
         const models = await fetchModelsByModality('/models', 'text', 'image', m => ({ value: m.id, text: m.name || m.id }));
         return res.json(models);
     } catch (error) {
@@ -152,58 +168,106 @@ router.post('/image/generate', async (req, res) => {
             return res.status(400).json({ error: 'Model and prompt are required' });
         }
 
-        const response = await fetch(`${API_OPENROUTER}/chat/completions`, {
+        const payload = {
+            model: model,
+            prompt: prompt,
+        };
+
+        if (req.body.aspect_ratio) {
+            payload.aspect_ratio = req.body.aspect_ratio;
+        }
+        if (req.body.seed !== undefined && req.body.seed >= 0) {
+            payload.seed = req.body.seed;
+        }
+        if (req.body.n) {
+            payload.n = req.body.n;
+        }
+
+        let response = await fetch(`${API_OPENROUTER}/images`, {
             method: 'POST',
             headers: {
                 ...OPENROUTER_HEADERS,
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
             },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt,
-                    },
-                ],
-                modalities: ['image'],
-                image_config: {
-                    aspect_ratio: req.body.aspect_ratio || '1:1',
-                },
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-            console.warn('OpenRouter image generation failed', await response.text());
-            return res.sendStatus(500);
+            let errText = await response.text();
+            // If the model does not support an optional parameter (like seed or aspect_ratio), strip it and retry once
+            try {
+                const errJson = JSON.parse(errText);
+                const errMsg = errJson?.error?.message || '';
+                const match = /does not support:\s*([a-zA-Z0-9_]+)/i.exec(errMsg);
+                if (match && match[1] && payload[match[1]] !== undefined) {
+                    console.info(`OpenRouter: retrying without unsupported parameter "${match[1]}"`);
+                    delete payload[match[1]];
+                    response = await fetch(`${API_OPENROUTER}/images`, {
+                        method: 'POST',
+                        headers: {
+                            ...OPENROUTER_HEADERS,
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${key}`,
+                        },
+                        body: JSON.stringify(payload),
+                    });
+                }
+            } catch {
+                // Ignore parse errors, will handle below
+            }
+
+            if (!response.ok) {
+                errText = await response.text();
+                console.warn('OpenRouter image generation failed', errText);
+                return res.status(response.status || 500).send(errText);
+            }
         }
 
         /** @type {any} */
         const data = await response.json();
+        const imgObj = Array.isArray(data?.data) ? data.data[0] : (Array.isArray(data?.images) ? data.images[0] : null);
 
-        const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (!imageUrl) {
-            console.warn('No image URL found in OpenRouter response', data);
-            return res.sendStatus(500);
+        if (!imgObj) {
+            console.warn('No image data found in OpenRouter response', data);
+            return res.status(500).send('No image data returned from OpenRouter');
         }
 
-        const [mimeType, base64Data] = /^data:(.*);base64,(.*)$/.exec(imageUrl)?.slice(1) || [];
+        let base64Data;
+        let format = 'png';
 
-        if (!mimeType || !base64Data) {
-            console.warn('Invalid image data format', imageUrl);
-            return res.sendStatus(500);
+        if (imgObj.b64_json || imgObj.base64) {
+            base64Data = imgObj.b64_json || imgObj.base64;
+            if (imgObj.media_type) {
+                format = mime.extension(imgObj.media_type) || 'png';
+            }
+        } else if (imgObj.url || imgObj.image_url?.url) {
+            const imageUrl = imgObj.url || imgObj.image_url?.url;
+            if (imageUrl.startsWith('data:')) {
+                const [detectedMime, detectedB64] = /^data:(.*);base64,(.*)$/.exec(imageUrl)?.slice(1) || [];
+                base64Data = detectedB64;
+                if (detectedMime) format = mime.extension(detectedMime) || 'png';
+            } else {
+                const blobRes = await fetch(imageUrl);
+                if (!blobRes.ok) throw new Error('Failed to fetch image URL');
+                const contentType = blobRes.headers.get('content-type');
+                if (contentType) format = mime.extension(contentType) || 'png';
+                const buffer = await blobRes.arrayBuffer();
+                base64Data = Buffer.from(buffer).toString('base64');
+            }
+        } else {
+            console.warn('Unrecognized image format in OpenRouter response', imgObj);
+            return res.status(500).send('Unrecognized image format in OpenRouter response');
         }
 
         const result = {
-            format: mime.extension(mimeType) || 'png',
+            format: format,
             image: base64Data,
         };
 
         return res.json(result);
     } catch (error) {
         console.error(error);
-        return res.sendStatus(500);
+        return res.status(500).send(error instanceof Error ? error.message : 'Internal server error');
     }
 });
