@@ -7,6 +7,65 @@ import { OPENROUTER_HEADERS } from '../constants.js';
 export const router = express.Router();
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
+/** Quantization suffixes that already have their own OpenRouter picker. */
+const QUANTIZATION_SUFFIXES = new Set([
+    'int4', 'int8', 'fp4', 'mxfp4', 'nvfp4', 'fp6', 'fp8', 'mxfp8', 'fp16', 'bf16', 'fp32', 'unknown',
+]);
+
+/**
+ * Turn an endpoint tag into an OpenRouter routing slug.
+ * Strips trailing quantization segments; keeps region/tier suffixes.
+ * @param {string} tag
+ * @param {string} [providerName]
+ * @returns {string}
+ */
+function routingSlugFromTag(tag, providerName = '') {
+    if (typeof tag === 'string' && tag.trim()) {
+        const parts = tag.trim().split('/').filter(Boolean);
+        if (parts.length > 1 && QUANTIZATION_SUFFIXES.has(parts[parts.length - 1].toLowerCase())) {
+            parts.pop();
+        }
+        return parts.join('/');
+    }
+
+    return String(providerName || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
+/**
+ * @param {string} name
+ * @param {string} slug
+ * @returns {string}
+ */
+function labelForProvider(name, slug) {
+    const slash = String(slug || '').indexOf('/');
+    if (slash === -1) {
+        return name || slug;
+    }
+    return `${name} / ${slug.slice(slash + 1)}`;
+}
+
+/**
+ * @param {{ slug: string, name: string, label: string }[]} items
+ * @returns {{ slug: string, name: string, label: string }[]}
+ */
+function uniqueSortedProviders(items) {
+    const bySlug = new Map();
+    for (const item of items) {
+        if (!item?.slug || bySlug.has(item.slug)) {
+            continue;
+        }
+        bySlug.set(item.slug, item);
+    }
+    return [...bySlug.values()].sort((a, b) => {
+        const byName = (a.name || '').localeCompare(b.name || '');
+        return byName || a.slug.localeCompare(b.slug);
+    });
+}
+
 router.post('/models/providers', async (req, res) => {
     try {
         const { model } = req.body;
@@ -24,9 +83,46 @@ router.post('/models/providers', async (req, res) => {
         /** @type {any} */
         const data = await response.json();
         const endpoints = data?.data?.endpoints || [];
-        const providerNames = endpoints.map(e => e.provider_name);
+        const providers = uniqueSortedProviders(endpoints.map(endpoint => {
+            const name = endpoint.provider_name || '';
+            const slug = routingSlugFromTag(endpoint.tag, name);
+            return {
+                slug,
+                name,
+                label: labelForProvider(name, slug),
+            };
+        }));
 
-        return res.json(providerNames);
+        return res.json(providers);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+router.post('/providers', async (_req, res) => {
+    try {
+        const response = await fetch(`${API_OPENROUTER}/providers`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const list = Array.isArray(data?.data) ? data.data : [];
+        const providers = uniqueSortedProviders(list.map(provider => ({
+            slug: provider.slug,
+            name: provider.name,
+            label: provider.name,
+        })));
+
+        return res.json(providers);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
