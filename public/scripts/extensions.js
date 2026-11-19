@@ -1346,9 +1346,13 @@ async function onUpdateClick() {
 
     const icon = $(this).find('i');
     icon.addClass('fa-spin');
-    await updateExtension(extensionName, false);
-    // updateExtension eats the error, but we can at least stop the spinner
-    icon.removeClass('fa-spin');
+    try {
+        await updateExtension(extensionName, false);
+    } catch (error) {
+        // Error already logged and displayed by updateExtension
+    } finally {
+        icon.removeClass('fa-spin');
+    }
 }
 
 /**
@@ -1372,9 +1376,12 @@ async function updateExtension(extensionName, quiet, timeout = null) {
 
         if (!response.ok) {
             const text = await response.text();
-            toastr.error(text || response.statusText, t`Extension update failed`, { timeOut: 5000 });
+            const errorMessage = text || response.statusText;
+            if (!quiet) {
+                toastr.error(errorMessage, t`Extension update failed`, { timeOut: 5000 });
+            }
             console.error('Extension update failed', response.status, response.statusText, text);
-            return;
+            throw new Error(`Extension update failed (${response.status}): ${errorMessage}`);
         }
 
         const data = await response.json();
@@ -1393,7 +1400,8 @@ async function updateExtension(extensionName, quiet, timeout = null) {
             toastr.success(t`Extension ${extensionName} updated to ${data.shortCommitHash}`, t`Reload the page to apply updates`);
         }
     } catch (error) {
-        console.error('Extension update error:', error);
+        console.error(`Extension update error for '${extensionName}':`, error);
+        throw error;
     }
 }
 
@@ -1995,7 +2003,6 @@ async function autoUpdateExtensions(forceAll) {
 
     const banner = toastr.info(t`Auto-updating extensions. This may take several minutes.`, t`Please wait...`, { timeOut: 10000, extendedTimeOut: 10000 });
     const isCurrentUserAdmin = isAdmin();
-    const promises = [];
     const autoUpdateTimeout = 60 * 1000;
     for (const [id, manifest] of Object.entries(manifests)) {
         const isDisabled = extension_settings.disabledExtensions.includes(id);
@@ -2010,10 +2017,13 @@ async function autoUpdateExtensions(forceAll) {
         }
         if ((forceAll || manifest.auto_update) && id.startsWith('third-party')) {
             console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
-            promises.push(updateExtension(id.replace('third-party', ''), true, autoUpdateTimeout));
+            try {
+                await updateExtension(id.replace('third-party', ''), true, autoUpdateTimeout);
+            } catch (error) {
+                console.error(`Auto-update failed for extension: ${manifest.display_name} (${id})`, error);
+            }
         }
     }
-    await Promise.allSettled(promises);
     toastr.clear(banner);
 }
 
