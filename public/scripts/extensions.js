@@ -47,8 +47,8 @@ const activeExtensions = new Set();
 const extensionLoadErrors = new Set();
 
 const getApiUrl = () => extension_settings.apiUrl;
-const sortManifestsByOrder = (a, b) => parseInt(a.loading_order) - parseInt(b.loading_order) || String(a.display_name).localeCompare(String(b.display_name));
-const sortManifestsByName = (a, b) => String(a.display_name).localeCompare(String(b.display_name)) || parseInt(a.loading_order) - parseInt(b.loading_order);
+const sortManifestsByOrder = (a, b) => parseInt(a.loading_order) - parseInt(b.loading_order) || String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
+const sortManifestsByName = (a, b) => String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || '')) || parseInt(a.loading_order) - parseInt(b.loading_order);
 let connectedToApi = false;
 
 /**
@@ -581,7 +581,7 @@ async function activateExtensions() {
         const extrasRequirements = manifest.requires;
         const extensionDependencies = manifest.dependencies;
         const minClientVersion = manifest.minimum_client_version;
-        const displayName = manifest.display_name || name;
+        const displayName = manifest.display_name || manifest.name || name;
 
         if (activeExtensions.has(name)) {
             continue;
@@ -917,9 +917,9 @@ function generateExtensionElement(name, manifest, isActive, isDisabled, isExtern
     }
 
     const isUserAdmin = isAdmin();
-    const displayName = manifest.display_name;
-    const displayVersion = manifest.version || '';
     const externalId = name.replace('third-party', '');
+    const displayName = manifest.display_name || manifest.name || externalId;
+    const displayVersion = manifest.version || '';
 
     // Root block
     const block = document.createElement('div');
