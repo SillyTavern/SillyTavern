@@ -284,11 +284,11 @@ router.post('/generate', async function (request, response) {
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', async function () {
+            // Release the generation connection even if the separate abort request stalls.
+            controller.abort();
             if (request.body.api_type === TEXTGEN_TYPES.KOBOLDCPP && !response.writableEnded) {
                 await abortKoboldCppRequest(request, trimV1(baseUrl));
             }
-
-            controller.abort();
         });
 
         let url = trimV1(baseUrl);
