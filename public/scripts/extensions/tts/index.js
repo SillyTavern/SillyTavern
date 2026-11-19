@@ -236,6 +236,10 @@ function resetTtsPlayback() {
 
     // Set audio ready to process again
     audioQueueProcessorReady = true;
+
+    if (typeof globalThis.mateEngineStopLipSync === 'function') {
+        globalThis.mateEngineStopLipSync();
+    }
 }
 
 function isTtsProcessing() {
@@ -349,13 +353,21 @@ async function playAudioData(audioJob) {
             await globalThis.vrmLipSync(audioBlob, char);
         }
 
+        // MateEngine lip sync
+        if (typeof globalThis.mateEngineLipSync === 'function') {
+            globalThis.mateEngineLipSync(audioJob);
+        }
+
         audioElement.src = srcUrl;
     } else if (typeof audioBlob === 'string') {
+        if (typeof globalThis.mateEngineLipSync === 'function') {
+            globalThis.mateEngineLipSync(audioJob);
+        }
         audioElement.src = audioBlob;
     } else {
         throw `TTS received invalid audio data type ${typeof audioBlob}`;
     }
-    audioElement.addEventListener('ended', completeCurrentAudioJob);
+    audioElement.addEventListener('ended', completeCurrentAudioJob, { once: true });
     audioElement.addEventListener('canplay', () => {
         console.debug('Starting TTS playback');
         audioElement.playbackRate = extension_settings.tts.playback_rate;
@@ -444,6 +456,9 @@ function addAudioControl() {
 }
 
 function completeCurrentAudioJob() {
+    if (typeof globalThis.mateEngineStopLipSync === 'function') {
+        globalThis.mateEngineStopLipSync();
+    }
     audioQueueProcessorReady = true;
     currentAudioJob = null;
     // updateUiPlayState();
@@ -456,7 +471,7 @@ function completeCurrentAudioJob() {
  * @param {string} char
  * @returns {Promise<{audioBlob: Blob|string, mimeType: string}>}
  */
-async function addAudioJob(response, char) {
+async function addAudioJob(response, char, text = '') {
     let audioBlob, mimeType;
     if (typeof response === 'string') {
         audioBlob = response;
@@ -468,7 +483,7 @@ async function addAudioJob(response, char) {
         }
         mimeType = audioBlob.type;
     }
-    audioJobQueue.push({ audioBlob, char });
+    audioJobQueue.push({ audioBlob, char, text });
     console.debug('Pushed audio job to queue.');
     return { audioBlob, mimeType };
 }
@@ -513,7 +528,7 @@ async function tts(text, voiceId, char, voiceMapKey = null) {
         if (typeof globalThis.rvcVoiceConversion === 'function' && extension_settings.rvc.enabled)
             response = await globalThis.rvcVoiceConversion(response, char, text);
 
-        const audioResult = await addAudioJob(response, char);
+        const audioResult = await addAudioJob(response, char, text);
         const eventData = { messageId, characterName: char, text, audio: audioResult.audioBlob, mimeType: audioResult.mimeType };
         await eventSource.emit(event_types.TTS_AUDIO_READY, eventData);
     }
