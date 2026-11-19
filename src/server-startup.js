@@ -199,6 +199,26 @@ export class ServerStartup {
     constructor(app, cliArgs) {
         this.app = app;
         this.cliArgs = cliArgs;
+        this.servers = [];
+        this.stopping = false;
+    }
+
+    /** Stops accepting requests and waits for existing requests to finish. */
+    stop() {
+        this.stopping = true;
+        return this.stopPromise ??= Promise.allSettled(this.servers.map(async ({ server, ready }) => {
+            if (!server.listening) await ready.catch(() => {});
+            if (!server.listening) return;
+            await new Promise((resolve, reject) => {
+                server.close(error => error ? reject(error) : resolve());
+            });
+        })).then(results => {
+            const failed = results.find(result => result.status === 'rejected');
+            if (failed) throw failed.reason;
+        }).catch(error => {
+            this.stopPromise = undefined;
+            throw error;
+        });
     }
 
     /**
@@ -273,14 +293,15 @@ export class ServerStartup {
      */
     #createHttpsServer(url, ipVersion) {
         this.#verifySslOptions();
-        return new Promise((resolve, reject) => {
+        let server;
+        const ready = new Promise((resolve, reject) => {
             /** @type {import('https').ServerOptions} */
             const sslOptions = {
                 cert: fs.readFileSync(this.cliArgs.certPath),
                 key: fs.readFileSync(this.cliArgs.keyPath),
                 passphrase: String(this.cliArgs.keyPassphrase ?? ''),
             };
-            const server = https.createServer(sslOptions, this.app);
+            server = https.createServer(sslOptions, this.app);
             server.on('error', reject);
             server.on('listening', resolve);
 
@@ -293,6 +314,8 @@ export class ServerStartup {
                 ipv6Only: true,
             });
         });
+        if (server) this.servers.push({ server, ready });
+        return ready;
     }
 
     /**
@@ -302,8 +325,8 @@ export class ServerStartup {
      * @returns {Promise<void>} A promise that resolves when the server is listening
      */
     #createHttpServer(url, ipVersion) {
-        return new Promise((resolve, reject) => {
-            const server = http.createServer(this.app);
+        const server = http.createServer(this.app);
+        const ready = new Promise((resolve, reject) => {
             server.on('error', reject);
             server.on('listening', resolve);
 
@@ -316,6 +339,8 @@ export class ServerStartup {
                 ipv6Only: true,
             });
         });
+        this.servers.push({ server, ready });
+        return ready;
     }
 
     /**
@@ -332,7 +357,7 @@ export class ServerStartup {
 
         const createFunc = this.cliArgs.ssl ? this.#createHttpsServer.bind(this) : this.#createHttpServer.bind(this);
 
-        if (useIPv6) {
+        if (useIPv6 && !this.stopping) {
             try {
                 await createFunc(this.cliArgs.getIPv6ListenUrl(), 6);
             } catch (error) {
@@ -348,7 +373,7 @@ export class ServerStartup {
             }
         }
 
-        if (useIPv4) {
+        if (useIPv4 && !this.stopping) {
             try {
                 await createFunc(this.cliArgs.getIPv4ListenUrl(), 4);
             } catch (error) {
@@ -397,14 +422,16 @@ export class ServerStartup {
 
     /**
      * Performs the server startup.
-     * @returns {Promise<ServerStartupResult>} A promise that resolves with an object containing the results of the server startup
+     * @returns {Promise<ServerStartupResult | undefined>} The startup result, or undefined if stopped
      */
     async start() {
+        if (this.stopping) return;
         let useIPv6 = (this.cliArgs.enableIPv6 === true);
         let useIPv4 = (this.cliArgs.enableIPv4 === true);
 
         if (this.cliArgs.enableIPv6 === 'auto' || this.cliArgs.enableIPv4 === 'auto') {
             const ipQuery = await getHasIP();
+            if (this.stopping) return;
             let hasIPv6 = false, hasIPv4 = false;
 
             hasIPv6 = this.cliArgs.listen ? ipQuery.hasIPv6Any : ipQuery.hasIPv6Local;
@@ -445,6 +472,7 @@ export class ServerStartup {
         }
 
         const [v6Failed, v4Failed, v6Error, v4Error] = await this.#startHTTPorHTTPS(useIPv6, useIPv4);
+        if (this.stopping) return;
         const result = { v6Failed, v4Failed, v6Error, v4Error, useIPv6, useIPv4 };
         this.#handleServerListenFail(result);
         return result;
