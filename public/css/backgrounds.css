@@ -85,7 +85,8 @@
 }
 
 #bg_menu_content,
-#bg_custom_content {
+#bg_custom_content,
+#bg_character_content {
     display: grid;
     gap: 5px;
     width: 100%;
