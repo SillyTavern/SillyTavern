@@ -852,12 +852,13 @@ async function importFromByaf(uploadPath, { request }, preservedFileName) {
             card.chat = path.basename(chats[0], path.extname(chats[0]));
         }
 
-        // Save alternate icons for the character.
-        for (const icon of byafData.images.slice(1)) {
+        // Save alternate icons for the character. They need a folder named after the character.
+        const altImagesName = sanitize(card.name);
+        for (const icon of altImagesName ? byafData.images.slice(1) : []) {
             // BYAF does not support character expressions, so using the same structure will not result in conflicts,
             // even if the expression system did not tolerate additional icons that are not mapped to expressions.
             // This will not yet allow changing icons within the UI but at least the icons will be available for manual selection, rather than being lost.
-            const altImagesFolder = path.join(request.user.directories.characters, sanitize(card.name));
+            const altImagesFolder = path.join(request.user.directories.characters, altImagesName);
             if (!fs.existsSync(altImagesFolder)) fs.mkdirSync(altImagesFolder, { recursive: true });
             const extension = path.extname(icon.filename) || '.png';
             const file = getUniqueName(`${sanitize(icon.label, { replacement: sanitizeSafeCharacterReplacements }) || 'alt'}`, (name) => fs.existsSync(path.join(altImagesFolder, `${name}${extension}`)));

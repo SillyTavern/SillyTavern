@@ -164,7 +164,7 @@ router.post('/backup', async (request, response) => {
 
         const handle = request.body.handle;
 
-        if (!handle) {
+        if (!handle || typeof handle !== 'string') {
             console.warn('Backup failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
@@ -172,6 +172,11 @@ router.post('/backup', async (request, response) => {
         if (handle !== request.user.profile.handle && !request.user.profile.admin) {
             console.error('Backup failed: Unauthorized');
             return response.status(403).json({ error: 'Unauthorized' });
+        }
+
+        if (handle !== request.user.profile.handle && !(await storage.getItem(toKey(handle)))) {
+            console.warn('Backup failed: User not found');
+            return response.status(404).json({ error: 'User not found' });
         }
 
         await createBackupArchive(handle, response);
