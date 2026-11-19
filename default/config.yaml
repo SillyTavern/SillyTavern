@@ -170,6 +170,9 @@ privateAddressWhitelist:
   allowedRanges:
     - '127.0.0.0/8'      # Loopback (IPv4)
     - '::1/128'          # Loopback (IPv6)
+    ## Add the ranges of the networks your own backends are on, for example:
+    # - '192.168.0.0/16'   # Home network
+    # - '100.64.0.0/10'    # Tailscale and other overlay networks
 
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
