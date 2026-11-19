@@ -72,7 +72,7 @@ import { checkForNewContent } from './endpoints/content-manager.js';
 import { init as settingsInit } from './endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
-import { migrateFlatSecrets } from './endpoints/secrets.js';
+import { migrateFlatSecrets, SecretManager } from './endpoints/secrets.js';
 import { migrateGroupChatsMetadataFormat } from './endpoints/groups.js';
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
@@ -480,6 +480,7 @@ function setDnsResolutionOrder() {
 initUserStorage(globalThis.DATA_ROOT)
     .then(setDnsResolutionOrder)
     .then(ensurePublicDirectoriesExist)
+    .then(SecretManager.ensureEncryption.bind(SecretManager))
     .then(migrateUserData)
     .then(migrateSystemPrompts)
     .then(migratePublicOverrides)
