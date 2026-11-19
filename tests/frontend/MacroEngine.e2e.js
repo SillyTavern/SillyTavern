@@ -639,6 +639,13 @@ test.describe('MacroEngine', () => {
     });
 
     test.describe('Environment', () => {
+        test('should resolve original content to an empty string when it is not provided', async ({ page }) => {
+            const result = await evaluateWithEngineAndCaptureMacroLogs(page, 'before {{original}} after');
+
+            expect(result.output).toBe('before  after');
+            expect(result.hasMacroErrors).toBeFalsy();
+        });
+
         test('should expose original content as env.content to macro handlers', async ({ page }) => {
             const input = '{{env-content}}';
             const originalContent = 'This is the full original input string.';
