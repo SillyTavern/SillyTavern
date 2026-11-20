@@ -218,7 +218,7 @@ router.post('/create', requireAdminMiddleware, async (request, response) => {
 
 router.post('/delete', requireAdminMiddleware, async (request, response) => {
     try {
-        if (!request.body.handle) {
+        if (!request.body.handle || typeof request.body.handle !== 'string') {
             console.warn('Delete user failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
@@ -231,6 +231,13 @@ router.post('/delete', requireAdminMiddleware, async (request, response) => {
         if (request.body.handle === DEFAULT_USER.handle) {
             console.warn('Delete user failed: Cannot delete default user');
             return response.status(400).json({ error: 'Sorry, but the default user cannot be deleted. It is required as a fallback.' });
+        }
+
+        const user = await storage.getItem(toKey(request.body.handle));
+
+        if (!user) {
+            console.warn('Delete user failed: User not found');
+            return response.status(404).json({ error: 'User not found' });
         }
 
         await storage.removeItem(toKey(request.body.handle));

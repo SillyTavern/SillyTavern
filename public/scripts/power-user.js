@@ -50,7 +50,7 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, getSanitizedFilename, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, getSanitizedFilename, getStringHash, isFalseBoolean, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -168,6 +168,7 @@ export const power_user = {
     border_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBorderColor').trim()}`,
 
     custom_css: '',
+    custom_css_enabled: true,
 
     waifuMode: false,
     movingUI: false,
@@ -1145,7 +1146,10 @@ function applyThemeColor(type) {
 }
 
 function applyCustomCSS() {
+    // Only an explicit false turns it off, so settings saved before the toggle existed keep their CSS
+    const enabled = power_user.custom_css_enabled !== false;
     $('#customCSS').val(power_user.custom_css);
+    $('#customCSSEnabled').prop('checked', enabled);
     var styleId = 'custom-style';
     var style = document.getElementById(styleId);
     if (!style) {
@@ -1154,7 +1158,17 @@ function applyCustomCSS() {
         style.setAttribute('id', styleId);
         document.head.appendChild(style);
     }
-    style.innerHTML = power_user.custom_css;
+    style.innerHTML = enabled ? power_user.custom_css : '';
+}
+
+/**
+ * Turns the Custom CSS on or off without changing its text.
+ * @param {boolean} enabled Whether the Custom CSS is applied
+ */
+function setCustomCssEnabled(enabled) {
+    power_user.custom_css_enabled = !!enabled;
+    saveSettingsDebounced();
+    applyCustomCSS();
 }
 
 function applyBlurStrength() {
@@ -2818,9 +2832,10 @@ async function loadUntilMesId(mesId) {
     return target;
 }
 
-async function doMesCut(_, text) {
+async function doMesCut(args, text) {
     console.debug(`was asked to cut message id #${text}`);
     const range = stringToRange(text, 0, chat.length - 1);
+    const deleteToolCalls = args?.toolcalls === undefined || isTrueBoolean(args.toolcalls);
 
     //reject invalid args or no args
     if (!range) {
@@ -2828,12 +2843,16 @@ async function doMesCut(_, text) {
         return;
     }
 
-    let totalMesToCut = (range.end - range.start) + 1;
-    let mesIDToCut = range.start;
+    const messagesToCut = chat.slice(range.start, range.end + 1);
     let cutText = '';
 
-    for (let i = 0; i < totalMesToCut; i++) {
-        cutText += (chat[mesIDToCut]?.mes || '') + '\n';
+    for (const message of messagesToCut) {
+        const mesIDToCut = chat.indexOf(message);
+        if (mesIDToCut === -1) {
+            continue;
+        }
+
+        cutText += (message?.mes || '') + '\n';
         let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
         if (!mesToCut.length) {
@@ -2845,7 +2864,7 @@ async function doMesCut(_, text) {
         }
 
         setEditedMessageId(mesIDToCut);
-        await deleteMessage(mesIDToCut, null, false);
+        await deleteMessage(mesIDToCut, null, false, deleteToolCalls);
     }
 
     await saveChatConditional();
@@ -2853,7 +2872,7 @@ async function doMesCut(_, text) {
     return cutText;
 }
 
-async function doDelMode(_, text) {
+async function doDelMode(args, text) {
     //reject invalid args
     if (text && isNaN(text)) {
         toastr.warning('Must enter a number or nothing.');
@@ -2862,7 +2881,8 @@ async function doDelMode(_, text) {
 
     // Just enter the delete mode.
     if (!text) {
-        $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
+        const deleteToolCalls = args?.toolcalls === undefined || isTrueBoolean(args.toolcalls);
+        $('#option_delete_mes').trigger('click', { fromSlashCommand: true, deleteToolCalls });
         return '';
     }
 
@@ -2879,7 +2899,7 @@ async function doDelMode(_, text) {
     }
 
     const range = `${chat.length - count}-${chat.length - 1}`;
-    return doMesCut(_, range);
+    return doMesCut(args, range);
 }
 
 function doResetPanels() {
@@ -3346,6 +3366,10 @@ jQuery(() => {
         power_user.custom_css = String($('#customCSS').val());
         saveSettingsDebounced();
         applyCustomCSS();
+    });
+
+    $('#customCSSEnabled').on('input', function () {
+        setCustomCssEnabled(!!$(this).prop('checked'));
     });
 
     $('#movingUImode').on('change', function () {
@@ -4107,6 +4131,41 @@ jQuery(() => {
     });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'custom-css',
+        callback: (_, value) => {
+            const state = String(value ?? '').trim().toLowerCase();
+            if (state === 'toggle') {
+                setCustomCssEnabled(power_user.custom_css_enabled === false);
+            } else if (isTrueBoolean(state)) {
+                setCustomCssEnabled(true);
+            } else if (isFalseBoolean(state)) {
+                setCustomCssEnabled(false);
+            }
+            return String(power_user.custom_css_enabled !== false);
+        },
+        returns: 'whether the Custom CSS is applied: true or false',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'the state to set. Without it, only the current state is returned',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.boolean('onOffToggle'),
+            }),
+        ],
+        helpString: `
+            <div>
+                Turns the Custom CSS of the User Settings on or off, or returns whether it is applied. The CSS text itself is kept.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li><pre><code class="language-stscript">/custom-css off</code></pre></li>
+                    <li><pre><code class="language-stscript">/custom-css toggle</code></pre></li>
+                    <li><pre><code class="language-stscript">/custom-css | /echo</code></pre></li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'vn',
         callback: toggleWaifu,
         helpString: 'Swaps Visual Novel Mode On/Off',
@@ -4145,6 +4204,15 @@ jQuery(() => {
         name: 'del',
         callback: doDelMode,
         aliases: ['delete', 'delmode'],
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'toolcalls',
+                description: 'also delete associated tool-call messages',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'optional number', [ARGUMENT_TYPE.NUMBER], false,
@@ -4157,6 +4225,15 @@ jQuery(() => {
         name: 'cut',
         callback: doMesCut,
         returns: 'the text of cut messages separated by a newline',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'toolcalls',
+                description: 'also delete associated tool-call messages',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'number or range',

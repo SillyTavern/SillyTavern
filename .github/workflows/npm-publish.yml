@@ -1,4 +1,4 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
+# Publish to npm for a new release or explicitly retry an existing release tag.
 # For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 
 name: Node.js Package
@@ -6,6 +6,16 @@ name: Node.js Package
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish
+        required: true
+        type: string
+
+env:
+  PUBLISH_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+  PUBLISH_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
 permissions:
   id-token: write  # Required for OIDC
@@ -16,9 +26,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          ref: ${{ env.PUBLISH_REF }}
       - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
         with:
           node-version: 24
+      - name: Verify release tag matches package version
+        run: test "$(node -p "require('./package.json').version")" = "$PUBLISH_TAG"
       - run: npm ci --omit=dev --ignore-scripts
 
   publish-npm:
@@ -26,9 +40,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          ref: ${{ env.PUBLISH_REF }}
       - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
       - run: npm ci --omit=dev --ignore-scripts
-      - run: npm publish
+      # https://github.com/npm/cli/issues/9755
+      - run: npm publish --allow-directory=all

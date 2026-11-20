@@ -170,6 +170,23 @@ export function sanitizeSelector(str, replacement = '_') {
     return String(str).replace(/[^a-z0-9_-]/ig, replacement);
 }
 
+/**
+ * Finds the extension that the current call comes from, by looking at the call stack.
+ * Lets a registration API name its owner without every extension working out its own folder.
+ * @returns {string|null} Extension ID as the loader knows it: 'third-party/name' for an installed extension,
+ * 'name' for a built-in one, or null if the call does not come from an extension
+ */
+export function getCallingExtensionId() {
+    const stack = new Error().stack?.split('\n') ?? [];
+    for (const line of stack) {
+        const match = line.match(/\/scripts\/extensions\/((?:third-party\/)?[^/]+)\//);
+        if (match) {
+            return decodeURIComponent(match[1]);
+        }
+    }
+    return null;
+}
+
 export function isValidUrl(value) {
     try {
         new URL(value);

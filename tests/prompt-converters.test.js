@@ -101,6 +101,11 @@ describe('convertTextCompletionPrompt', () => {
 
 
 describe('calculateClaudeBudgetTokens', () => {
+    test('missing effort returns null for both model kinds', () => {
+        expect(mod.calculateClaudeBudgetTokens(8192, undefined, true, true)).toBeNull();
+        expect(mod.calculateClaudeBudgetTokens(8192, undefined, true, false)).toBeNull();
+    });
+
     describe('adaptive model (Opus 4.6+)', () => {
         test('auto returns null', () => {
             expect(mod.calculateClaudeBudgetTokens(8192, 'auto', true, true)).toBeNull();
@@ -164,6 +169,34 @@ describe('calculateGoogleBudgetTokens', () => {
         test('medium returns medium', () => expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.5-flash')).toBe('medium'));
         test('high returns high', () => expect(mod.calculateGoogleBudgetTokens(8192, 'high', 'gemini-3.5-flash')).toBe('high'));
         test('max returns high', () => expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.5-flash')).toBe('high'));
+    });
+
+    test('Gemini 3.7 Flash uses Gemini 3 thinking levels without minimal', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.7-flash')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.7-flash')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.7-flash')).toBe('medium');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.7-flash')).toBe('high');
+    });
+
+    test('Gemini 3.8 Flash uses Gemini 3 thinking levels without minimal', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.8-flash')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.8-flash')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'low', 'gemini-3.8-flash')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.8-flash')).toBe('high');
+    });
+
+    test('Gemini 3.6 Flash uses Gemini 3 thinking levels', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.6-flash')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.6-flash')).toBe('minimal');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.6-flash')).toBe('medium');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.6-flash')).toBe('high');
+    });
+
+    test('Gemini 3.5 Flash-Lite uses Gemini 3 thinking levels', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.5-flash-lite')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.5-flash-lite')).toBe('minimal');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.5-flash-lite')).toBe('medium');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.5-flash-lite')).toBe('high');
     });
 
     test('stable Gemini 3.1 Flash-Lite uses Gemini 3 thinking levels', () => {
@@ -1039,6 +1072,29 @@ describe('convertGooglePrompt', () => {
         ];
         const result = mod.convertGooglePrompt(messages, 'gemini-2.0-flash', false, names);
         expect(result.contents.filter(c => c.role === 'user')).toHaveLength(1);
+    });
+
+    for (const model of ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']) {
+        test(`merges a trailing prefill into the user turn on ${model}`, () => {
+            const messages = [
+                { role: 'user', content: 'Hi' },
+                { role: 'assistant', content: 'Prefill' },
+            ];
+            const result = mod.convertGooglePrompt(messages, model, false, names);
+            expect(result.contents).toHaveLength(1);
+            expect(result.contents[0].role).toBe('user');
+            expect(result.contents[0].parts[0].text).toBe('Hi\n\nPrefill');
+        });
+    }
+
+    test('keeps non-trailing model turns on models without prefill support', () => {
+        const messages = [
+            { role: 'user', content: 'Hi' },
+            { role: 'assistant', content: 'Hello' },
+            { role: 'user', content: 'How are you?' },
+        ];
+        const result = mod.convertGooglePrompt(messages, 'gemini-3.6-flash', false, names);
+        expect(result.contents.map(c => c.role)).toEqual(['user', 'model', 'user']);
     });
 
     test('converts image_url to inlineData', () => {

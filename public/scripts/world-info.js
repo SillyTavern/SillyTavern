@@ -4636,6 +4636,7 @@ export async function getSortedEntries() {
         console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
 
         // Need to deep clone the entries to avoid modifying the cached data
+        addMissingWorldInfoFields(entries);
         return structuredClone(entries);
     } catch (e) {
         console.error(e);
@@ -5251,7 +5252,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                     break;
                 }
                 if (Array.isArray(WIOutletEntries[entry.outletName])) {
-                    WIOutletEntries[entry.outletName].push(content);
+                    WIOutletEntries[entry.outletName].unshift(content);
                 } else {
                     WIOutletEntries[entry.outletName] = [content];
                 }

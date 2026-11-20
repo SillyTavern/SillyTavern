@@ -111,6 +111,8 @@ import {
     loadProxyPresets,
     selected_proxy,
     initOpenAI,
+    isCustomConnectionTransition,
+    deferSettingsSaveForCustomConnection,
 } from './scripts/openai.js';
 
 import {
@@ -604,6 +606,7 @@ export let is_send_press = false; //Send generation
 export const isGenerating = () => (is_send_press || is_group_generating);
 
 let this_del_mes = -1;
+let deleteToolCallsInDeleteMode = true;
 
 /** @type {string} */
 let this_edit_mes_chname = '';
@@ -803,6 +806,7 @@ function initStandaloneMode() {
 }
 
 export function cancelStatusCheck(reason = 'Manually cancelled status check') {
+    if (isCustomConnectionTransition()) return;
     abortStatusCheck?.abort(new AbortReason(reason));
     abortStatusCheck = new AbortController();
     setOnlineStatus('no_connection');
@@ -1610,13 +1614,32 @@ export async function deleteLastMessage() {
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
+function getMessageDeletionStartId(id, deleteToolCalls = true) {
+    const message = chat[id];
+    if (!deleteToolCalls || message?.is_user || message?.is_system) {
+        return id;
+    }
+
+    let startId = id;
+    while (startId > 0) {
+        const previousMessage = chat[startId - 1];
+        if (!previousMessage?.is_system || !Array.isArray(previousMessage.extra?.tool_invocations)) {
+            break;
+        }
+        startId--;
+    }
+
+    return startId;
+}
+
 /**
  * Deletes a message from the chat by its ID, optionally asking for confirmation.
  * @param {number} id The ID of the message to delete.
  * @param {number} [swipeDeletionIndex] Deletes the swipe with that index.
  * @param {boolean} [askConfirmation=false] Whether to ask for confirmation before deleting.
+ * @param {boolean} [deleteToolCalls=true] Whether to delete preceding tool-call messages.
  */
-export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfirmation = false) {
+export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfirmation = false, deleteToolCalls = true) {
     const canDeleteSwipe = swipeDeletionIndex !== undefined && swipeDeletionIndex !== null;
     if (canDeleteSwipe) {
         if (swipeDeletionIndex < 0) {
@@ -1654,13 +1677,19 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
         return;
     }
 
-    chat.splice(id, 1);
-    messageElement.remove();
+    const firstMessageId = getMessageDeletionStartId(id, deleteToolCalls);
+    const messageIds = Array.from({ length: id - firstMessageId + 1 }, (_, index) => id - index);
+
+    // Delete from the end so earlier indices remain stable.
+    for (const messageId of messageIds) {
+        chat.splice(messageId, 1);
+        chatElement.find(`.mes[mesid="${messageId}"]`).remove();
+        deleteItemizedPromptForMessage(messageId);
+    }
 
     chat_metadata.tainted = true;
 
-    const startIndex = [0, minId].includes(id) ? id : null;
-    deleteItemizedPromptForMessage(id);
+    const startIndex = firstMessageId <= minId ? firstMessageId : null;
     updateViewMessageIds(startIndex);
     saveChatDebounced();
 
@@ -3280,14 +3309,15 @@ export async function getExtensionPrompt(position = extension_prompt_types.IN_PR
         }
         return true;
     };
-    const promptPromises = Object.keys(extension_prompts)
+    const candidates = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
         .filter(x => x.position == position && x.value)
         .filter(x => depth === undefined || x.depth === undefined || x.depth === depth)
-        .filter(x => role === undefined || x.role === undefined || x.role === role)
-        .filter(filterByFunction);
-    const prompts = await Promise.all(promptPromises);
+        .filter(x => role === undefined || x.role === undefined || x.role === role);
+    // The filter function may be async, so it cannot be passed to Array.filter directly
+    const passes = await Promise.all(candidates.map(filterByFunction));
+    const prompts = candidates.filter((_, index) => passes[index]);
 
     let values = prompts.map(x => x.value.trim()).join(separator);
     if (wrap && values.length && !values.startsWith(separator)) {
@@ -3696,7 +3726,7 @@ class StreamingProcessor {
 
             // Token count update.
             const tokenCountText = this.reasoningHandler.reasoning + processedText;
-            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await getTokenCountAsync(tokenCountText, 0) : 0;
+            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await this.#getTokenCount(tokenCountText) : 0;
             if (currentTokenCount) {
                 chat[messageId].extra.token_count = currentTokenCount;
                 if (this.messageTokenCounterDom instanceof HTMLElement) {
@@ -3742,6 +3772,29 @@ class StreamingProcessor {
 
         if (!scrollLock) {
             scrollChatToBottom({ waitForFrame: true });
+        }
+    }
+
+    /**
+     * Gets the final message token count, returning promptly if generation is stopped while the count is pending.
+     * A generation that was stopped before this point still gets counted: Stop aborts first and finalizes after,
+     * so bailing out on an already aborted signal would drop the count of every stopped message.
+     * @param {string} text Message text to count
+     * @returns {Promise<number>} Token count, or 0 if generation was aborted while counting
+     */
+    async #getTokenCount(text) {
+        const signal = this.abortController.signal;
+
+        let onAbort;
+        const aborted = new Promise(resolve => {
+            onAbort = () => resolve(0);
+            signal.addEventListener('abort', onAbort, { once: true });
+        });
+
+        try {
+            return await Promise.race([getTokenCountAsync(text, 0), aborted]);
+        } finally {
+            signal.removeEventListener('abort', onAbort);
         }
     }
 
@@ -4526,6 +4579,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         return {
             ...chatItem,
             mes: regexedMessage,
+            original_mes: message,
             index,
         };
     }));
@@ -4776,7 +4830,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = coreChat[j].mes;
             if (i === 0 && isContinue) {
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-                continue_mag = coreChat[j].mes;
+                continue_mag = coreChat[j].original_mes ?? coreChat[j].mes;
             }
             continue;
         }
@@ -4809,7 +4863,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = chat2[i].includes(FORMAT_TOKEN)
                 ? chat2[i].slice(0, chat2[i].lastIndexOf(FORMAT_TOKEN))
                 : chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-            continue_mag = coreChat[j].mes;
+            continue_mag = coreChat[j].original_mes ?? coreChat[j].mes;
         }
 
         if (coreChat[j].is_user) {
@@ -5385,7 +5439,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
         if (isStreamingEnabled() && type !== 'quiet') {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
             streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag, promptReasoning);
             if (isContinue) {
                 // Save reply does add cycle text to the prompt, so it's not needed here
@@ -5496,7 +5549,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         let includeUserPromptBias = true;
         if (isContinue) {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
             getMessage = continue_mag + getMessage;
         } else if (reasoning && power_user.user_prompt_bias) {
             reasoning = substituteParams(power_user.user_prompt_bias) + reasoning;
@@ -7166,6 +7218,7 @@ export function setCharacterName(value) {
  * @param {string|'no_connection'} value Connection status value
  */
 export function setOnlineStatus(value) {
+    if (isCustomConnectionTransition()) return;
     const previousStatus = online_status;
     online_status = value;
     displayOnlineStatus();
@@ -8066,6 +8119,7 @@ export async function getSettings(initLoaderHandle = null) {
 
 //MARK: saveSettings()
 export async function saveSettings(loopCounter = 0) {
+    if (deferSettingsSaveForCustomConnection()) return;
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
         saveSettingsDebounced();
@@ -8155,8 +8209,10 @@ export function setGenerationParamsFromPreset(preset) {
 // Common code for message editor done and auto-save
 function updateMessage(div) {
     const mesBlock = div.closest('.mes_block');
-    let text = mesBlock.find('.edit_textarea').val()
-        ?? mesBlock.find('.mes_text').text();
+    let text = mesBlock.find('.edit_textarea').val();
+    if (typeof text !== 'string') {
+        return;
+    }
     const mesElement = div.closest('.mes');
     const mes = chat[mesElement.attr('mesid')];
 
@@ -8209,7 +8265,7 @@ function updateMessage(div) {
     return { mesBlock, text, mes, bias };
 }
 
-function openMessageDelete(fromSlashCommand) {
+function openMessageDelete(fromSlashCommand, deleteToolCalls = true) {
     closeMessageEditor();
     hideSwipeButtons();
     if (fromSlashCommand || (!is_send_press) || (selected_group && !is_group_generating)) {
@@ -8228,11 +8284,16 @@ function openMessageDelete(fromSlashCommand) {
             is_group_generating: ${is_group_generating}`);
     }
     this_del_mes = -1;
+    deleteToolCallsInDeleteMode = deleteToolCalls;
     is_delete_mode = true;
 }
 
 function messageEditAuto(div) {
-    const { mesBlock, text, mes, bias } = updateMessage(div);
+    const updatedMessage = updateMessage(div);
+    if (!updatedMessage) {
+        return;
+    }
+    const { mesBlock, text, mes, bias } = updatedMessage;
 
     mesBlock.find('.mes_text').val('');
     mesBlock.find('.mes_text').val(messageFormatting(
@@ -8416,7 +8477,13 @@ async function messageEditDone(div) {
         return;
     }
 
-    let { mesBlock, text, mes, bias } = updateMessage(div);
+    const updatedMessage = updateMessage(div);
+    if (!updatedMessage) {
+        // The editor textarea is gone, so there is nothing to save. Close the editor instead of leaving it half open.
+        await messageEditCancel(this_edit_mes_id);
+        return;
+    }
+    let { mesBlock, text, mes, bias } = updatedMessage;
 
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
     text = chat[this_edit_mes_id]?.mes ?? text;
@@ -9790,7 +9857,7 @@ export async function createOrEditCharacter(e) {
             return;
         }
         try {
-            //if the character name text area isn't empty (only posible when creating a new character)
+            //if the character name text area isn't empty (only possible when creating a new character)
             let url = '/api/characters/create';
 
             if (crop_data != undefined) {
@@ -11272,6 +11339,7 @@ jQuery(async function () {
         });
         $(this).addClass('selected'); //sets the bg of the mes selected for deletion
         var i = Number($(this).attr('mesid')); //checks the message ID in the chat
+        i = getMessageDeletionStartId(i, deleteToolCallsInDeleteMode);
         this_del_mes = i;
         //as long as the current message ID is less than the total chat length
         while (i < chat.length) {
@@ -11596,6 +11664,7 @@ jQuery(async function () {
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
     $('#options [id]').on('click', async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
+        const deleteToolCalls = customData?.deleteToolCalls ?? true;
         var id = $(this).attr('id');
 
         // Check whether a custom prompt was provided via custom data (for example through a slash command)
@@ -11674,7 +11743,7 @@ jQuery(async function () {
                 Generate('continue', buildOrFillAdditionalArgs());
             }
         } else if (id == 'option_delete_mes') {
-            setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
+            setTimeout(() => openMessageDelete(fromSlashCommand, deleteToolCalls), animation_duration);
         } else if (id == 'option_close_chat') {
             await closeCurrentChat();
         } else if (id === 'option_settings') {
@@ -11761,7 +11830,7 @@ jQuery(async function () {
         cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
-        await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
+        if (!isCustomConnectionTransition()) await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
     });
 
     ////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////

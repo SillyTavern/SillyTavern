@@ -396,7 +396,7 @@
     "Available Models": "利用可能なモデル",
     "Prompt Post-Processing": "迅速な後処理",
     "Applies additional processing to the prompt before sending it to the API.": "プロンプトを API に送信する前に追加の処理を適用します。",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "短いテストメッセージを送信してAPI接続を検証します。それに対してクレジットが与えられることに注意してください！",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "短いテストメッセージを送信してAPI接続を検証します。これにより利用料金が発生する場合があります。",
     "Test Message": "テストメッセージ",
     "Auto-connect to Last Server": "前回のサーバーに自動接続",
     "Missing key": "❌ キーがありません",
