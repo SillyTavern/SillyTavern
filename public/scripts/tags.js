@@ -2289,28 +2289,32 @@ function printViewTagList(tagContainer, empty = true) {
 function removeMissingTagFilters() {
     const tagIds = new Set(tags.map(tag => tag.id));
     const assignedTagIds = new Set(Object.values(tag_map).flat());
-    const openBogusFolderIds = new Set(getOpenBogusFolders().map(tag => tag.id));
-    const isEmptyOpenBogusFolder = (tagId) => openBogusFolderIds.has(tagId) && !assignedTagIds.has(tagId);
+    // Filter lists only print tags that are assigned to at least one entity. A filter on an unassigned
+    // tag therefore has no element to toggle, and "Clear all filters" can't reset it either, because it
+    // works by clicking the printed elements. Drop those filters instead of leaving them stuck.
+    const isUnclearable = (tagId) => !tagIds.has(tagId) || !assignedTagIds.has(tagId);
 
     for (const helper of [groupCandidatesFilter, groupMembersFilter, entitiesFilter]) {
         const { selected, excluded } = helper.getFilterData(FILTER_TYPES.TAG);
+        const storagePrefix = getFilterStorageKey(helper);
         let anyRemoved = false;
 
-        if (Array.isArray(selected)) {
-            for (let i = selected.length - 1; i >= 0; i--) {
-                if (!tagIds.has(selected[i]) || isEmptyOpenBogusFolder(selected[i])) {
-                    selected.splice(i, 1);
-                    anyRemoved = true;
-                }
+        for (const tagIdList of [selected, excluded]) {
+            if (!Array.isArray(tagIdList)) {
+                continue;
             }
-        }
 
-        if (Array.isArray(excluded)) {
-            for (let i = excluded.length - 1; i >= 0; i--) {
-                if (!tagIds.has(excluded[i]) || isEmptyOpenBogusFolder(excluded[i])) {
-                    excluded.splice(i, 1);
-                    anyRemoved = true;
+            for (let i = tagIdList.length - 1; i >= 0; i--) {
+                if (!isUnclearable(tagIdList[i])) {
+                    continue;
                 }
+
+                if (storagePrefix) {
+                    accountStorage.removeItem(`${storagePrefix}_tag_${tagIdList[i]}`);
+                }
+
+                tagIdList.splice(i, 1);
+                anyRemoved = true;
             }
         }
 

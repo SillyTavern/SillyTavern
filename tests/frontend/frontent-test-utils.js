@@ -20,11 +20,21 @@ export const testSetup = {
         if (await testSetup.isLoginPage({ page })) {
             // eslint-disable-next-line playwright/no-networkidle
             await page.waitForLoadState('networkidle');
-            const userSelect = page.locator('#userList .userSelect').last();
-            if (await userSelect.count()) {
-                await userSelect.click();
+            // Try accounts from last to first: clicking a password-protected account stays on the login page
+            const userSelects = page.locator('#userList .userSelect');
+            const userCount = await userSelects.count();
+            for (let i = userCount - 1; i >= 0; i--) {
+                await userSelects.nth(i).click();
+                const loggedIn = await page
+                    .waitForURL(url => url.toString().startsWith(baseURL) && url.pathname !== '/login', { timeout: 3000 })
+                    .then(() => true, () => false);
+                if (loggedIn) {
+                    break;
+                }
             }
-            await page.waitForURL(url => url.toString().startsWith(baseURL) && url.pathname !== '/login');
+            if (await testSetup.isLoginPage({ page })) {
+                throw new Error('Could not log into any account without a password.');
+            }
         }
         await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
     },

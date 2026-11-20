@@ -316,7 +316,7 @@ export async function getFileAttachment(url) {
         const text = await result.text();
         return text;
     } catch (error) {
-        toastr.error(error, t`Could not download file`);
+        toastr.error(String(error?.message ?? error), t`Could not download file`);
         console.error('Could not download file', error);
     }
 }
@@ -520,6 +520,9 @@ export async function appendFileContent(message, messageText) {
                 fileTexts.push(fileText);
             }
         }
+        if (!fileTexts.length) {
+            return messageText;
+        }
         const mergedFileTexts = fileTexts.join('\n\n') + '\n\n';
         message.extra.fileLength = mergedFileTexts.length;
         return mergedFileTexts + messageText;
@@ -618,7 +621,9 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             if (sheet) {
                 sanitizeRuleSet(ast.stylesheet);
             }
-            return `<style>${css.stringify(ast)}</style>`;
+            // The CSS is placed into HTML as text, so it must not be able to end the style element
+            const styleText = css.stringify(ast).replace(/<\//g, '<\\/');
+            return `<style>${styleText}</style>`;
         } catch (error) {
             return `CSS ERROR: ${error}`;
         }

@@ -1,4 +1,5 @@
 import { Popper } from '../lib.js';
+import { resumeCustomProviderOwner, suspendCustomProviderOwner } from './custom-providers.js';
 
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
@@ -404,6 +405,8 @@ function hasExtensionHook(name, hookName) {
  * @returns {Promise<void>}
  */
 async function callExtensionHook(name, hookName) {
+    if (['disable', 'delete', 'clean'].includes(hookName)) suspendCustomProviderOwner(name);
+    if (['activate', 'enable'].includes(hookName)) resumeCustomProviderOwner(name);
     const manifest = manifests[name];
 
     if (!manifest) {
@@ -1796,6 +1799,15 @@ export async function loadExtensionSettings(settings, versionChanged, enableAuto
     extensionNames = extensions.map(x => x.name);
     extensionTypes = Object.fromEntries(extensions.map(x => [x.name, x.type]));
     manifests = await getManifests(extensionNames);
+
+    // An extension without a loadable manifest cannot be used: drop it so state queries
+    // and the extensions list do not report a ghost entry (e.g. leftover folder on disk)
+    const namesWithoutManifest = extensionNames.filter(name => !Object.hasOwn(manifests, name));
+    if (namesWithoutManifest.length) {
+        console.warn('Ignoring extensions without a loadable manifest.json:', namesWithoutManifest);
+        extensionNames = extensionNames.filter(name => Object.hasOwn(manifests, name));
+        namesWithoutManifest.forEach(name => delete extensionTypes[name]);
+    }
 
     if (versionChanged && enableAutoUpdate) {
         await autoUpdateExtensions(false);

@@ -486,6 +486,20 @@ export async function readAllChunks(readableStream) {
     });
 }
 
+/**
+ * Creates a precisely-sized ArrayBuffer from a Uint8Array view such as a Node Buffer.
+ * This avoids leaking unrelated bytes from the underlying backing store.
+ * @param {Uint8Array} view Source byte view
+ * @returns {ArrayBuffer} Exact ArrayBuffer slice for the provided view
+ */
+export function getArrayBufferSlice(view) {
+    if (!(view instanceof Uint8Array)) {
+        throw new TypeError('Expected Uint8Array');
+    }
+
+    return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);
+}
+
 function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
@@ -575,6 +589,17 @@ export function clientRelativePath(root, inputPath) {
     }
 
     return inputPath.slice(root.length).split(path.sep).join('/');
+}
+
+/**
+ * Same as `clientRelativePath`, but encodes `#` and `?`, so that names containing them
+ * can be used as a URL without being cut into a fragment or a query string.
+ * @param {string} root The root directory of the user data folder.
+ * @param {string} inputPath The path to be converted.
+ * @returns {string} The relative URL path from which the client can access the file.
+ */
+export function clientRelativeUrl(root, inputPath) {
+    return clientRelativePath(root, inputPath).replace(/[#?]/g, encodeURIComponent);
 }
 
 /**
@@ -713,9 +738,12 @@ export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_T
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {import('express').Response} to The Express response to pipe to.
+ * @param {object} [options] Options
+ * @param {(text: string) => string} [options.transformErrorText] Applied to the body of a failed response before it is
+ * logged and before it is sent on, for example to remove a credential the upstream echoed back.
  * @returns {Promise<void>}
  */
-export async function forwardFetchResponse(from, to) {
+export async function forwardFetchResponse(from, to, { transformErrorText } = {}) {
     let statusCode = from.status;
     let statusText = from.statusText;
 
@@ -733,11 +761,12 @@ export async function forwardFetchResponse(from, to) {
 
     if (!from.ok) {
         try {
-            const rawErrorText = await from.text();
-            const detail = rawErrorText || 'Unknown error occurred';
+            const responseText = await from.text();
+            const errorText = transformErrorText ? transformErrorText(responseText) : responseText;
+            const detail = errorText || 'Unknown error occurred';
 
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${detail}`);
-            to.end(rawErrorText, 'utf-8');
+            to.end(errorText, 'utf-8');
         } catch {
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: Unknown error occurred`);
             to.end();

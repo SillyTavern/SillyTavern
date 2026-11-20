@@ -14,6 +14,7 @@ import {
     extension_prompt_roles,
     extension_prompt_types,
     Generate,
+    getCurrentChatId,
     getExtensionPrompt,
     getExtensionPromptMaxDepth,
     getMediaDisplay,
@@ -43,7 +44,8 @@ import {
 } from './PromptManager.js';
 
 import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
-import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
+import { SECRET_KEYS, secret_state, writeSecret, updateSecretDisplay } from './secrets.js';
+import { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, CUSTOM_PROVIDER_CONTROLS, applyCustomSnapshot, captureCustomConnection, captureCustomFields, ensureCustomProviderState, getCustomAuth, getCustomProvider, listCustomProviders, normalizeCustomEndpoint, reconcileCustomCredential, settingsForCustomRequest, switchCustomProvider, validateCustomSnapshot } from './custom-providers.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
@@ -377,7 +379,7 @@ export const settingsToUpdate = {
     prompts: ['', 'prompts', false, false],
     prompt_order: ['', 'prompt_order', false, false],
     show_external_models: ['#openai_show_external_models', 'show_external_models', true, true],
-    proxy_password: ['#openai_proxy_password', 'proxy_password', false, true],
+    proxy_password: ['#openai_proxy_access_key', 'proxy_password', false, true],
     assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false, false],
     assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false, false],
     use_sysprompt: ['#use_sysprompt', 'use_sysprompt', true, false],
@@ -437,10 +439,10 @@ const default_settings = {
     personality_format: default_personality_format,
     sort_models: 'alphabetically',
     group_models: false,
-    openai_model: 'gpt-4-turbo',
-    claude_model: 'claude-sonnet-4-5',
-    google_model: 'gemini-2.5-pro',
-    vertexai_model: 'gemini-2.5-pro',
+    openai_model: 'gpt-6-sol',
+    claude_model: 'claude-sonnet-5-5',
+    google_model: 'gemini-3.8-flash',
+    vertexai_model: 'gemini-3.8-flash',
     ai21_model: 'jamba-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -455,7 +457,7 @@ const default_settings = {
     nanogpt_model: 'gpt-4o-mini',
     nanogpt_provider: '',
     nanogpt_payg_override: false,
-    deepseek_model: 'deepseek-v4-flash',
+    deepseek_model: 'deepseek-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -1635,6 +1637,21 @@ export async function prepareOpenAIMessages({
 }
 
 /**
+ * Extracts a human-readable message from a Chat Completion error response.
+ * Providers can return an error object without a message field, or the error as
+ * a plain string. statusText is only used for non-2xx responses, since for an
+ * HTTP 200 carrying an error payload it is just "OK" (#5647).
+ * @param {object} data Parsed response body
+ * @param {Response} response Fetch response
+ * @returns {string} Error message to display and throw
+ */
+function getChatCompletionErrorMessage(data, response) {
+    const error = data?.error ?? data?.detail?.error;
+    const message = typeof error === 'string' ? error : (error?.message || error?.code || error?.type);
+    return String(message || (!response.ok && response.statusText) || t`Unknown error`);
+}
+
+/**
  * Handles errors during streaming requests.
  * @param {Response} response
  * @param {string} decoded - response text or decoded stream data
@@ -1656,7 +1673,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
         // if trying to fix "[object Object]" displayed to users, start here
 
         if (data.error) {
-            !quiet && toastr.error(data.error.message || response.statusText, 'Chat Completion API');
+            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
             throw new Error(data);
         }
 
@@ -1666,7 +1683,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
         }
 
         if (data.detail) {
-            !quiet && toastr.error(data.detail?.error?.message || response.statusText, 'Chat Completion API');
+            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
             throw new Error(data);
         }
     } catch {
@@ -2072,7 +2089,7 @@ function saveModelList(data) {
                 }));
         });
 
-        if (!oai_settings.custom_model && model_list.length > 0) {
+        if (!oai_settings.custom_model && model_list.length > 0 && !oai_settings.custom_provider_state?.active) {
             $('#model_custom_select').val(model_list[0].id).trigger('change');
         }
     }
@@ -2198,7 +2215,7 @@ function saveModelList(data) {
         $('#model_nanogpt_select').val(oai_settings.nanogpt_model).trigger('change');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK && model_list.length > 0) {
         $('#model_deepseek_select').empty();
         model_list.forEach((model) => {
             $('#model_deepseek_select').append($('<option>', { value: model.id, text: model.id }));
@@ -2301,14 +2318,12 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').empty();
+        model_list.sort((a, b) => (a?.name || a?.id || '').localeCompare(b?.name || b?.id || ''));
         model_list.forEach((model) => {
-            if (!model?.supports_chat) {
-                return;
-            }
             $('#model_fireworks_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: model.name || model.id,
                 }));
         });
 
@@ -2558,6 +2573,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.FIREWORKS,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2569,10 +2585,24 @@ function getReasoningEffort(settings = null, model = null) {
             switch (settings.reasoning_effort) {
                 case reasoning_effort_types.auto:
                     return undefined;
+                case reasoning_effort_types.min:
+                case reasoning_effort_types.low:
+                    return reasoning_effort_types.low;
                 case reasoning_effort_types.max:
                     return reasoning_effort_types.max;
                 default:
                     return reasoning_effort_types.high;
+            }
+        }
+
+        if (settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return reasoning_effort_types.low;
+                default:
+                    return settings.reasoning_effort;
             }
         }
 
@@ -2604,7 +2634,7 @@ function getReasoningEffort(settings = null, model = null) {
                 }
 
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)) {
-                    if (/^gpt-5\.(4|5|6)/.test(model)) {
+                    if (/^(?:gpt-5\.(?:4|5|6)|gpt-6-(?:sol|luna)|gpt-6\.1-terra)/.test(model)) {
                         return 'none';
                     }
                     if (/^gpt-5/.test(model)) {
@@ -2614,6 +2644,10 @@ function getReasoningEffort(settings = null, model = null) {
 
                 return reasoning_effort_types.low;
             case reasoning_effort_types.max:
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
+                    && /^gpt-6(?:\.\d+)?-/.test(model)) {
+                    return reasoning_effort_types.max;
+                }
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
                     && /^gpt-5\.6/.test(model)) {
                     // GPT-5.6 reserves "max" effort for the Responses API.
@@ -2668,11 +2702,31 @@ function getVerbosity(settings = null) {
  * @returns {Promise<object>} Final generation parameters object appropriate for the chat completion source
  */
 export async function createGenerationParameters(settings, model, type, messages, { jsonSchema = null } = {}) {
+    if (settings === oai_settings && customConnectionTransition) throw new Error('A connection profile is still being applied.');
+    // The provider this request belongs to, fixed now: by the time the request is ready, another one may be selected.
+    const customProviderId = settings.chat_completion_source === chat_completion_sources.CUSTOM
+        ? settings.custom_provider_state?.active?.provider?.id ?? null : null;
+    // Tool/bias preparation can await; freeze a managed tuple before another selection can change it.
+    if (settings === oai_settings && settings.chat_completion_source === chat_completion_sources.CUSTOM && settings.custom_provider_state?.active) settings = settingsForCustomRequest(settings, captureCurrentCustomConnection());
     // HACK: Filter out null and non-object messages
     if (!Array.isArray(messages)) {
         throw new Error('messages must be an array');
     }
     messages = messages.filter(msg => msg && typeof msg === 'object');
+
+    // DeepSeek only accepts image blocks in user messages. Media can also be
+    // attached to system and assistant messages by the shared inlining path.
+    const isDeepSeekVisionModel = typeof model === 'string' && /deepseek-(?:flash|v4-flash)/i.test(model);
+    if (isDeepSeekVisionModel) {
+        messages = messages.flatMap((message) => {
+            if (!['system', 'assistant'].includes(message.role) || !Array.isArray(message.content)) {
+                return [message];
+            }
+
+            const content = message.content.filter(block => block?.type !== 'image_url');
+            return content.length > 0 ? [{ ...message, content }] : [];
+        });
+    }
 
     // "OpenAI-like" sources
     const gptSources = [
@@ -2863,6 +2917,10 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.nanogpt_payg_override = settings.nanogpt_payg_override;
     }
 
+    if (settings.chat_completion_source === chat_completion_sources.FIREWORKS && type !== 'quiet') {
+        generate_data.chat_id = getCurrentChatId();
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
         const stopStringsLimit = 5;
         generate_data.top_k = Number(settings.top_k_openai);
@@ -2885,6 +2943,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.custom_include_body = substituteParams(settings.custom_include_body);
         generate_data.custom_exclude_body = substituteParams(settings.custom_exclude_body);
         generate_data.custom_include_headers = substituteParams(settings.custom_include_headers);
+        generate_data.custom_auth = getCustomAuth(settings);
     }
 
     if (settings.chat_completion_source === chat_completion_sources.COHERE) {
@@ -3055,17 +3114,28 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    // Claude Fable models removed sampling parameters and reject them with HTTP 400,
+    if (gptSources.includes(settings.chat_completion_source) && /gpt-6(?:\.\d+)?-/.test(model)) {
+        generate_data.max_completion_tokens = generate_data.max_tokens;
+        delete generate_data.max_tokens;
+        if (model.includes('gpt-6-astra') || model.includes('gpt-6.1-sol') || generate_data.reasoning_effort !== 'none') {
+            delete generate_data.temperature;
+            delete generate_data.top_p;
+            delete generate_data.logprobs;
+            delete generate_data.top_logprobs;
+        }
+    }
+
+    // Claude Fable / Claude 5 models removed sampling parameters and reject them with HTTP 400,
     // including via OpenAI-compatible proxies. Unanchored to also match prefixed ids
-    // like 'anthropic/claude-fable-5'.
-    if (/claude-fable/.test(model)) {
+    // like 'anthropic/claude-fable-5' or 'anthropic/claude-opus-5'.
+    if (/claude-(fable|opus-5|sonnet-5|haiku-5)/.test(model)) {
         delete generate_data.temperature;
         delete generate_data.top_p;
         delete generate_data.top_k;
         delete generate_data.frequency_penalty;
         delete generate_data.presence_penalty;
         // Keep reasoning_effort for the native Claude source, where the backend maps it to
-        // adaptive thinking; proxies may translate it into a thinking budget that Fable rejects.
+        // adaptive thinking; proxies may translate it into a thinking budget that these models reject.
         if (settings.chat_completion_source !== chat_completion_sources.CLAUDE) {
             delete generate_data.reasoning_effort;
         }
@@ -3075,7 +3145,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.json_schema = jsonSchema;
     }
 
-    return { generate_data, stream, canMultiSwipe };
+    return { generate_data, stream, canMultiSwipe, customProviderId };
 }
 
 /**
@@ -3094,8 +3164,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     }
 
     const model = getChatCompletionModel(oai_settings);
-    const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
-    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
+    const { generate_data, stream, canMultiSwipe, customProviderId } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
+    // The second argument tells a provider extension whose request this is. The selected provider may have changed since.
+    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data, { customProviderId });
 
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
@@ -3146,7 +3217,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         checkModerationError(data);
 
         if (data.error) {
-            const message = data.error.message || response.statusText || t`Unknown error`;
+            const message = getChatCompletionErrorMessage(data, response);
             toastr.error(message, t`API returned an error`);
             throw new Error(message);
         }
@@ -3238,7 +3309,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -4242,7 +4313,7 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
-        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
+        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder|v4-flash)$/, newKey: 'deepseek_model', newValue: 'deepseek-flash' },
         { oldKey: 'openrouter_sort_models', oldValue: 'alphabetically', newKey: 'sort_models', newValue: 'alphabetically' },
         { oldKey: 'openrouter_sort_models', oldValue: 'pricing.prompt', newKey: 'sort_models', newValue: 'pricing.prompt' },
         { oldKey: 'openrouter_sort_models', oldValue: 'context_length', newKey: 'sort_models', newValue: 'context_length' },
@@ -4270,6 +4341,9 @@ function migrateChatCompletionSettings(settings) {
  * @param {ChatCompletionSettings} settings Saved settings from backend
  */
 function loadOpenAISettings(data, settings) {
+    // Private metadata is deliberately absent from settingsToUpdate/preset serialization.
+    if (settings.custom_provider_state !== undefined) oai_settings.custom_provider_state = structuredClone(settings.custom_provider_state);
+    else delete oai_settings.custom_provider_state;
     openai_setting_names = data.openai_setting_names;
     openai_settings = data.openai_settings;
     openai_settings.forEach(function (item, i) {
@@ -4412,6 +4486,17 @@ function setToolReasoningControls() {
 }
 
 async function getStatusOpen() {
+    if (customConnectionTransition) return;
+    const revision = customConnectionRevision;
+    const statusSignal = abortStatusCheck.signal;
+    let customAuth;
+    if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
+        try { customAuth = getCustomAuth(oai_settings); } catch (error) { showCustomProviderError(error); setOnlineStatus('no_connection'); return resultCheckStatus(); }
+        if (customAuth && oai_settings.custom_provider_state.active.models.mode === 'manual') {
+            setOnlineStatus(t`Not checked; use Test Message`);
+            return resultCheckStatus();
+        }
+    }
     const noValidateSources = [
         chat_completion_sources.CLAUDE,
         chat_completion_sources.AI21,
@@ -4464,6 +4549,9 @@ async function getStatusOpen() {
         $('.model_custom_select').empty();
         data.custom_url = oai_settings.custom_url;
         data.custom_include_headers = substituteParams(oai_settings.custom_include_headers);
+        data.custom_include_body = substituteParams(oai_settings.custom_include_body);
+        data.custom_exclude_body = substituteParams(oai_settings.custom_exclude_body);
+        data.custom_auth = customAuth;
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
@@ -4490,7 +4578,7 @@ async function getStatusOpen() {
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
-        setOnlineStatus(t`Status check bypassed`);
+        setOnlineStatus(customAuth ? t`Not checked; use Test Message` : t`Status check bypassed`);
     }
 
     try {
@@ -4498,15 +4586,18 @@ async function getStatusOpen() {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(data),
-            signal: abortStatusCheck.signal,
+            signal: statusSignal,
             cache: 'no-cache',
         });
 
-        if (!response.ok) {
-            throw new Error(response.statusText);
-        }
-
         const responseData = await response.json();
+        if (revision !== customConnectionRevision || customConnectionTransition || statusSignal.aborted) return;
+        if (responseData.error?.code === 'CUSTOM_AUTH') {
+            showCustomProviderError(new Error(responseData.error.message));
+            setOnlineStatus('no_connection');
+            return resultCheckStatus();
+        }
+        if (!response.ok) throw new Error(response.statusText);
 
         if ('data' in responseData && Array.isArray(responseData.data)) {
             saveModelList(responseData.data);
@@ -4515,9 +4606,11 @@ async function getStatusOpen() {
             setOnlineStatus(t`Valid`);
         }
         if (responseData.bypass) {
-            setOnlineStatus(t`Status check bypassed`);
+            setOnlineStatus(customAuth ? t`Not checked; use Test Message` : t`Status check bypassed`);
         }
     } catch (error) {
+        if (revision !== customConnectionRevision || customConnectionTransition) return;
+        if (statusSignal.aborted) return resultCheckStatus();
         console.error(error);
 
         if (!canBypass) {
@@ -4954,6 +5047,23 @@ async function onLogitBiasPresetDeleteClick() {
     saveSettingsDebounced();
 }
 
+/**
+ * Promise that resolves when the most recently started preset application has fully completed.
+ * The change handler defers the actual apply behind an event emission, so programmatic preset
+ * switches (e.g. /preset, connection profiles) must await this to sequence follow-up commands
+ * such as /api and /model correctly.
+ * @type {Promise<void>}
+ */
+let presetApplicationPromise = Promise.resolve();
+
+/**
+ * Gets a promise that resolves when the currently pending preset application completes.
+ * @returns {Promise<void>} Promise that resolves when the preset is fully applied.
+ */
+export function getPresetApplicationPromise() {
+    return presetApplicationPromise;
+}
+
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
     const presetNameBefore = oai_settings.preset_settings_openai;
@@ -4969,7 +5079,7 @@ function onSettingsPresetChange() {
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
 
     // Allow subscribers to alter the preset before applying deltas
-    eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
+    presetApplicationPromise = eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
         preset: preset,
         presetName: presetName,
         settingsToUpdate: settingsToUpdate,
@@ -4977,32 +5087,45 @@ function onSettingsPresetChange() {
         savePreset: saveOpenAIPreset,
         presetNameBefore: presetNameBefore,
     }).finally(async () => {
-        if (oai_settings.bind_preset_to_connection) {
-            $('.model_custom_select').empty();
-        }
-
-        for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
-            if (isConnection && !oai_settings.bind_preset_to_connection) {
-                continue;
+        const replacingConnection = oai_settings.bind_preset_to_connection && CUSTOM_CONNECTION_FIELDS.some(field => preset[field] !== undefined && preset[field] !== oai_settings[field]);
+        const ownsTransition = !customConnectionTransition;
+        const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+        const release = ownsTransition ? beginCustomConnectionTransition() : () => {};
+        try {
+            if (replacingConnection && oai_settings.custom_provider_state?.active?.provider && ownsTransition) {
+                switchCustomProvider(oai_settings, null, currentCustomSecretId());
             }
+            const previousConnection = captureCustomFields(oai_settings, true);
 
-            // Extensions don't need UI updates and shouldn't fallback to current settings
-            if (key === 'extensions') {
-                oai_settings.extensions = preset.extensions || {};
-                continue;
-            }
-
-            if (preset[key] !== undefined) {
-                if (isCheckbox) {
-                    updateCheckbox(selector, preset[key]);
-                } else {
-                    updateInput(selector, preset[key]);
+            for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
+                if (isConnection && !oai_settings.bind_preset_to_connection) {
+                    continue;
                 }
-                oai_settings[setting] = preset[key];
-            }
-        }
 
-        // These cannot be changed via preset if unbound to connection
+                // Extensions don't need UI updates and shouldn't fallback to current settings
+                if (key === 'extensions') {
+                    oai_settings.extensions = preset.extensions || {};
+                    continue;
+                }
+
+                if (preset[key] !== undefined) {
+                    if (isCheckbox) {
+                        updateCheckbox(selector, preset[key]);
+                    } else {
+                        updateInput(selector, preset[key]);
+                    }
+                    oai_settings[setting] = preset[key];
+                }
+            }
+
+            // These cannot be changed via preset if unbound to connection
+            if (replacingConnection && oai_settings.custom_provider_state?.active && ownsTransition) {
+                const active = oai_settings.custom_provider_state.active;
+                active.credential = oai_settings.custom_url !== previousConnection.custom_url && active.credential.mode === 'legacy-custom' && active.credential.id
+                    ? { mode: 'unbound' } : reconcileCustomCredential(active.auth, active.credential, oai_settings.custom_url);
+            }
+        } finally { release(); }
+        if (replacingConnection && ownsTransition) commitCustomConnection(oldProviderId, 'preset');
         if (oai_settings.bind_preset_to_connection) {
             $('#chat_completion_source').trigger('change');
             $('#openrouter_providers_chat').trigger('change');
@@ -5030,6 +5153,7 @@ function getMaxContextOpenAI(value) {
 
     /** @type {[RegExp, number][]} */
     const contextMap = [
+        [/^gpt-6(?:\.\d+)?-/, max_1050k],
         [/^gpt-5\.6/, max_1050k],
         [/^gpt-5\.[45]/, max_1mil],
         [/^gpt-5/, max_400k],
@@ -5551,7 +5675,7 @@ async function onModelChange() {
         oai_settings.deepseek_model = value;
     }
 
-    if (value && $(this).is('#model_custom_select')) {
+    if (value && $(this).is('#model_custom_select') && value !== oai_settings.custom_model) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
         $('#custom_model_id').val(value).trigger('input');
@@ -5667,7 +5791,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6|opus-4-7|opus-4-8|fable)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|sonnet-5|opus-4-6|opus-4-7|opus-4-8|opus-5|haiku-5|fable)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
@@ -5972,6 +6096,7 @@ function onReverseProxyInput() {
 
 async function onConnectButtonClick(e) {
     e.stopPropagation();
+    if (customConnectionTransition) return;
 
     /** @type {Object.<string, {key: string, selector: string, proxy?: boolean, keyless?: boolean}>} */
     const apiSourceConfig = {
@@ -6020,7 +6145,18 @@ async function onConnectButtonClick(e) {
     if (config) {
         const apiKey = String($(config.selector).val()).trim();
         if (apiKey.length) {
-            await writeSecret(config.key, apiKey);
+            const managed = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM && oai_settings.custom_provider_state?.active;
+            if (managed) {
+                if (managed.auth.mode === 'none') { showCustomProviderError(new Error(t`This setup does not accept a key.`)); return; }
+                const revision = customConnectionRevision;
+                const endpoint = normalizeCustomEndpoint(oai_settings.custom_url);
+                if (endpoint.startsWith('http:') && !await Popup.show.confirm(t`Send a key over HTTP?`, t`This API root is not encrypted. Only approve it on a trusted local network.`)) return;
+                const id = await writeSecret(config.key, apiKey, undefined, { activate: false });
+                if (!id) { showCustomProviderError(new Error(t`Could not save the connection key.`)); return; }
+                if (revision !== customConnectionRevision) return;
+                managed.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'reference', key: config.key, id, endpoint } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true, clearKey: true });
+            } else await writeSecret(config.key, apiKey);
         }
 
         if (!secret_state[config.key] && (!config.proxy || !oai_settings.reverse_proxy) && !config.keyless) {
@@ -6072,6 +6208,7 @@ function toggleChatCompletionForms() {
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
         $('#model_nanogpt_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
+        syncCustomModelSelect();
         $('#model_custom_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').trigger('change');
@@ -6103,7 +6240,47 @@ function toggleChatCompletionForms() {
         $(this).toggle(mode !== 'except' ? matchesSource : !matchesSource);
     });
 
+    applyCustomProviderControls();
     setToolReasoningControls();
+}
+
+/**
+ * The input of each control a Custom provider may show or hide. The control's block is its closest data-source element.
+ * @type {Record<import('./custom-providers.js').CustomProviderControl, string>}
+ */
+const CUSTOM_PROVIDER_CONTROL_INPUTS = {
+    temperature: '#temp_openai', top_p: '#top_p_openai', top_k: '#top_k_openai', top_a: '#top_a_openai', min_p: '#min_p_openai',
+    repetition_penalty: '#repetition_penalty_openai', frequency_penalty: '#freq_pen_openai', presence_penalty: '#pres_pen_openai',
+    seed: '#seed_openai', n: '#n_openai', logit_bias: '#openai_logit_bias_preset', reasoning_effort: '#openai_reasoning_effort',
+    verbosity: '#openai_verbosity', show_thoughts: '#openai_show_thoughts', function_calling: '#openai_function_calling',
+    web_search: '#openai_enable_web_search', inline_media: '#openai_media_inlining', inline_image_quality: '#openai_inline_image_quality',
+    request_images: '#openai_request_images', system_prompt: '#use_sysprompt',
+};
+
+/**
+ * Gets the ID of the named Custom provider that is the selected connection.
+ * @returns {string|null} Provider ID, or null for Manual and for every other source or API
+ */
+export function getActiveCustomProviderId() {
+    if (main_api !== 'openai' || oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM) return null;
+    return oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+}
+
+/**
+ * Shows and hides the controls a selected Custom provider declared, on top of what the Custom source shows by default.
+ * Everything a provider did not name keeps the visibility its data-source attribute gives it.
+ */
+function applyCustomProviderControls() {
+    const controls = getCustomProvider(getActiveCustomProviderId())?.controls;
+    for (const name of CUSTOM_PROVIDER_CONTROLS) {
+        const block = $(CUSTOM_PROVIDER_CONTROL_INPUTS[name]).closest('[data-source]');
+        if (!block.length) continue;
+        const matchesSource = String(block.data('source')).split(',').includes(oai_settings.chat_completion_source);
+        let visible = block.data('source-mode') !== 'except' ? matchesSource : !matchesSource;
+        if (controls?.hide?.includes(name)) visible = false;
+        if (controls?.show?.includes(name)) visible = true;
+        block.toggle(visible);
+    }
 }
 
 async function testApiConnection() {
@@ -6123,6 +6300,7 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
+    if (customConnectionTransition) return;
     if (main_api == 'openai') {
         setOnlineStatus('no_connection');
         resultCheckStatus();
@@ -6130,10 +6308,8 @@ function reconnectOpenAi() {
     }
 }
 
-function onProxyPasswordShowClick() {
-    const $input = $('#openai_proxy_password');
-    const type = $input.attr('type') === 'password' ? 'text' : 'password';
-    $input.attr('type', type);
+function onProxyAccessKeyShowClick() {
+    $('#openai_proxy_access_key').toggleClass('masked-secret');
     $(this).toggleClass('fa-eye-slash fa-eye');
 }
 
@@ -6142,16 +6318,19 @@ async function onCustomizeParametersClick() {
 
     template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
         oai_settings.custom_include_body = String($(this).val());
+        customConnectionEdited('custom_include_body');
         saveSettingsDebounced();
     });
 
     template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function () {
         oai_settings.custom_exclude_body = String($(this).val());
+        customConnectionEdited('custom_exclude_body');
         saveSettingsDebounced();
     });
 
     template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function () {
         oai_settings.custom_include_headers = String($(this).val());
+        customConnectionEdited('custom_include_headers');
         saveSettingsDebounced();
     });
 
@@ -6180,6 +6359,11 @@ export function isImageInliningSupported() {
         'gpt-4.1',
         'gpt-4.5-preview',
         'gpt-4o',
+        'gpt-6-astra',
+        'gpt-6.1-sol',
+        'gpt-6.1-terra',
+        'gpt-6-sol',
+        'gpt-6-luna',
         'gpt-5',
         'o1',
         'o3',
@@ -6188,8 +6372,11 @@ export function isImageInliningSupported() {
         'claude-3',
         'claude-fable',
         'claude-opus-4',
+        'claude-opus-5',
         'claude-sonnet-4',
+        'claude-sonnet-5',
         'claude-haiku-4',
+        'claude-haiku-5',
         // Cohere
         'c4ai-aya-vision',
         'command-a-vision',
@@ -6221,6 +6408,10 @@ export function isImageInliningSupported() {
         'moonshot-v1-128k-vision-preview',
         'kimi-k2.5',
         'kimi-latest',
+        // DeepSeek
+        'deepseek-v4-flash-vision-exp',
+        'deepseek-flash',
+        'deepseek-v4-flash',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
@@ -6280,10 +6471,14 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.DEEPSEEK:
+            return visionSupportedModels.some(model => oai_settings.deepseek_model.includes(model));
         case chat_completion_sources.WORKERS_AI: {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
         }
+        case chat_completion_sources.FIREWORKS:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.fireworks_model)?.supports_image_input);
         default:
             return false;
     }
@@ -6452,7 +6647,7 @@ function setProxyPreset(name, url, password) {
     oai_settings.reverse_proxy = url;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
     oai_settings.proxy_password = password;
-    $('#openai_proxy_password').val(oai_settings.proxy_password);
+    $('#openai_proxy_access_key').val(oai_settings.proxy_password);
     reconnectOpenAi();
 }
 
@@ -6471,7 +6666,7 @@ function onProxyPresetChange() {
 $('#save_proxy').on('click', async function () {
     const presetName = $('#openai_reverse_proxy_name').val();
     const reverseProxy = $('#openai_reverse_proxy').val();
-    const proxyPassword = $('#openai_proxy_password').val();
+    const proxyPassword = $('#openai_proxy_access_key').val();
 
     setProxyPreset(presetName, reverseProxy, proxyPassword);
     saveSettingsDebounced();
@@ -6505,7 +6700,7 @@ $('#delete_proxy').on('click', async function () {
         oai_settings.reverse_proxy = selected_proxy.url;
         $('#openai_reverse_proxy').val(selected_proxy.url);
         oai_settings.proxy_password = selected_proxy.password;
-        $('#openai_proxy_password').val(selected_proxy.password);
+        $('#openai_proxy_access_key').val(selected_proxy.password);
 
         saveSettingsDebounced();
         $('#openai_proxy_preset').val(selected_proxy.name);
@@ -6684,7 +6879,347 @@ function updateFeatureSupportFlags() {
     }
 }
 
+let customConnectionRevision = 0;
+let customConnectionTransition = 0;
+let settingsSaveDeferred = false;
+
+/** Longest a transition may hold back settings saves and status updates before it is released for its owner. */
+const CUSTOM_CONNECTION_TRANSITION_TIMEOUT = 30000;
+
+/**
+ * Suppress connection-dependent requests during a profile's final overlay.
+ * @returns {() => void} Release function. Safe to call more than once.
+ */
+export function beginCustomConnectionTransition() {
+    customConnectionTransition++;
+    let released = false;
+    let timer = null;
+    const release = () => {
+        if (released) return;
+        released = true;
+        clearTimeout(timer);
+        customConnectionTransition--;
+        // A save requested during the transition was held back, not dropped.
+        if (customConnectionTransition === 0 && settingsSaveDeferred) {
+            settingsSaveDeferred = false;
+            saveSettingsDebounced();
+        }
+    };
+    // Settings saves are held back while a transition is open, so one that never ends must not stay open.
+    timer = setTimeout(() => {
+        console.warn('A Custom connection transition was not released in time. Releasing it so settings can be saved again.');
+        release();
+    }, CUSTOM_CONNECTION_TRANSITION_TIMEOUT);
+    return release;
+}
+
+/**
+ * Holds a settings save back while a Custom connection transition is open.
+ * The save is repeated once the last open transition is released.
+ * @returns {boolean} True if the save was held back and the caller should not save now
+ */
+export function deferSettingsSaveForCustomConnection() {
+    if (!customConnectionTransition) return false;
+    settingsSaveDeferred = true;
+    return true;
+}
+
+/** Whether the active Custom tuple is being restored by a Profile. */
+export function isCustomConnectionTransition() {
+    return customConnectionTransition > 0;
+}
+
+/** Reproject a restored tuple after a compositional load or rollback. */
+export function refreshCustomConnection() {
+    renderCustomProviderSetup();
+    updateSecretDisplay();
+}
+
+/** Publish the final tuple after staging has ended; only real connection replacements invalidate discovery. */
+export function commitCustomConnection(oldProviderId, reason = 'profile restore') {
+    customConnectionChanged(reason, { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/** Connect the committed Chat Completion source once, without submitting pending key input. */
+export async function connectChatCompletion() {
+    startStatusLoading();
+    await getStatusOpen();
+}
+
+function currentCustomSecretId() {
+    return secret_state[SECRET_KEYS.CUSTOM]?.find(item => item.active)?.id ?? null;
+}
+
+/** Capture the active tuple for private Profile persistence. */
+export function captureCurrentCustomConnection() {
+    return captureCustomConnection(oai_settings, currentCustomSecretId());
+}
+
+function showCustomProviderError(error) {
+    $('#custom_provider_error').text(error.message);
+}
+
+function customConnectionChanged(reason, { oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null, invalidateStatus = false, clearModels = false, clearKey = false } = {}) {
+    if (customConnectionTransition) return;
+    if (invalidateStatus) {
+        customConnectionRevision++;
+        cancelStatusCheck();
+        $('#custom_provider_error').text('');
+        if (main_api === 'openai' && oai_settings.chat_completion_source === 'custom') setOnlineStatus('no_connection');
+        resultCheckStatus();
+    }
+    if (clearModels) {
+        model_list = [];
+        $('.model_custom_select').empty().append(new Option(t`None`, ''));
+    }
+    if (clearKey) $('#api_key_custom').val('');
+    renderCustomProviderSetup();
+    updateSecretDisplay();
+    updateFeatureSupportFlags();
+    saveSettingsDebounced();
+    void eventSource.emit(event_types.CUSTOM_CONNECTION_CHANGED, { oldProviderId, newProviderId: oai_settings.custom_provider_state?.active?.provider?.id ?? null, reason });
+}
+
+function customConnectionEdited(field, previousValue) {
+    if (customConnectionTransition) return;
+    const endpointChanged = field === 'custom_url' && previousValue !== oai_settings.custom_url;
+    const active = oai_settings.custom_provider_state?.active;
+    if (endpointChanged && active) {
+        active.credential = active.credential.mode === 'legacy-custom' && active.credential.id
+            ? { mode: 'unbound' } : reconcileCustomCredential(active.auth, active.credential, oai_settings.custom_url);
+    }
+    customConnectionChanged('edit', { invalidateStatus: endpointChanged || field === 'custom_include_headers', clearModels: endpointChanged });
+}
+
+/** Restore a resolved tuple; a missing helper does not prevent using saved values. */
+export function restoreCustomConnection(snapshot, reason = 'profile restore') {
+    const value = validateCustomSnapshot(snapshot);
+    if (value.credential.mode === 'reference' && !secret_state[value.credential.key]?.some(item => item.id === value.credential.id)) throw new Error('The profile key no longer exists. Choose a stored key.');
+    if (value.credential.mode === 'legacy-custom' && value.credential.id && !secret_state[SECRET_KEYS.CUSTOM]?.some(item => item.id === value.credential.id)) throw new Error('The captured Custom key no longer exists. Choose a stored key.');
+    if (value.credential.mode === 'reference' && value.credential.endpoint !== normalizeCustomEndpoint(value.settings.custom_url)) throw new Error('The profile key is not approved for this API root.');
+    const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+    applyCustomSnapshot(oai_settings, value, currentCustomSecretId());
+    customConnectionChanged(reason, { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/**
+ * Select within Chat Completion / Custom only. No implicit API switch or paid request.
+ * @param {string|null} id Opaque registered/saved provider ID, or null for remembered Manual
+ * @returns {Promise<void>}
+ */
+export async function selectCustomProvider(id) {
+    if (main_api !== 'openai' || oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM) throw new Error('Select Chat Completion → Custom before choosing a provider setup.');
+    if ((oai_settings.custom_provider_state?.active?.provider?.id ?? null) === id) return;
+    const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+    switchCustomProvider(oai_settings, id, currentCustomSecretId());
+    customConnectionChanged('selection', { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/** Bind a masked vault entry to the visible connection, without rotating its category. */
+export async function bindCustomCredential(key, id) {
+    if (!oai_settings.custom_provider_state?.active) throw new Error('No managed Custom connection is selected.');
+    if (!CUSTOM_CREDENTIAL_KEYS.includes(key) || !secret_state[key]?.some(item => item.id === id)) throw new Error('Choose an existing eligible Chat Completion key.');
+    const endpoint = normalizeCustomEndpoint(oai_settings.custom_url);
+    const revision = customConnectionRevision;
+    if (oai_settings.custom_provider_state.active.auth.mode === 'none') throw new Error('This connection does not accept a key.');
+    if (endpoint.startsWith('http:') && !await Popup.show.confirm(t`Send a key over HTTP?`, t`This API root is not encrypted. Only approve it on a trusted local network.`)) return;
+    if (revision !== customConnectionRevision) throw new Error('The connection changed. Select its key again.');
+    oai_settings.custom_provider_state.active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'reference', key, id, endpoint } }).credential;
+    customConnectionChanged('edit', { invalidateStatus: true });
+}
+
+/** Prefix of a source dropdown option that stands for a named Custom provider setup. */
+const CUSTOM_PROVIDER_OPTION_PREFIX = 'custom:';
+
+/**
+ * Splits a source dropdown value into the Chat Completion source and, for a named setup, its provider ID.
+ * @param {string} value Selected option value
+ * @returns {{source: string, providerId?: string}} The source to use and the provider ID if the option names a setup
+ */
+function parseSourceOption(value) {
+    return value.startsWith(CUSTOM_PROVIDER_OPTION_PREFIX)
+        ? { source: chat_completion_sources.CUSTOM, providerId: value.slice(CUSTOM_PROVIDER_OPTION_PREFIX.length) }
+        : { source: value };
+}
+
+/**
+ * Lists the named Custom provider setups in the source dropdown, in their own group, and shows the active one as selected.
+ * They stay Custom connections: the group only makes them findable by name where every other provider is picked.
+ * @param {Map<string, {label: string, owner: string, registered: boolean}>} entries Setups by provider ID, including unavailable saved ones
+ * @param {string[]} labels Labels of the registered setups, to tell apart equal names
+ * @param {string} activeId Provider ID of the active setup, or an empty string for Manual
+ */
+function renderCustomProviderSourceOptions(entries, labels, activeId) {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('chat_completion_source'));
+    if (!select) return;
+    const groupId = 'chat_completion_custom_providers';
+    document.getElementById(groupId)?.remove();
+
+    // Saved setups of removed extensions are only listed while they are the active connection.
+    const listed = [...entries].filter(([key, entry]) => entry.registered || key === activeId)
+        .sort((a, b) => a[1].label.localeCompare(b[1].label) || a[0].localeCompare(b[0]));
+    if (listed.length) {
+        const group = document.createElement('optgroup');
+        group.id = groupId;
+        group.label = t`Custom Providers`;
+        for (const [key, entry] of listed) {
+            const label = labels.filter(label => label === entry.label).length > 1 ? `${entry.label} (${entry.owner})` : entry.label;
+            group.append(new Option(label, CUSTOM_PROVIDER_OPTION_PREFIX + key));
+        }
+        select.querySelector('optgroup')?.after(group);
+    }
+
+    const isCustom = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    select.value = isCustom && activeId ? CUSTOM_PROVIDER_OPTION_PREFIX + activeId : oai_settings.chat_completion_source;
+}
+
+/**
+ * Makes the Custom model dropdown show the model in use, adding it to the list if it is not there.
+ * The dropdown is the model picker of a named provider, and a stale selection must never be read back as a choice.
+ */
+function syncCustomModelSelect() {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('model_custom_select'));
+    if (!select) return;
+    const model = oai_settings.custom_model ?? '';
+    if (model && ![...select.options].some(option => option.value === model)) {
+        select.add(new Option(model, model));
+    }
+    select.value = model;
+}
+
+function renderCustomProviderSetup() {
+    const state = oai_settings.custom_provider_state;
+    const card = document.getElementById('custom_provider_card');
+    if (!card) return;
+    if (state && state.version !== 1) {
+        $('#custom_provider_card, #custom_credential_binding, #custom_provider_advanced').addClass('displayNone');
+        showCustomProviderError(new Error('Unsupported Custom provider state version. Keep this record and use a supporting build.'));
+        return;
+    }
+    const registrations = listCustomProviders();
+    const active = state?.active;
+    const id = active?.provider?.id ?? '';
+    const saved = Object.values(state?.drafts ?? {});
+    if (active?.provider) saved.push({ provider: active.provider });
+    const entries = new Map(registrations.map(entry => [entry.id, { label: entry.definition.label, owner: entry.ownerExtension, registered: true }]));
+    for (const slot of saved) {
+        if (!entries.has(slot.provider.id)) entries.set(slot.provider.id, { label: `${slot.provider.label} (${t`extension unavailable`})`, owner: slot.provider.id.split(':')[0], registered: false });
+    }
+    const labels = registrations.map(entry => entry.definition.label);
+    renderCustomProviderSourceOptions(entries, labels, id);
+
+    // The provider card: who this is and which extension added it. Hidden for the Manual connection.
+    const named = Boolean(active?.provider);
+    const definition = getCustomProvider(id);
+    const entry = entries.get(id);
+    $('#custom_provider_card').toggleClass('displayNone', !named);
+    $('#custom_provider_name').text(entry?.label ?? '');
+    $('#custom_provider_owner').text((entry?.owner ?? '').replace(/^third-party\//, ''));
+    $('#custom_provider_info').text(named ? definition ? definition.note ?? '' : t`extension unavailable` : '');
+    // A place for the provider's own inputs. It is emptied whenever another connection takes over.
+    const slot = document.getElementById('custom_provider_extension_settings');
+    // Also when the provider's extension is gone: its inputs would look alive without doing anything.
+    if (slot && (slot.dataset.provider !== id || !definition)) {
+        slot.replaceChildren();
+        slot.dataset.provider = id;
+    }
+    applyCustomProviderControls();
+    for (const [selector, url] of [['#custom_provider_documentation', definition?.documentationUrl], ['#custom_provider_support', definition?.supportUrl]]) $(selector).attr('href', url ?? '').toggleClass('displayNone', !url);
+
+    for (const [field, selector] of [['custom_url', '#custom_api_url_text'], ['custom_model', '#custom_model_id'], ['custom_prompt_post_processing', '#custom_prompt_post_processing'], ['custom_include_headers', '#custom_include_headers'], ['custom_include_body', '#custom_include_body'], ['custom_exclude_body', '#custom_exclude_body']]) $(selector).val(oai_settings[field]);
+    if (active?.models.suggestions?.length && !model_list.length) {
+        const models = /** @type {HTMLSelectElement} */ (document.getElementById('model_custom_select'));
+        models.replaceChildren(new Option(t`None`, ''), ...active.models.suggestions.map(model => new Option(model.label ?? model.id, model.id)));
+    }
+    syncCustomModelSelect();
+    $('#custom_credential_binding').toggleClass('displayNone', !active);
+    $('#api_key_custom').prop('disabled', active?.auth.mode === 'none');
+
+    // A named provider brings its own endpoint and model source, so the manual fields step back.
+    // The Advanced switch brings them back, together with the actions that change the setup itself.
+    const details = !named || Boolean($('#custom_provider_details_toggle').prop('checked'));
+    const otherDrafts = saved.some(slot => slot.provider.id !== id);
+    $('#custom_provider_advanced').toggleClass('displayNone', !named && !otherDrafts);
+    $('#custom_provider_details').toggleClass('displayNone', !named);
+    $('#custom_provider_actions').toggleClass('displayNone', !details || (!named && !otherDrafts));
+    $('#custom_endpoint_block').toggleClass('displayNone', !details);
+    $('#custom_key_block').toggleClass('displayNone', named && active.auth.mode === 'none');
+    $('#custom_key_optional').toggleClass('displayNone', named && active.auth.mode !== 'none' && active.auth.required);
+    $('#custom_model_id_block').toggleClass('displayNone', !details && active.models.mode === 'discover');
+    $('#custom_model_select_block').toggleClass('displayNone', !details && active.models.mode === 'manual' && !active.models.suggestions?.length);
+    $('#custom_key_title').text(named ? t`API Key` : t`Custom API Key`);
+    $('#custom_model_select_title').text(named ? t`Model` : t`Available Models`);
+    // Prompt post-processing is shared by several sources. For a named provider it is one of the connection details.
+    const isCustomSource = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    $('#prompt_post_processing_form').toggleClass('displayNone', isCustomSource && !details);
+    const modified = definition && CUSTOM_CONNECTION_FIELDS.some(field => definition.defaults[field] !== oai_settings[field]);
+    $('#custom_provider_modified').text(named && definition ? modified ? t`Changed from the provider defaults.` : t`Using the provider defaults.` : '');
+    $('#custom_provider_reset').prop('disabled', !definition).toggleClass('displayNone', !named);
+    $('#custom_provider_detach').prop('disabled', !named).toggleClass('displayNone', !named);
+    $('#custom_provider_forget').prop('disabled', !otherDrafts);
+    const credentialSelect = document.getElementById('custom_credential_select');
+    if (!credentialSelect) return;
+    const unbound = new Option(t`Choose a saved key`, 'unbound');
+    unbound.disabled = active?.auth.mode === 'none';
+    credentialSelect.replaceChildren(unbound);
+    if (active && (active.auth.mode === 'none' || !active.auth.required)) credentialSelect.add(new Option(t`No key`, 'none'));
+    if (active?.credential.mode === 'legacy-custom') credentialSelect.add(new Option(t`Captured Manual key selection`, 'legacy'));
+    if (active?.auth.mode !== 'none') for (const key of CUSTOM_CREDENTIAL_KEYS) for (const secret of secret_state[key] ?? []) credentialSelect.add(new Option(`${key.replace('api_key_', '')}: ${secret.label || t`Unlabeled`} (••••••••)`, JSON.stringify([key, secret.id])));
+    credentialSelect.value = active?.credential.mode === 'reference' ? JSON.stringify([active.credential.key, active.credential.id]) : active?.credential.mode === 'none' ? 'none' : active?.credential.mode === 'legacy-custom' ? 'legacy' : 'unbound';
+}
+
+function initCustomProviderSetup() {
+    const handleError = error => { showCustomProviderError(error); renderCustomProviderSetup(); };
+    $('#custom_provider_details_toggle').on('input', renderCustomProviderSetup);
+    $('#custom_credential_select').on('change', async function () {
+        const value = String($(this).val());
+        try {
+            if (value === 'unbound') {
+                oai_settings.custom_provider_state.active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'unbound' } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true });
+            } else if (value === 'none') {
+                const active = oai_settings.custom_provider_state.active;
+                if (active.auth.mode !== 'none' && active.auth.required) throw new Error('This provider requires a key.');
+                active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'none' } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true });
+            } else if (value && value !== 'legacy') await bindCustomCredential(...JSON.parse(value));
+        } catch (error) { handleError(error); }
+    });
+    $('#custom_provider_reset').on('click', async () => {
+        const active = oai_settings.custom_provider_state?.active;
+        const definition = getCustomProvider(active?.provider?.id);
+        if (!definition || !await Popup.show.confirm(t`Reset provider defaults?`, t`This replaces the connection fields. Your stored keys are kept.`)) return;
+        const credential = reconcileCustomCredential(definition.auth, active.credential, definition.defaults.custom_url);
+        restoreCustomConnection({ version: 1, settings: definition.defaults, provider: active.provider, models: definition.models, auth: definition.auth, credential }, 'reset');
+    });
+    $('#custom_provider_detach').on('click', () => {
+        const snapshot = captureCurrentCustomConnection();
+        snapshot.provider = null;
+        restoreCustomConnection(snapshot, 'detach');
+    });
+    $('#custom_provider_forget').on('click', async () => {
+        const state = ensureCustomProviderState(oai_settings);
+        const select = document.createElement('select');
+        for (const [id, snapshot] of Object.entries(state.drafts)) select.add(new Option(snapshot.provider.label, id));
+        if (!select.options.length || !await Popup.show.confirm(t`Forget saved setup?`, select)) return;
+        delete state.drafts[select.value];
+        renderCustomProviderSetup();
+        saveSettingsDebounced();
+    });
+    eventSource.on(event_types.CUSTOM_PROVIDER_REGISTRY_CHANGED, renderCustomProviderSetup);
+    eventSource.on(event_types.SETTINGS_LOADED_AFTER, renderCustomProviderSetup);
+    eventSource.on(event_types.SECRET_WRITTEN, renderCustomProviderSetup);
+    eventSource.on(event_types.SECRET_DELETED, renderCustomProviderSetup);
+    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => {
+        customConnectionRevision++;
+        cancelStatusCheck();
+        renderCustomProviderSetup();
+    });
+    renderCustomProviderSetup();
+}
+
 export function initOpenAI() {
+    initCustomProviderSetup();
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'proxy',
         callback: runProxyCallback,
@@ -6894,13 +7429,31 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#chat_completion_source').on('change', function () {
+    $('#chat_completion_source').on('change', function (event) {
+        const { source, providerId } = parseSourceOption(String($(this).find(':selected').val()));
+        if (customConnectionTransition) {
+            oai_settings.chat_completion_source = source;
+            toggleChatCompletionForms();
+            return;
+        }
         cancelStatusCheck('Chat Completion source changed');
         model_list = [];
-        oai_settings.chat_completion_source = String($(this).find(':selected').val());
+        oai_settings.chat_completion_source = source;
         toggleChatCompletionForms();
         saveSettingsDebounced();
-        reconnectOpenAi();
+
+        // A named setup was picked, or the user picked plain Custom, which means the Manual connection.
+        // Code that only re-triggers this event keeps whichever setup is active.
+        const pickedByUser = Boolean(event.originalEvent);
+        const targetProvider = providerId ?? (pickedByUser && source === chat_completion_sources.CUSTOM ? null : undefined);
+        const activeProvider = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+        if (targetProvider !== undefined && targetProvider !== activeProvider) {
+            // Selecting a setup never connects on its own: the user chooses a key and clicks Connect.
+            void selectCustomProvider(targetProvider).catch(error => { showCustomProviderError(error); renderCustomProviderSetup(); });
+        } else {
+            reconnectOpenAi();
+            renderCustomProviderSetup();
+        }
         forceCharacterEditorTokenize();
         updateFeatureSupportFlags();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
@@ -6920,9 +7473,15 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#openai_proxy_password').on('input', function () {
+    $('#openai_proxy_access_key').on('input', function () {
         oai_settings.proxy_password = String($(this).val());
         saveSettingsDebounced();
+    });
+
+    $('#openai_proxy_access_key').on('copy cut', function (event) {
+        if ($(this).hasClass('masked-secret')) {
+            event.preventDefault();
+        }
     });
 
     $('#claude_assistant_prefill').on('input', function () {
@@ -7004,17 +7563,21 @@ export function initOpenAI() {
     });
 
     $('#custom_api_url_text').on('input', function () {
+        const previous = oai_settings.custom_url;
         oai_settings.custom_url = String($(this).val());
+        customConnectionEdited('custom_url', previous);
         saveSettingsDebounced();
     });
 
     $('#custom_model_id').on('input', function () {
         oai_settings.custom_model = String($(this).val());
+        customConnectionEdited('custom_model');
         saveSettingsDebounced();
     });
 
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
+        customConnectionEdited('custom_prompt_post_processing');
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
@@ -7320,7 +7883,7 @@ export function initOpenAI() {
     $('#openai_logit_bias_export_preset').on('click', onLogitBiasPresetExportClick);
     $('#openai_logit_bias_delete_preset').on('click', onLogitBiasPresetDeleteClick);
     $('#import_oai_preset').on('click', onImportPresetClick);
-    $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
+    $('#openai_proxy_access_key_show').on('click', onProxyAccessKeyShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 }

@@ -9,6 +9,7 @@ import {
     humanizedDateTime,
     tryParse,
     clientRelativePath,
+    clientRelativeUrl,
     getUniqueName,
     removeFileExtension,
     removeColorFormatting,
@@ -29,6 +30,7 @@ import {
     generateTimestamp,
     mergeObjectWithYaml,
     excludeKeysByYaml,
+    getArrayBufferSlice,
     Cache,
     MemoryLimitedMap,
 } from '../src/util';
@@ -176,6 +178,16 @@ describe('clientRelativePath', () => {
 
     test('should throw if path does not start with root', () => {
         expect(() => clientRelativePath('/data/user', '/other/path')).toThrow();
+    });
+});
+
+describe('clientRelativeUrl', () => {
+    test('should encode # and ?', () => {
+        expect(clientRelativeUrl('/data/user', '/data/user/images/Chatbot #T4LK1-e/pic?1.png')).toBe('/images/Chatbot %23T4LK1-e/pic%3F1.png');
+    });
+
+    test('should keep other characters unchanged', () => {
+        expect(clientRelativeUrl('/data/user', '/data/user/images/Café chat/pic 1.png')).toBe('/images/Café chat/pic 1.png');
     });
 });
 
@@ -516,6 +528,25 @@ describe('mergeObjectWithYaml', () => {
         const obj = { a: 1 };
         mergeObjectWithYaml(obj, '- hello\n- b: 2');
         expect(obj).toEqual({ a: 1, b: 2 });
+    });
+});
+
+describe('getArrayBufferSlice', () => {
+    test('returns an exact ArrayBuffer for Buffer views', () => {
+        const source = Buffer.alloc(16, 0);
+        source.write('abc', 4, 'utf8');
+        const view = source.subarray(4, 7);
+
+        expect(view.byteLength).toBe(3);
+        expect(view.buffer.byteLength).toBe(16);
+
+        const exact = getArrayBufferSlice(view);
+        expect(exact.byteLength).toBe(3);
+        expect(Buffer.from(exact).toString('utf8')).toBe('abc');
+    });
+
+    test('throws for non-Uint8Array input', () => {
+        expect(() => getArrayBufferSlice('abc')).toThrow(TypeError);
     });
 });
 

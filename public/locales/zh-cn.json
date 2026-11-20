@@ -556,7 +556,7 @@
     "prompt_post_processing_single": "单一用户消息（无工具）",
     "Additional Parameters": "附加参数",
     "Test Message": "发送测试消息",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "通过发送简短的测试消息验证您的API连接。请注意，您将因此消耗额度！",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "通过发送简短的测试消息验证您的 API 连接。这可能会产生使用费用。",
     "Auto-connect to Last Server": "自动连接到上次的服务器",
     "Missing key": "❌ 缺少密钥",
     "Key saved": "密钥已保存",
