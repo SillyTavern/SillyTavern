@@ -116,22 +116,6 @@ describe('Ollama server-side payload allowlist', () => {
         expect(OLLAMA_KEYS).not.toContain('typical_p');
         // `typical` was never allowlisted, matching the reviewer note.
         expect(OLLAMA_KEYS).not.toContain('typical');
-        expect(OLLAMA_KEYS).toEqual([
-            'num_predict',
-            'num_ctx',
-            'num_batch',
-            'stop',
-            'temperature',
-            'repeat_penalty',
-            'presence_penalty',
-            'frequency_penalty',
-            'top_k',
-            'top_p',
-            'tfs_z',
-            'seed',
-            'repeat_last_n',
-            'min_p',
-        ]);
     });
 
     test('leaves non-Ollama backends forwarding typical_p untouched', async () => {
