@@ -52,6 +52,9 @@ test.describe('External media in messages', () => {
             '--image: url(https://example.com/a.png)',
             '--image: "https://example.com/a.png"; background: image-set(var(--image) 1x)',
             '--image: \'//example.com/a.png\'',
+            '-\\-image: "https://example.com/a.png"; background: image-set(var(--image) 1x)',
+            '/* " */ --image: "https://example.com/a.png"',
+            'background: var(--image, "https://example.com/a.png")',
             'background: image-set("//example.com/a.png" 1x)',
             'background: url(__ORIGIN__.example.com/a.png)',
             'background: url("//example.com/\\"a.png")',
@@ -69,6 +72,10 @@ test.describe('External media in messages', () => {
         expect(local.css).toContain('base64,//8AAA==');
         expect(local.css).toContain('/img/b.png');
         expect(local.css).toContain('www.w3.org');
+
+        const quotedSvg = 'data:image/svg+xml,%3Csvg%20xmlns=\'http://www.w3.org/2000/svg\'/%3E';
+        const nested = await render(page, `<style>.box { background: image-set("${quotedSvg}" 1x); --image: "${quotedSvg}"; }</style>`);
+        expect(nested.css.match(/www\.w3\.org/g)).toHaveLength(2);
 
         const strings = await render(page, '<style>.box::before { content: "Note: "; } .box::after { content: "see https://example.com"; --label: "a: b"; }</style>');
         expect(strings.css).toContain('Note: ');
@@ -97,6 +104,8 @@ test.describe('External media in messages', () => {
             '<div style="background: u\\72l(https://example.com/a.png)">A</div>',
             '<div style="/* \' */ background: url(https://example.com/a.png)">A</div>',
             '<div style="--image: \'https://example.com/a.png\'; background: image-set(var(--image) 1x)">A</div>',
+            '<div style="\\2d-image: \'https://example.com/a.png\'; background: image-set(var(\\2d-image) 1x)">A</div>',
+            '<div style="background: u\\72&#13;&#10;l(https://example.com/a.png)">A</div>',
             '<table background="/\\example.com/a.png"><tr><td>A</td></tr></table>',
             '<table background="__ORIGIN__.example.com/a.png"><tr><td>A</td></tr></table>',
         ];

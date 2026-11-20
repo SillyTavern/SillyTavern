@@ -565,33 +565,66 @@ function isExternalUrl(url) {
 }
 
 /**
- * Checks if a CSS value references a resource outside of this origin.
- * This does not parse CSS. It looks at everything that could be a resource reference, and rather reports one too many.
- * @param {string} value CSS declaration value, or the text of a style attribute
- * @param {object} [options] Options
- * @param {boolean} [options.allStrings=false] Check every string. Needed for custom properties, as a string in them can be used as a reference elsewhere through var().
- * @returns {boolean} True if the value contains an external reference
+ * Resolves the escapes in a piece of CSS.
+ * @param {string} text CSS text with normalized line breaks
+ * @returns {string} The text with its escapes resolved
  */
-export function hasExternalCssReference(value, { allStrings = false } = {}) {
-    // Resolve CSS escapes first, as they can be used anywhere, including in function names
-    const text = String(value ?? '').replace(/\\(?:([0-9a-f]{1,6})\s?|([\s\S]))/gi, (_, hex, char) => {
+function unescapeCss(text) {
+    return text.replace(/\\(?:([0-9a-f]{1,6})[ \t\n]?|([\s\S]))/gi, (_, hex, char) => {
         if (!hex) return char === '\n' ? '' : char;
         const codePoint = parseInt(hex, 16);
-        return codePoint > 0 && codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : '\uFFFD';
+        return codePoint > 0 && codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : '�';
     });
+}
+
+/**
+ * Collects the contents of all strings in a piece of CSS, the way a browser splits it into strings and comments.
+ * @param {string} text CSS text with normalized line breaks
+ * @returns {string[]} String contents, with their escapes still in place
+ */
+function getCssStrings(text) {
+    const strings = [];
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '\\') {
+            i++;
+        } else if (char === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2);
+            i = end === -1 ? text.length : end + 1;
+        } else if (char === '"' || char === '\'') {
+            let end = i + 1;
+            // A string ends at its quote, at a line break, or with the text
+            while (end < text.length && text[end] !== char && text[end] !== '\n') {
+                end += text[end] === '\\' ? 2 : 1;
+            }
+            strings.push(text.slice(i + 1, end));
+            i = end;
+        }
+    }
+    return strings;
+}
+
+/**
+ * Checks if a CSS value references a resource outside of this origin.
+ * This does not parse CSS. It looks at everything that could be a resource reference, and rather reports one too many:
+ * every url(), and every string, as a string can become a reference through image-set() or var().
+ * @param {string} value CSS declaration value, or the text of a style attribute
+ * @returns {boolean} True if the value contains an external reference
+ */
+export function hasExternalCssReference(value) {
+    const text = String(value ?? '').replace(/\r\n?|\f/g, '\n');
     const leadingNoise = /^(?:\s|\/\*[\s\S]*?\*\/)*/;
 
-    // url(...) with a quoted or unquoted argument. The start of the argument decides where it points to.
-    for (const match of text.matchAll(/url\(([^)]*)/gi)) {
+    // url(...) with a quoted or unquoted argument. Escapes are resolved first, as they can be part of the function name.
+    // The start of the argument decides where it points to.
+    for (const match of unescapeCss(text).matchAll(/url\(([^)]*)/gi)) {
         const reference = match[1].replace(leadingNoise, '').replace(/^["']/, '');
         if (isExternalUrl(reference)) {
             return true;
         }
     }
 
-    // Functions that accept a plain string as a resource reference. Other strings are just text.
-    const stringSources = allStrings ? [text] : [...text.matchAll(/(?:image-set|image|src)\(([\s\S]*)/gi)].map(match => match[1]);
-    return stringSources.some(source => source.split(/["']/).some(part => isExternalUrl(part.replace(leadingNoise, ''))));
+    return getCssStrings(text).some(string => isExternalUrl(unescapeCss(string)));
 }
 
 /**
@@ -616,7 +649,7 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             }
         }
         if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
-            rule.declarations = rule.declarations.filter(declaration => !hasExternalCssReference(declaration.value, { allStrings: String(declaration.property ?? '').startsWith('--') }));
+            rule.declarations = rule.declarations.filter(declaration => !hasExternalCssReference(declaration.value));
         }
     }
 
@@ -1988,8 +2021,7 @@ export function addDOMPurifyHooks() {
                 break;
             }
             case 'style': {
-                // A style attribute can define custom properties, which is where a string can become a reference
-                if (data.attrValue && !isExternalMediaAllowed() && hasExternalCssReference(data.attrValue, { allStrings: data.attrValue.includes('--') })) {
+                if (data.attrValue && !isExternalMediaAllowed() && hasExternalCssReference(data.attrValue)) {
                     console.warn('External media blocked', data.attrValue);
                     data.keepAttr = false;
                 }
