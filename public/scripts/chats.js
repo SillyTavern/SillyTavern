@@ -567,13 +567,14 @@ function isExternalUrl(url) {
 /**
  * Resolves the escapes in a piece of CSS.
  * @param {string} text CSS text with normalized line breaks
+ * @param {(char: string) => string} [mapEscaped] Called for every character that came from an escape, to replace it
  * @returns {string} The text with its escapes resolved
  */
-function unescapeCss(text) {
+function unescapeCss(text, mapEscaped = (char) => char) {
     return text.replace(/\\(?:([0-9a-f]{1,6})[ \t\n]?|([\s\S]))/gi, (_, hex, char) => {
-        if (!hex) return char === '\n' ? '' : char;
+        if (!hex) return char === '\n' ? '' : mapEscaped(char);
         const codePoint = parseInt(hex, 16);
-        return codePoint > 0 && codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : '�';
+        return mapEscaped(codePoint > 0 && codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : '\uFFFD');
     });
 }
 
@@ -617,8 +618,10 @@ export function hasExternalCssReference(value) {
 
     // url(...) with a quoted or unquoted argument. Escapes are resolved first, as they can be part of the function name.
     // The start of the argument decides where it points to.
-    for (const match of unescapeCss(text).matchAll(/url\(([^)]*)/gi)) {
-        const reference = match[1].replace(leadingNoise, '').replace(/^["']/, '');
+    // An escaped parenthesis does not end the argument, so it is set aside while the argument is cut out.
+    const escapedParenthesis = '\uE000';
+    for (const match of unescapeCss(text, char => char === ')' ? escapedParenthesis : char).matchAll(/url\(([^)]*)/gi)) {
+        const reference = match[1].replaceAll(escapedParenthesis, ')').replace(leadingNoise, '').replace(/^["']/, '');
         if (isExternalUrl(reference)) {
             return true;
         }

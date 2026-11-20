@@ -57,6 +57,7 @@ test.describe('External media in messages', () => {
             'background: var(--image, "https://example.com/a.png")',
             'background: image-set("//example.com/a.png" 1x)',
             'background: url(__ORIGIN__.example.com/a.png)',
+            'background: url(__ORIGIN__\\).example.com/a.png)',
             'background: url("//example.com/\\"a.png")',
         ];
 
