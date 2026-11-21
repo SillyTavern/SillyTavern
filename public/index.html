@@ -4126,10 +4126,11 @@
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button menu_button_icon" data-i18n="Cancel">Cancel</div>
-                            <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon" data-i18n="Additional Parameters">Additional Parameters</div>
+                            <div id="customize_additional_parameters" class="menu_button menu_button_icon" title="Power users: add, overwrite or remove fields of the request for this source. Values are sent as they are." data-i18n="[title]Power users: add, overwrite or remove fields of the request for this source. Values are sent as they are."><span data-i18n="Additional Parameters">Additional Parameters</span><span class="additional_parameters_count"></span></div>
                             <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                             <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. This may incur usage charges." data-i18n="Test Message;[title]Verifies your API connection by sending a short test message. This may incur usage charges.">Test Message</div>
                         </div>
+                        <div id="additional_parameters_summary" class="additional_parameters_summary displayNone" role="status"></div>
                         <div class="online_status">
                             <div class="online_status_indicator"></div>
                             <div class="online_status_text" data-i18n="No connection...">No connection...</div>

@@ -71,7 +71,7 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
-import { chat_completion_sources, isCustomConnectionTransition, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_ENDPOINT, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
+import { chat_completion_sources, isCustomConnectionTransition, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_ENDPOINT, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT, getAdditionalParameters, setAdditionalParameters } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -3543,6 +3543,67 @@ export function initDefaultSlashCommands() {
         helpString: t`Copies the provided text to the OS clipboard. Returns an empty string.`,
     }));
 
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'additional-parameters',
+        aliases: ['api-params'],
+        returns: t`the additional parameters of the selected Chat Completion source as JSON, or an empty string if it has none`,
+        helpString: `
+            <div>
+                ${t`Gets or sets the "Additional Parameters" of the selected Chat Completion source: request body fields to add or overwrite, body fields to remove, and request headers to add. Each one is YAML text. The values are sent as they are.`}
+            </div>
+            <div>
+                ${t`Without arguments, returns the current values as JSON. The unnamed argument takes such a JSON value and replaces all three, which is how Connection Profiles save and restore them.`}
+            </div>
+            <div>
+                <strong>${t`Examples:`}</strong>
+            </div>
+            <ul>
+                <li><pre><code class="language-stscript">/additional-parameters | /echo</code></pre></li>
+                <li><pre><code class="language-stscript">/additional-parameters include_body="reasoning_effort: xhigh"</code></pre></li>
+                <li><pre><code class="language-stscript">/additional-parameters exclude_body="- temperature"</code></pre></li>
+                <li><pre><code class="language-stscript">/additional-parameters force=true</code></pre> ${t`removes all of them`}</li>
+            </ul>
+        `,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({ name: 'include_body', description: t`YAML mapping merged into the request body`, typeList: [ARGUMENT_TYPE.STRING] }),
+            SlashCommandNamedArgument.fromProps({ name: 'exclude_body', description: t`YAML list of body fields to remove; dotted paths reach nested fields`, typeList: [ARGUMENT_TYPE.STRING] }),
+            SlashCommandNamedArgument.fromProps({ name: 'include_headers', description: t`YAML mapping of request headers to add`, typeList: [ARGUMENT_TYPE.STRING] }),
+            SlashCommandNamedArgument.fromProps({ name: 'force', description: t`with no other argument, removes all additional parameters of the source`, typeList: [ARGUMENT_TYPE.BOOLEAN], defaultValue: 'false' }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({ description: t`JSON with include_body, exclude_body and include_headers`, typeList: [ARGUMENT_TYPE.STRING], acceptsMultiple: false, isRequired: false }),
+        ],
+        callback: (args, value) => {
+            if (main_api !== 'openai') {
+                return '';
+            }
+
+            const jsonValue = String(value ?? '').trim();
+            const named = { include_body: args.include_body, exclude_body: args.exclude_body, include_headers: args.include_headers };
+            const hasNamed = Object.values(named).some(item => item !== undefined);
+
+            if (jsonValue) {
+                let parsed;
+                try {
+                    parsed = JSON.parse(jsonValue);
+                } catch {
+                    throw new Error(t`The value must be JSON with include_body, exclude_body and include_headers.`);
+                }
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error(t`The value must be JSON with include_body, exclude_body and include_headers.`);
+                }
+                setAdditionalParameters({ include_body: parsed.include_body ?? '', exclude_body: parsed.exclude_body ?? '', include_headers: parsed.include_headers ?? '' });
+            } else if (hasNamed) {
+                setAdditionalParameters(Object.fromEntries(Object.entries(named).filter(([, item]) => item !== undefined).map(([field, item]) => [field, String(item)])));
+            } else if (isTrueBoolean(String(args.force))) {
+                setAdditionalParameters({ include_body: '', exclude_body: '', include_headers: '' });
+            }
+
+            const current = getAdditionalParameters();
+            return Object.values(current).some(Boolean) ? JSON.stringify(current) : '';
+        },
+    }));
 
     const promptPostProcessingEnumProvider = () => Array
         .from(document.getElementById('custom_prompt_post_processing').querySelectorAll('option'))

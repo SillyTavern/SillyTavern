@@ -393,6 +393,24 @@ export async function getWebLlmContextSize() {
 /**
  * It uses the profiles to send a generate request to the API.
  */
+/**
+ * Gets the additional parameters a Connection Profile saved, as a request field.
+ * A profile saved before the feature existed has none; the request then uses the ones of its source.
+ * @param {object} profile Connection profile
+ * @returns {{additional_parameters?: object}} Field to spread into the request data
+ */
+function getProfileAdditionalParameters(profile) {
+    const saved = profile?.['additional-parameters'];
+    if (typeof saved !== 'string') return {};
+    if (!saved.trim()) return { additional_parameters: {} };
+    try {
+        const parsed = JSON.parse(saved);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? { additional_parameters: parsed } : {};
+    } catch {
+        return {};
+    }
+}
+
 export class ConnectionManagerRequestService {
     static defaultSendRequestParams = {
         stream: false,
@@ -467,6 +485,7 @@ export class ConnectionManagerRequestService {
                         max_tokens: maxTokens,
                         model: profile.model,
                         chat_completion_source: selectedApiMap.source,
+                        ...getProfileAdditionalParameters(profile),
                         secret_id: profile['secret-id'],
                         custom_url: profile['api-url'],
                         vertexai_region: profile['api-url'],
