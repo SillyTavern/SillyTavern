@@ -129,6 +129,11 @@ describe('exact per-account Custom credentials', () => {
         expect(response.status).toBe(400);
         expect(upstream).not.toHaveBeenCalled();
     });
+    test.each(['custom_include_headers', 'custom_include_body', 'custom_exclude_body'])('comment-only YAML is treated as empty: %s', async field => {
+        const response = await post('/chat/generate', { [field]: '# kept for later', chat_completion_source: 'custom', custom_url: endpoint, custom_auth: envelope(reference()), messages: [] });
+        expect(response.status).toBe(200);
+        expect(upstream).toHaveBeenCalledTimes(1);
+    });
     test('credential-bearing requests refuse redirects', async () => {
         upstream.mockImplementation(async (url, options) => {
             if (options.redirect === 'error') throw new Error('Redirect refused');
