@@ -5658,13 +5658,15 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillLeft,
 .fillRight {
+    /* Positive when the Chat Width is 75% or more, which leaves the side panels too narrow to use, so they go fullscreen like on mobile */
+    --fullscreenNavPanels: calc((var(--sheldWidth) - 74.5vw) * 1000);
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
+    width: max(calc((100dvw - var(--sheldWidth) - 2px) /2), min(100dvw, var(--fullscreenNavPanels)));
     max-height: calc(100vh - var(--topBarBlockSize));
     max-height: calc(100dvh - var(--topBarBlockSize));
     height: 0;
     position: fixed;
-    top: 0;
+    top: clamp(0px, var(--fullscreenNavPanels), var(--topBarBlockSize));
     margin: 0;
     box-shadow: none;
     overflow: hidden;
@@ -5691,6 +5693,20 @@ body:not(.movingUI) .drawer-content.maximized {
     @starting-style {
         height: 0;
     }
+}
+
+/* Move sliders onto more rows instead of squashing them when the side panel is narrow */
+#left-nav-panel .flexFlowColumn:has(> .neo-range-slider) {
+    min-width: calc(var(--mainFontSize) * 5);
+}
+
+/* Rows of sliders that share one line (Mirostat, DRY, etc.) split it equally and wrap when it gets too narrow */
+#left-nav-panel .flexFlowRow:has(> .flexFlowColumn > .neo-range-slider) {
+    flex-wrap: wrap;
+}
+
+#left-nav-panel .flexFlowRow > .flexFlowColumn:has(> .neo-range-slider) {
+    flex-basis: 0;
 }
 
 /*
