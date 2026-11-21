@@ -3,6 +3,8 @@ import { MacroCstWalker } from './MacroCstWalker.js';
 import { MacroRegistry, MacroValueType } from './MacroRegistry.js';
 import { logMacroGeneralError, logMacroInternalError, logMacroRuntimeWarning, logMacroSyntaxWarning } from './MacroDiagnostics.js';
 import { ELSE_MARKER } from '../definitions/core-macros.js';
+// explicit whitespace macro output carries markers until the engine has done its trims.
+import { applyLegacyTrim, stripWhitespaceMarkers } from '../protected-whitespace.js';
 
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
@@ -112,9 +114,11 @@ class MacroEngine {
      * @param {number} [options.contextOffset=0] - Base offset from the original top-level document.
      *        Used when evaluating nested content (via resolve() in handlers) to preserve global
      *        positioning for macros like {{pick}} that seed on position.
+     * @param {boolean} [options.keepWhitespaceMarkers=false] - return the result with whitespace markers.
+     *        Use it only when the result goes back into a macro evaluation, because that evaluation removes them.
      * @returns {string} The resolved string.
      */
-    evaluate(input, env, { contextOffset = 0 } = {}) {
+    evaluate(input, env, { contextOffset = 0, keepWhitespaceMarkers = false } = {}) {
         if (!input) {
             return '';
         }
@@ -153,7 +157,8 @@ class MacroEngine {
             return input;
         }
 
-        const result = this.#runPostProcessors(evaluated, safeEnv);
+        // {{if}} keeps the markers so that its trim does not remove explicit whitespace macro output.
+        const result = this.#runPostProcessors(evaluated, safeEnv, { keepWhitespaceMarkers });
 
         return result;
     }
@@ -257,14 +262,28 @@ class MacroEngine {
      *
      * @param {string} text - The input text to process.
      * @param {MacroEnv} env - The environment to pass to the macro handler.
+     * @param {Object} [options={}]
+     * @param {boolean} [options.keepWhitespaceMarkers=false] - Return the text with whitespace markers.
      * @returns {string} The processed text.
      */
-    #runPostProcessors(text, env) {
-        let result = text;
-        for (const { handler } of this.#postProcessors) {
+    #runPostProcessors(text, env, { keepWhitespaceMarkers = false } = {}) {
+        // only the core post-processors before the first other one get the whitespace markers, which the
+        // legacy {{trim}} needs. The other post-processors get the text without markers. The markers come back only
+        // if those post-processors do not change the text.
+        const firstOtherIndex = this.#postProcessors.findIndex(({ source }) => !String(source).startsWith('core:'));
+        const coreCount = firstOtherIndex === -1 ? this.#postProcessors.length : firstOtherIndex;
+
+        let marked = text;
+        for (const { handler } of this.#postProcessors.slice(0, coreCount)) {
+            marked = handler(marked, env);
+        }
+
+        const plain = stripWhitespaceMarkers(marked);
+        let result = plain;
+        for (const { handler } of this.#postProcessors.slice(coreCount)) {
             result = handler(result, env);
         }
-        return result;
+        return keepWhitespaceMarkers && result === plain ? marked : result;
     }
 
     /**
@@ -311,7 +330,8 @@ class MacroEngine {
         // To treat {{trim}} as it was before, we won't process it by the engine itself,
         // but doing a regex replace on {{trim}} and the surrounding area, after all other macros have been processed.
         this.addPostProcessor(
-            text => text.replace(/(?:\r?\n)*{{trim}}(?:\r?\n)*/gi, ''),
+            // the pattern also reads the whitespace markers, so that {{noop}} stops it.
+            text => applyLegacyTrim(text),
             { priority: 20, source: 'core:legacy-trim' },
         );
 

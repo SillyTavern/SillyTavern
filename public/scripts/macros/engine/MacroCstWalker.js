@@ -8,7 +8,9 @@ import { MacroEngine } from './MacroEngine.js';
 import { parseFlags, createEmptyFlags, MacroFlagType } from './MacroFlags.js';
 import { MacroParser } from './MacroParser.js';
 import { MacroRegistry } from './MacroRegistry.js';
-import { isFalseBoolean } from '/scripts/utils.js';
+import { isFalseBoolean } from '../../utils.js';
+// explicit whitespace macro output carries markers until the walker has done its trims.
+import { markWhitespaceMacroResult, stripWhitespaceMarkers } from '../protected-whitespace.js';
 
 /**
  * @typedef {Object} MacroCall
@@ -455,6 +457,8 @@ class MacroCstWalker {
                     if (!flags.preserveWhitespace) {
                         scopedValue = trimContent(scopedValue);
                     }
+                    // remove the markers after the trim, because the handler gets this text.
+                    scopedValue = stripWhitespaceMarkers(scopedValue);
                 }
 
                 args.push(scopedValue);
@@ -509,7 +513,8 @@ class MacroCstWalker {
         const value = resolveMacro(call);
         const stringValue = typeof value === 'string' ? value : String(value ?? '');
 
-        return stringValue;
+        // mark explicit whitespace macro output, so that trims keep it.
+        return markWhitespaceMacroResult(macroDef?.aliasOf ?? macroDef?.name, stringValue);
     }
 
     /**
@@ -864,7 +869,8 @@ class MacroCstWalker {
             result += text.slice(cursor, endOffset + 1);
         }
 
-        return result.trim();
+        // remove the markers after the trim, so that the value keeps explicit whitespace macro output.
+        return stripWhitespaceMarkers(result.trim());
     }
 
     /**
@@ -892,7 +898,8 @@ class MacroCstWalker {
         const newContextOffset = contextOffset + location.startOffset;
 
         // Use the shared helper to evaluate the content, which handles scoped macros
-        return this.#evaluateRawContent(rawContent, newContextOffset, context);
+        // remove the markers here, because handlers can store or return argument text.
+        return stripWhitespaceMarkers(this.#evaluateRawContent(rawContent, newContextOffset, context));
     }
 
     /**
