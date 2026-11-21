@@ -95,6 +95,7 @@ const sources = {
     zai: 'zai',
     openrouter: 'openrouter',
     workersai: 'workersai',
+    custom: 'custom',
 };
 const comfyTypes = {
     standard: 'standard',
@@ -296,6 +297,10 @@ const defaultSettings = {
 
     drawthings_url: 'http://localhost:7860',
     drawthings_auth: '',
+
+    // Custom OpenAI-compatible endpoint settings
+    custom_url: '',
+    custom_params: '',
 
     hr_upscaler: 'Latent',
     hr_scale: 1.0,
@@ -534,6 +539,8 @@ async function loadSettings() {
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
     $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
     $('#sd_drawthings_auth').val(extension_settings.sd.drawthings_auth);
+    $('#sd_custom_url').val(extension_settings.sd.custom_url);
+    $('#sd_custom_params').val(extension_settings.sd.custom_params);
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
@@ -1279,6 +1286,16 @@ function onDrawthingsAuthInput() {
     saveSettingsDebounced();
 }
 
+function onCustomUrlInput() {
+    extension_settings.sd.custom_url = $('#sd_custom_url').val();
+    saveSettingsDebounced();
+}
+
+function onCustomParamsInput() {
+    extension_settings.sd.custom_params = $('#sd_custom_params').val();
+    saveSettingsDebounced();
+}
+
 function onHrUpscalerChange() {
     extension_settings.sd.hr_upscaler = $('#sd_hr_upscaler').find(':selected').val();
     saveSettingsDebounced();
@@ -1746,6 +1763,9 @@ async function loadSamplers() {
         case sources.workersai:
             samplers = ['N/A'];
             break;
+        case sources.custom:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1998,6 +2018,9 @@ async function loadModels() {
             break;
         case sources.workersai:
             models = await loadWorkersAIImageModels();
+            break;
+        case sources.custom:
+            models = await loadCustomOpenAiModels();
             break;
     }
 
@@ -2412,6 +2435,28 @@ async function loadAimlapiModels() {
     return (json.data || []);
 }
 
+async function loadCustomOpenAiModels() {
+    $('#sd_custom_key').toggleClass('success', !!secret_state[SECRET_KEYS.CUSTOM_OPENAI_SD]);
+
+    if (!extension_settings.sd.custom_url) {
+        return [];
+    }
+
+    const result = await fetch('/api/sd/custom-openai/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ url: extension_settings.sd.custom_url }),
+    });
+
+    if (!result.ok) {
+        return [];
+    }
+
+    const json = await result.json();
+
+    return (json.data || []);
+}
+
 async function loadVladModels() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -2643,6 +2688,9 @@ async function loadSchedulers() {
         case sources.workersai:
             schedulers = ['N/A'];
             break;
+        case sources.custom:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2764,6 +2812,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.workersai:
+            vaes = ['N/A'];
+            break;
+        case sources.custom:
             vaes = ['N/A'];
             break;
     }
@@ -3417,6 +3468,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.workersai:
                 result = await generateWorkersAIImage(prefixedPrompt, negativePrompt, signal);
+                break;
+            case sources.custom:
+                result = await generateCustomImage(prefixedPrompt, signal);
                 break;
         }
 
@@ -4196,6 +4250,32 @@ async function generateAimlapiImage(prompt, signal) {
     }
 
     const res = await fetch('/api/sd/aimlapi/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal,
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    const { format, data } = await res.json();
+    return { format, data };
+}
+
+/**
+ * Generates an image via a user-configured OpenAI-compatible endpoint.
+ */
+async function generateCustomImage(prompt, signal) {
+    const body = {
+        url: extension_settings.sd.custom_url,
+        prompt,
+        model: extension_settings.sd.model,
+        n: 1,
+        size: `${extension_settings.sd.width}x${extension_settings.sd.height}`,
+        response_format: 'b64_json',
+        custom_params: extension_settings.sd.custom_params,
+    };
+
+    const res = await fetch('/api/sd/custom-openai/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         signal,
@@ -5131,6 +5211,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.OPENROUTER];
         case sources.workersai:
             return !!oai_settings.workers_ai_account_id && secret_state[SECRET_KEYS.WORKERS_AI];
+        case sources.custom:
+            return !!extension_settings.sd.custom_url;
         default:
             return false;
     }
@@ -5831,6 +5913,8 @@ export async function init() {
     $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
     $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
     $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
+    $('#sd_custom_url').on('input', onCustomUrlInput);
+    $('#sd_custom_params').on('input', onCustomParamsInput);
     $('#sd_vlad_validate').on('click', validateVladUrl);
     $('#sd_vlad_url').on('input', onVladUrlInput);
     $('#sd_vlad_auth').on('input', onVladAuthInput);
@@ -5940,6 +6024,7 @@ export async function init() {
                 [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
                 [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
                 [sources.workersai]: SECRET_KEYS.WORKERS_AI,
+                [sources.custom]: SECRET_KEYS.CUSTOM_OPENAI_SD,
             };
             const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);
             if (!shouldReloadOptions) {
