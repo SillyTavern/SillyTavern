@@ -15,8 +15,9 @@ function validateParameters(body, managed, auth) {
         if (typeof body[field] !== 'string') throw new CustomAuthError(`${field} must be YAML text.`);
         let value;
         try { value = yaml.parse(body[field]); } catch { throw new CustomAuthError(`Invalid YAML in ${field}.`); }
+        if (value === null || value === undefined) continue;
         if (field === 'custom_exclude_body') {
-            if (value === null || !['object', 'string'].includes(typeof value)) throw new CustomAuthError(`${field} must contain field names.`);
+            if (!['object', 'string'].includes(typeof value)) throw new CustomAuthError(`${field} must contain field names.`);
             continue;
         }
         const mappings = Array.isArray(value) ? value : [value];
