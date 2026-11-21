@@ -29,6 +29,7 @@ import {
     getConfigValue,
     tryParse,
     uuidv4,
+    getVersion,
     mergeObjectWithYaml,
     excludeKeysByYaml,
     color,
@@ -100,6 +101,8 @@ const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
+const API_OPENCODE_GO = 'https://opencode.ai/inference/go/openai/v1';
+const API_OPENCODE_GO_MODELS = 'https://opencode.ai/inference/go/v1';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -122,6 +125,37 @@ function getAffinityKey() {
         affinityKey = getCookieSecret(globalThis.DATA_ROOT);
     }
     return affinityKey;
+}
+
+/**
+ * Lazily-cached User-Agent string for OpenCode Go requests.
+ * OpenCode asks clients to identify themselves with a product user agent
+ * instead of a generic SDK or HTTP library name.
+ * @type {string|undefined}
+ */
+let opencodeGoUserAgent;
+async function getOpenCodeGoUserAgent() {
+    opencodeGoUserAgent ??= `SillyTavern/${(await getVersion()).pkgVersion} (OpenCode Go)`;
+    return opencodeGoUserAgent;
+}
+
+/**
+ * Builds the extra HTTP headers for OpenCode Go requests.
+ * A stable session ID (derived from the chat) helps OpenCode with routing
+ * and prompt caching.
+ * @param {string|undefined} chatId Chat identifier from the frontend
+ * @returns {Promise<Record<string, string>>} Extra headers
+ */
+async function getOpenCodeGoHeaders(chatId) {
+    const headers = {
+        'User-Agent': await getOpenCodeGoUserAgent(),
+    };
+
+    if (chatId) {
+        headers['x-opencode-session'] = 'st-' + createHmac('sha256', getAffinityKey()).update(chatId).digest('hex').slice(0, 32);
+    }
+
+    return headers;
 }
 
 /**
@@ -2020,6 +2054,12 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
             headers = {};
             queryParams = { type: 'text', sub_type: 'chat' };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENCODE_GO) {
+            // OpenCode Go: the models endpoint lives under /inference/go/v1,
+            // while chat completions are served under /inference/go/openai/v1.
+            apiUrl = request.body.reverse_proxy ? new URL(request.body.reverse_proxy).toString() : API_OPENCODE_GO_MODELS;
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENCODE_GO, request.body.secret_id);
+            headers = await getOpenCodeGoHeaders();
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
 
@@ -2591,6 +2631,25 @@ router.post('/generate', async function (request, response) {
             bodyParams = {};
             if (request.body.json_schema) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENCODE_GO) {
+            apiUrl = new URL(request.body.reverse_proxy || API_OPENCODE_GO).toString();
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENCODE_GO, request.body.secret_id);
+            headers = await getOpenCodeGoHeaders(request.body.chat_id);
+            bodyParams = {};
+            if (request.body.reasoning_effort && request.body.reasoning_effort !== 'auto') {
+                // OpenCode reasoning models accept effort levels from minimal to max.
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'min' ? 'minimal' : request.body.reasoning_effort;
+            }
+            if (request.body.json_schema) {
+                bodyParams['response_format'] = {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: request.body.json_schema.name,
+                        strict: request.body.json_schema.strict ?? true,
+                        schema: request.body.json_schema.value,
+                    },
+                };
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
