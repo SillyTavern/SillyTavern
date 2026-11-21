@@ -4,7 +4,7 @@ import yargs from 'yargs/yargs';
 import { hideBin } from 'yargs/helpers';
 import ipRegex from 'ip-regex';
 import envPaths from 'env-paths';
-import { color, getConfigValue, stringToBool } from './util.js';
+import { color, getConfigValue, stringToBool, urlHostnameToIPv6 } from './util.js';
 import { initConfig } from './config-init.js';
 
 /**
@@ -333,10 +333,12 @@ export class CommandLineParser {
                 );
             },
             getIPv6ListenUrl: function () {
-                const isValid = ipRegex.v6({ exact: true }).test(this.listenAddressIPv6);
+                // ipRegex rejects brackets, while URL requires them for IPv6 literals.
+                const address = urlHostnameToIPv6(this.listenAddressIPv6);
+                const isValid = ipRegex.v6({ exact: true }).test(address);
                 return new URL(
                     (this.ssl ? 'https://' : 'http://') +
-                    (this.listen ? (isValid ? this.listenAddressIPv6 : '[::]') : '[::1]') +
+                    (this.listen ? (isValid ? `[${address}]` : '[::]') : '[::1]') +
                     (':' + this.port),
                 );
             },
