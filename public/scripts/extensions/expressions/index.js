@@ -1266,7 +1266,8 @@ async function validateImages(spriteFolderName, forceRedrawCached = false) {
  * @returns {ExpressionImage}
  */
 function getExpressionImageData(sprite) {
-    const fileName = sprite.path.split('/').pop().split('?')[0];
+    // The server encodes '#' and '?' in the path; the file name keeps them as they are on disk
+    const fileName = sprite.path.split('/').pop().split('?')[0].replace(/%23|%3F/g, decodeURIComponent);
     const fileNameWithoutExtension = fileName.replace(/\.[^/.]+$/, '');
     return {
         expression: sprite.label,

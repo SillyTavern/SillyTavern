@@ -6,7 +6,7 @@ import mime from 'mime-types';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { getImageBuffers } from '../util.js';
+import { clientRelativeUrl, getImageBuffers } from '../util.js';
 
 /**
  * Gets the path to the sprites folder for the provided character name
@@ -139,7 +139,7 @@ router.get('/get', function (request, response) {
 
                     return {
                         label: label,
-                        path: `/characters/${name}/${file}` + (mtime ? `?t=${mtime}` : ''),
+                        path: clientRelativeUrl(request.user.directories.root, pathToSprite) + (mtime ? `?t=${mtime}` : ''),
                     };
                 });
         }

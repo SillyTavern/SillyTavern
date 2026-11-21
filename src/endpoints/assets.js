@@ -8,7 +8,7 @@ import sanitize from 'sanitize-filename';
 import fetch from 'node-fetch';
 
 import { UNSAFE_EXTENSIONS } from '../constants.js';
-import { clientRelativePath, isValidUrl } from '../util.js';
+import { clientRelativePath, clientRelativeUrl, isValidUrl } from '../util.js';
 import { getHostFromUrl, isHostWhitelisted } from './content-manager.js';
 
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
@@ -359,7 +359,7 @@ router.post('/character', async (request, response) => {
                 });
 
             for (let i of files)
-                output.push(`/characters/${name}/${category}/${i}`);
+                output.push(clientRelativeUrl(request.user.directories.root, path.join(folderPath, i)));
         }
         return response.send(output);
     } catch (err) {
