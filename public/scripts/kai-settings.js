@@ -35,7 +35,11 @@ export const kai_settings = {
     top_k: 0,
     typical: 1,
     tfs: 1,
+    smoothing_factor: 0.0,
+    singleline: false,
     rep_pen_slope: 0.9,
+    dynatemp_range: 0.0,
+    dynatemp_exponent: 1.0,
     streaming_kobold: false,
     sampler_order: [0, 1, 2, 3, 4, 5, 6],
     mirostat: 0,
@@ -155,6 +159,10 @@ function loadKoboldSettingsFromPreset(preset) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
     }
+    if (Object.hasOwn(preset, 'singleline')) {
+        kai_settings.singleline = preset.singleline;
+        $('#singleline').prop('checked', kai_settings.singleline);
+    }
     if (Object.hasOwn(preset, 'use_default_badwordsids')) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
@@ -191,9 +199,12 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         top_k: kai_settings.top_k,
         top_p: kai_settings.top_p,
         min_p: (kai_flags.can_use_min_p || isHorde) ? kai_settings.min_p : undefined,
+        smoothing_factor: kai_settings.smoothing_factor,
+        dynatemp_range: kai_settings.dynatemp_range,
+        dynatemp_exponent: kai_settings.dynatemp_exponent,
         typical: kai_settings.typical,
         use_world_info: false,
-        singleline: false,
+        singleline: kai_settings.singleline,
         stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate, isContinue) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
@@ -326,6 +337,27 @@ const sliders = [
         counterId: '#rep_pen_slope_counter',
         format: (val) => val,
         setValue: (val) => { kai_settings.rep_pen_slope = Number(val); },
+    },
+    {
+        name: 'smoothing_factor',
+        sliderId: '#smoothing_factor',
+        counterId: '#smoothing_factor_counter',
+        format: (val) => val,
+        setValue: (val) => { kai_settings.smoothing_factor = Number(val); },
+    },
+    {
+        name: 'dynatemp_range',
+        sliderId: '#dynatemp_range',
+        counterId: '#dynatemp_range_counter',
+        format: (val) => val,
+        setValue: (val) => { kai_settings.dynatemp_range = Number(val); },
+    },
+    {
+        name: 'dynatemp_exponent',
+        sliderId: '#dynatemp_exponent',
+        counterId: '#dynatemp_exponent_counter',
+        format: (val) => val,
+        setValue: (val) => { kai_settings.dynatemp_exponent = Number(val); },
     },
     {
         name: 'sampler_order',
@@ -480,6 +512,12 @@ export function initKoboldSettings() {
     $('#streaming_kobold').on('input', function () {
         const value = !!$(this).prop('checked');
         kai_settings.streaming_kobold = value;
+        saveSettingsDebounced();
+    });
+
+    $('#singleline').on('input', function () {
+        const value = !!$(this).prop('checked');
+        kai_settings.singleline = value;
         saveSettingsDebounced();
     });
 
