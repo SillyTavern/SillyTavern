@@ -90,6 +90,7 @@ const sources = {
     nanogpt: 'nanogpt',
     bfl: 'bfl',
     falai: 'falai',
+    wavespeed: 'wavespeed',
     xai: 'xai',
     google: 'google',
     zai: 'zai',
@@ -1731,6 +1732,9 @@ async function loadSamplers() {
         case sources.falai:
             samplers = ['N/A'];
             break;
+        case sources.wavespeed:
+            samplers = ['N/A'];
+            break;
         case sources.xai:
             samplers = ['N/A'];
             break;
@@ -1984,6 +1988,9 @@ async function loadModels() {
         case sources.falai:
             models = await loadFalaiModels();
             break;
+        case sources.wavespeed:
+            models = await loadWaveSpeedModels();
+            break;
         case sources.xai:
             models = await loadXAIModels();
             break;
@@ -2108,6 +2115,21 @@ async function loadFalaiModels() {
     $('#sd_falai_key').toggleClass('success', !!secret_state[SECRET_KEYS.FALAI]);
 
     const result = await fetch('/api/sd/falai/models', {
+        method: 'POST',
+        headers: getRequestHeaders({ omitContentType: true }),
+    });
+
+    if (result.ok) {
+        return await result.json();
+    }
+
+    return [];
+}
+
+async function loadWaveSpeedModels() {
+    $('#sd_wavespeed_key').toggleClass('success', !!secret_state[SECRET_KEYS.WAVESPEED]);
+
+    const result = await fetch('/api/sd/wavespeed/models', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),
     });
@@ -2628,6 +2650,9 @@ async function loadSchedulers() {
         case sources.falai:
             schedulers = ['N/A'];
             break;
+        case sources.wavespeed:
+            schedulers = ['N/A'];
+            break;
         case sources.xai:
             schedulers = ['N/A'];
             break;
@@ -2749,6 +2774,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.falai:
+            vaes = ['N/A'];
+            break;
+        case sources.wavespeed:
             vaes = ['N/A'];
             break;
         case sources.xai:
@@ -3402,6 +3430,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.falai:
                 result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
+                break;
+            case sources.wavespeed:
+                result = await generateWaveSpeedImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.xai:
                 result = await generateXAIImage(prefixedPrompt, negativePrompt, signal);
@@ -4561,6 +4592,37 @@ async function generateFalaiImage(prompt, negativePrompt, signal) {
 }
 
 /**
+ * Generates an image using the WaveSpeedAI API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The negative prompt used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateWaveSpeedImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/sd/wavespeed/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            width: clamp(extension_settings.sd.width, 256, 2048),
+            height: clamp(extension_settings.sd.height, 256, 2048),
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: data.format || 'png', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image using the Google Vertex AI API.
  * @param {string} prompt The main instruction used to guide the image generation.
  * @param {string} negativePrompt The instruction used to restrict the image generation.
@@ -5121,6 +5183,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.BFL];
         case sources.falai:
             return secret_state[SECRET_KEYS.FALAI];
+        case sources.wavespeed:
+            return secret_state[SECRET_KEYS.WAVESPEED];
         case sources.xai:
             return secret_state[SECRET_KEYS.XAI];
         case sources.google:
@@ -5935,6 +5999,7 @@ export async function init() {
             const keySourceMap = {
                 [sources.bfl]: SECRET_KEYS.BFL,
                 [sources.falai]: SECRET_KEYS.FALAI,
+                [sources.wavespeed]: SECRET_KEYS.WAVESPEED,
                 [sources.stability]: SECRET_KEYS.STABILITY,
                 [sources.aimlapi]: SECRET_KEYS.AIMLAPI,
                 [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
