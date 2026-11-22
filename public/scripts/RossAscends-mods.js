@@ -690,12 +690,12 @@ export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, deboun
 
 // ---------------------------------------------------
 
-export function initRossMods() {
+export async function initRossMods() {
     // initial status check
     checkStatusDebounced();
 
     if (power_user.auto_load_chat) {
-        RA_autoloadchat();
+        await RA_autoloadchat();
     }
 
     if (power_user.auto_connect) {
