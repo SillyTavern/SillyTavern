@@ -329,9 +329,11 @@ function sanitizeRegexMacro(x) {
  * @param {regex_placement} placement The placement of the string
  * @param {RegexParams} params The parameters to use for the regex script
  * @returns {string} The regexed string
- * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, isEdit?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
+ * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, isEdit?: boolean, isPartial?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
+ * `isPartial` marks text that is still being generated. Macros in the replacement can have side effects (e.g. variable changes),
+ * so scripts that use them are deferred until the final text is available.
  */
-export function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
+export function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, isPartial, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
         console.warn('getRegexedString: rawString is not a string. Returning empty string.');
@@ -355,6 +357,11 @@ export function getRegexedString(rawString, placement, { characterOverride, isMa
         ) {
             if (isEdit && !script.runOnEdit) {
                 console.debug(`getRegexedString: Skipping script ${script.scriptName} because it does not run on edit`);
+                return;
+            }
+
+            if (isPartial && script.replaceString?.includes('{{')) {
+                console.debug(`getRegexedString: Skipping script ${script.scriptName} until generation is finished because its replacement uses macros`);
                 return;
             }
 
