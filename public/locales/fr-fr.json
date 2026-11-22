@@ -2062,5 +2062,18 @@
     "Deleting chat…": "Suppression de la discussion…",
     "Loading chat…": "Chargement de la discussion…",
     "Bulk Delete": "Suppression groupée",
-    "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…"
+    "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…",
+    "Service Tier": "Niveau de service",
+    "Flex (cheap, slower)": "Flex (moins cher, plus lent)",
+    "Priority (fast, expensive)": "Priority (rapide, coûteux)",
+    "${0} — currently unavailable": "${0} — actuellement indisponible",
+    "${0} — supported by fallback providers only": "${0} — pris en charge uniquement par les fournisseurs de secours",
+    "${0} — supported by some selected providers": "${0} — pris en charge par certains fournisseurs sélectionnés",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} n'est pas disponible pour les fournisseurs et le modèle actuels. Les requêtes sont traitées aux tarifs standard.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Aucun des fournisseurs sélectionnés ne propose ${0}. Comme les fournisseurs de secours sont autorisés, un autre fournisseur peut traiter la requête.",
+    "${0} is only offered by: ${1}.": "${0} n'est proposé que par : ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (prix de base)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Estimation basée sur le prix de base du modèle. Les tarifs des fournisseurs et des niveaux de service ne sont pas inclus.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Le niveau de service OpenRouter sélectionné, ${0}, n'est pas disponible pour les fournisseurs et le modèle actuels. Les requêtes sont traitées aux tarifs standard. Vous pouvez modifier le niveau de service dans le menu Connexions API."
 }

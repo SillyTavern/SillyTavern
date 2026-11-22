@@ -1454,5 +1454,18 @@
     "Deleting chat…": "Eliminazione chat…",
     "Loading chat…": "Caricamento chat…",
     "Bulk Delete": "Eliminazione multipla",
-    "Deleting ${0} character(s)…": "Eliminazione di ${0} personaggio/i…"
+    "Deleting ${0} character(s)…": "Eliminazione di ${0} personaggio/i…",
+    "Service Tier": "Livello di servizio",
+    "Flex (cheap, slower)": "Flex (economico, più lento)",
+    "Priority (fast, expensive)": "Priority (veloce, costoso)",
+    "${0} — currently unavailable": "${0} — attualmente non disponibile",
+    "${0} — supported by fallback providers only": "${0} — supportato solo da fornitori alternativi",
+    "${0} — supported by some selected providers": "${0} — supportato da alcuni fornitori selezionati",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} non è disponibile per i fornitori e il modello attuali. Le richieste vengono servite a tariffe standard.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Nessuno dei fornitori selezionati offre ${0}. Poiché i fornitori alternativi sono consentiti, un altro fornitore potrebbe servire la richiesta.",
+    "${0} is only offered by: ${1}.": "${0} è offerto solo da: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (prezzo base)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Stima basata sul prezzo base del modello. Le tariffe dei fornitori e dei livelli di servizio non sono incluse.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Il livello di servizio OpenRouter selezionato, ${0}, non è disponibile per i fornitori e il modello attuali. Le richieste vengono servite a tariffe standard. Puoi cambiare il livello di servizio nel menu Connessioni API."
 }

@@ -574,7 +574,13 @@ label[for="bind_preset_to_connection"]:has(input:checked) {
 }
 
 #openrouter_provider_warning_text,
-#openrouter_provider_warning_chat {
+#openrouter_provider_warning_chat,
+#openrouter_service_tier_warning {
     color: var(--warning);
     margin-left: 5px;
+}
+
+/* A tier only fallback providers can serve still works, so it is a caution, not an error. */
+#openrouter_service_tier_warning.fallback_only_warning {
+    color: var(--golden);
 }

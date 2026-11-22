@@ -2774,5 +2774,18 @@
     "Deleting chat…": "正在刪除聊天…",
     "Loading chat…": "正在載入聊天…",
     "Bulk Delete": "批次刪除",
-    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…"
+    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…",
+    "Service Tier": "服務檔位",
+    "Flex (cheap, slower)": "Flex（低價，較慢）",
+    "Priority (fast, expensive)": "Priority（快，但貴）",
+    "${0} — currently unavailable": "${0}：目前無法使用",
+    "${0} — supported by fallback providers only": "${0}：僅由回退供應商支援",
+    "${0} — supported by some selected providers": "${0}：僅部分所選供應商支援",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} 不適用於目前的供應商與模型。請求將依標準費率處理。",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "所選供應商皆未提供 ${0}。由於允許回退供應商，請求可能由其他供應商處理。",
+    "${0} is only offered by: ${1}.": "${0} 僅由以下供應商提供：${1}。",
+    "${0} (${1})": "${0}（${1}）",
+    "${0} (base price)": "${0}（基礎價格）",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "根據模型的基礎價格估算，不包含供應商與服務檔位的費率。",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "所選 OpenRouter 服務檔位 ${0} 不適用於目前的供應商與模型。請求將依標準費率處理。您可以在 API 連線選單中變更服務檔位。"
 }
