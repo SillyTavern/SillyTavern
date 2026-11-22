@@ -159,6 +159,10 @@ function loadKoboldSettingsFromPreset(preset) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
     }
+    if (Object.hasOwn(preset, 'singleline')) {
+        kai_settings.singleline = preset.singleline;
+        $('#singleline').prop('checked', kai_settings.singleline);
+    }
     if (Object.hasOwn(preset, 'use_default_badwordsids')) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
