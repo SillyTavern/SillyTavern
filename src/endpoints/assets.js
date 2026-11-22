@@ -19,6 +19,13 @@ const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character'
  * @returns {{error: boolean, message?: string}} Whether validation failed, and why if so
  */
 export function validateAssetFileName(inputFilename) {
+    if (typeof inputFilename !== 'string') {
+        return {
+            error: true,
+            message: 'Filename is required.',
+        };
+    }
+
     if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         return {
             error: true,
