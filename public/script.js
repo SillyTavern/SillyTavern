@@ -12380,9 +12380,36 @@ jQuery(async function () {
                 }
             } break;
             case 'replace_update': {
+                // The dropdown is reset at the end of this handler, but the file
+                // picker suspends the page on iOS, so reset before the first await.
+                $('#char-management-dropdown').prop('selectedIndex', 0);
+
                 let onlineUrl = getCharacterSource(this_chid);
 
                 const POPUP_RESULT_URL = POPUP_RESULT.CUSTOM1, POPUP_RESULT_FILE = POPUP_RESULT.CUSTOM2;
+
+                // Remember the chat currently selected, so we can reload it after the replacement
+                const currentChatFile = characters[this_chid].chat;
+                async function postReplace() {
+                    await openCharacterChat(currentChatFile);
+                }
+
+                async function uploadReplacementCard(e) {
+                    const file = e.target.files[0];
+                    if (!file) {
+                        return;
+                    }
+
+                    try {
+                        const data = new Map();
+                        data.set(file, characters[this_chid].avatar);
+                        await processDroppedFiles([file], data);
+                        await postReplace();
+                    } catch {
+                        toastr.error('Failed to replace the character card.', 'Something went wrong');
+                    }
+                }
+
                 const result = await Popup.show.confirm(t`Replace Character`,
                     `<p>${t`Choose a new character card to replace this character with.`}</p>` +
                     `<p>${t`You can also replace this character with the one from the online source.`}${onlineUrl ? `<br />This character was downloaded from: <var>${onlineUrl}</var>` : ''}</p>` +
@@ -12397,34 +12424,23 @@ jQuery(async function () {
                             text: t`Replace with File`,
                             result: POPUP_RESULT_FILE,
                             classes: ['popup-button-ok'],
+                            action: () => {
+                                // Open the picker from the button's own click. Once
+                                // the popup promise resolves the browser no longer
+                                // treats it as a user gesture, and iOS silently
+                                // ignores a file input click without one.
+                                $('#character_replace_file')
+                                    .off('change')
+                                    .on('change', uploadReplacementCard)
+                                    .trigger('click');
+                            },
                         }],
                         defaultResult: onlineUrl ? POPUP_RESULT_URL : POPUP_RESULT_FILE,
                     });
 
-                // Remember the chat currently selected, so we can reload it after the replacement
-                const currentChatFile = characters[this_chid].chat;
-                async function postReplace() {
-                    await openCharacterChat(currentChatFile);
-                }
-
                 switch (result) {
                     case POPUP_RESULT_FILE: {
-                        async function uploadReplacementCard(e) {
-                            const file = e.target.files[0];
-                            if (!file) {
-                                return;
-                            }
-
-                            try {
-                                const data = new Map();
-                                data.set(file, characters[this_chid].avatar);
-                                await processDroppedFiles([file], data);
-                                await postReplace();
-                            } catch {
-                                toastr.error('Failed to replace the character card.', 'Something went wrong');
-                            }
-                        }
-                        $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
+                        // The file picker was opened by the custom button action.
                         break;
                     }
                     case POPUP_RESULT_URL: {
