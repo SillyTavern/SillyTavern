@@ -1,7 +1,9 @@
 {
     "name": "SillyTavern",
     "short_name": "SillyTavern",
+    "id": "/",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "theme_color": "#202124",
     "background_color": "#202124",
