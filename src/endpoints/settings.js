@@ -35,7 +35,13 @@ const AUTOSAVE_FUNCTIONS = new Map();
  */
 function triggerAutoSave(handle) {
     if (!AUTOSAVE_FUNCTIONS.has(handle)) {
-        const throttledAutoSave = _.throttle(() => backupUserSettings(handle, true), AUTOSAVE_INTERVAL);
+        const throttledAutoSave = _.throttle(() => {
+            try {
+                backupUserSettings(handle, true);
+            } catch (error) {
+                console.error('Could not auto-save settings backup:', error);
+            }
+        }, AUTOSAVE_INTERVAL);
         AUTOSAVE_FUNCTIONS.set(handle, throttledAutoSave);
     }
 
@@ -211,7 +217,7 @@ router.post('/save', function (request, response) {
         response.send({ result: 'ok' });
     } catch (err) {
         console.error(err);
-        response.send(err);
+        response.sendStatus(500);
     }
 });
 
