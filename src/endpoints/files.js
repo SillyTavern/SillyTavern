@@ -6,6 +6,7 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileSyncAtomic } from 'write-file-atomic';
 
 import { validateAssetFileName } from './assets.js';
+import { moveUploadedFile } from './images.js';
 import { clientRelativePath } from '../util.js';
 
 export const router = express.Router();
@@ -47,6 +48,48 @@ router.post('/upload', async (request, response) => {
         return response.send({ path: url });
     } catch (error) {
         console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+/**
+ * Endpoint to handle raw multipart file uploads.
+ * The file should be provided as a multipart form field named 'avatar'.
+ * Avoids buffering the file contents in memory by moving the uploaded temp file into place.
+ *
+ * @route POST /api/files/upload-form
+ * @param {Object} request.body - The multipart form fields.
+ * @param {string} request.body.name - The name to save the file as.
+ * @returns {Object} response - The response object containing the path where the file was saved.
+ */
+router.post('/upload-form', async (request, response) => {
+    try {
+        if (!request.file) {
+            return response.status(400).send('No file uploaded');
+        }
+
+        if (!request.body.name) {
+            await fs.promises.unlink(request.file.path).catch(() => { });
+            return response.status(400).send('No upload name specified');
+        }
+
+        // Validate filename
+        const validation = validateAssetFileName(request.body.name);
+        if (validation.error) {
+            await fs.promises.unlink(request.file.path).catch(() => { });
+            return response.status(400).send(validation.message);
+        }
+
+        const pathToUpload = path.join(request.user.directories.files, request.body.name);
+        await moveUploadedFile(request.file.path, pathToUpload);
+        const url = clientRelativePath(request.user.directories.root, pathToUpload);
+        console.info(`Uploaded file: ${url} from ${request.user.profile.handle}`);
+        return response.send({ path: url });
+    } catch (error) {
+        console.error(error);
+        if (request.file?.path) {
+            await fs.promises.unlink(request.file.path).catch(() => { });
+        }
         return response.sendStatus(500);
     }
 });
