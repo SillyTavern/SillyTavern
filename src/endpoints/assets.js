@@ -14,6 +14,18 @@ import { getHostFromUrl, isHostWhitelisted } from './content-manager.js';
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
 
 /**
+ * Checks whether a file is a Live2D model settings file (Cubism 2 `*.model.json`
+ * or Cubism 3+ `*.model3.json`). Matches the file name only, so unrelated files
+ * that merely contain "model" — e.g. VTube Studio's `items_pinned_to_model.json` —
+ * are not mistaken for a model and offered as a loadable Live2D model.
+ * @param {string} filePath Path or name of the file to check.
+ * @returns {boolean} True if the file is a Live2D model settings file.
+ */
+function isLive2dModelFile(filePath) {
+    return /(?:^|\.)model3?\.json$/i.test(path.basename(filePath));
+}
+
+/**
  * Validates the input filename for the asset.
  * @param {string} inputFilename Input filename
  * @returns {{error: boolean, message?: string}} Whether validation failed, and why if so
@@ -127,7 +139,7 @@ router.post('/get', async (request, response) => {
                     const files = getFiles(live2d_folder);
                     //console.debug("FILE FOUND:",files)
                     for (let file of files) {
-                        if (file.includes('model') && file.endsWith('.json')) {
+                        if (isLive2dModelFile(file)) {
                             //console.debug("Asset live2d model found:",file)
                             output[folder].push(clientRelativePath(request.user.directories.root, file));
                         }
@@ -345,7 +357,7 @@ router.post('/character', async (request, response) => {
                     const live2dModelPath = path.join(folderPath, modelFolder);
                     for (let file of fs.readdirSync(live2dModelPath)) {
                         //console.debug("Character live2d model found:", file)
-                        if (file.includes('model') && file.endsWith('.json'))
+                        if (isLive2dModelFile(file))
                             output.push(path.join('characters', name, category, modelFolder, file));
                     }
                 }
