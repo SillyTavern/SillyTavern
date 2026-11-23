@@ -175,6 +175,7 @@ body {
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
     overflow: hidden;
+    overscroll-behavior-y: none;
     color-scheme: only light;
 }
 
@@ -871,9 +872,11 @@ body .panelControlBar {
 
 #chat {
     max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
+    max-height: calc(100dvh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     overflow-x: hidden;
     padding-bottom: 0;
     overflow-y: scroll;
+    overscroll-behavior-y: contain;
     display: flex;
     bottom: 10px;
     /*     border-bottom: 1px solid var(--SmartThemeBorderColor);
