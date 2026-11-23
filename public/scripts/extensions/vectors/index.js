@@ -804,7 +804,16 @@ async function rearrangeChat(chat, _contextSize, _abort, type) {
             return;
         }
 
-        if (chat.length < settings.protect) {
+        // The interceptor receives a copy of the chat with hidden messages filtered out.
+        // If hidden messages were vectorized, they must be matched against the full chat,
+        // otherwise their vectors can never be inserted.
+        const fullChat = getContext().chat;
+        const hiddenMessages = settings.keep_hidden && Array.isArray(fullChat)
+            ? fullChat.filter(x => x.is_system && !fullChat.slice(-settings.protect).includes(x))
+            : [];
+
+        // Hidden messages stay retrievable even when the visible part of the chat is shorter than the retain window
+        if (chat.length < settings.protect && hiddenMessages.length === 0) {
             console.debug(`Vectors: Not enough messages to rearrange (less than ${settings.protect})`);
             return;
         }
@@ -823,7 +832,7 @@ async function rearrangeChat(chat, _contextSize, _abort, type) {
         const insertedHashes = new Set();
         const retainMessages = chat.slice(-settings.protect);
 
-        for (const message of chat) {
+        for (const message of [...chat, ...hiddenMessages]) {
             if (retainMessages.includes(message) || !message.mes) {
                 continue;
             }
