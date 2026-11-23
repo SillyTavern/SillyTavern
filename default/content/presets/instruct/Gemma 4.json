@@ -1,7 +1,7 @@
 {
     "input_sequence": "<|turn>user\n",
     "output_sequence": "<|turn>model\n",
-    "last_output_sequence": "",
+    "last_output_sequence": "<|turn>model\n<|channel>thought\n<channel|>",
     "system_sequence": "<|turn>system\n",
     "stop_sequence": "<turn|>",
     "wrap": false,
