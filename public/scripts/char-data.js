@@ -75,6 +75,7 @@
  * @property {string} depth_prompt.prompt - The actual prompt text used for deeper character interaction.
  * @property {"system" | "user" | "assistant"} depth_prompt.role - The role the character takes on during the prompted interaction (system, user, or assistant).
  * @property {RegexScriptData[]} regex_scripts - Custom regex scripts for the character.
+ * @property {CharXMediaConfig} [charx_media] - CharX export configuration for character-owned media.
  * // Non-standard extensions added by external tools
  * @property {string} [pygmalion_id] - The unique identifier assigned to the character by the Pygmalion.chat.
  * @property {string} [github_repo] - The gitHub repository associated with the character.
@@ -100,6 +101,20 @@
 * @property {number} minDepth - The minimum depth
 * @property {number} maxDepth - The maximum depth
 */
+
+/**
+ * @typedef {object} CharXMediaConfig
+ * @property {number} [version] - Configuration version.
+ * @property {boolean} [generateRegex] - Whether CharX export should embed display-only filename regex scripts.
+ * @property {CharXMediaItem[]} [items] - Per-file export overrides.
+ */
+
+/**
+ * @typedef {object} CharXMediaItem
+ * @property {string} sourcePath - Root-relative source path of the character-owned file.
+ * @property {string} [exportName] - Exported filename inside the CharX package.
+ * @property {boolean} [enabled] - Whether the file should be included in CharX export.
+ */
 
 /**
  * @typedef {object} v1CharData
