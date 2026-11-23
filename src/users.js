@@ -1070,7 +1070,8 @@ function createRouteHandler(directoryFn) {
     return async (req, res) => {
         try {
             const directory = directoryFn(req);
-            const filePath = decodeURIComponent(req.params[0]);
+            // Express has already decoded route parameters; preserve literal percent signs.
+            const filePath = req.params[0];
             const fullPath = path.join(directory, filePath);
             if (!isPathUnderParent(directory, path.resolve(fullPath))) {
                 return res.sendStatus(403);
