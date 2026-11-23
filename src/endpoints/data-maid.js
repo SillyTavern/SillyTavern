@@ -97,10 +97,24 @@ export class DataMaidService {
      * Creates a new DataMaidService instance for a specific user.
      * @param {string} handle - The user's handle.
      * @param {import('../users.js').UserDirectoryList} directories - List of user directories to scan for loose data.
+     * @param {boolean} [strict=false] Fail automatic cleanup scans if any scan error occurs.
      */
-    constructor(handle, directories) {
+    constructor(handle, directories, strict = false) {
         this.handle = handle;
         this.directories = directories;
+        this.strict = strict;
+        /** @type {string[]} */
+        this.scanErrors = [];
+    }
+
+    /**
+     * Records a scan error so automatic cleanup can fail safely.
+     * @param {string} message Error context
+     * @param {unknown} [error] Scan error
+     */
+    recordScanError(message, error) {
+        console.error(message, error);
+        this.scanErrors.push(message);
     }
 
     /**
@@ -239,7 +253,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting user images:', error);
+            this.recordScanError('[Data Maid] Error collecting user images:', error);
         }
 
         return result;
@@ -304,7 +318,7 @@ export class DataMaidService {
                         }
                     }
                 } catch (error) {
-                    console.error('[Data Maid] Error reading settings file:', error);
+                    this.recordScanError('[Data Maid] Error reading settings file:', error);
                 }
             }
             const knownFileFullPaths = new Set();
@@ -319,7 +333,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting user files:', error);
+            this.recordScanError('[Data Maid] Error collecting user files:', error);
         }
 
         return result;
@@ -353,7 +367,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting character chats:', error);
+            this.recordScanError('[Data Maid] Error collecting character chats:', error);
         }
 
         return result;
@@ -385,7 +399,7 @@ export class DataMaidService {
                             }
                         }
                     } catch (error) {
-                        console.error(`[Data Maid] Error parsing group chat file ${file.name}:`, error);
+                        this.recordScanError(`[Data Maid] Error parsing group chat file ${file.name}:`, error);
                     }
                 }
             }
@@ -398,7 +412,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting group chats:', error);
+            this.recordScanError('[Data Maid] Error collecting group chats:', error);
         }
 
         return result;
@@ -426,7 +440,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting avatar thumbnails:', error);
+            this.recordScanError('[Data Maid] Error collecting avatar thumbnails:', error);
         }
 
         return result;
@@ -454,7 +468,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting background thumbnails:', error);
+            this.recordScanError('[Data Maid] Error collecting background thumbnails:', error);
         }
 
         return result;
@@ -482,7 +496,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting persona thumbnails:', error);
+            this.recordScanError('[Data Maid] Error collecting persona thumbnails:', error);
         }
 
         return result;
@@ -504,7 +518,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting chat backups:', error);
+            this.recordScanError('[Data Maid] Error collecting chat backups:', error);
         }
 
         return result;
@@ -526,7 +540,7 @@ export class DataMaidService {
                 }
             }
         } catch (error) {
-            console.error('[Data Maid] Error collecting settings backups:', error);
+            this.recordScanError('[Data Maid] Error collecting settings backups:', error);
         }
 
         return result;
@@ -565,7 +579,7 @@ export class DataMaidService {
 
             return allChats;
         } catch (error) {
-            console.error('[Data Maid] Error parsing chats:', error);
+            this.recordScanError('[Data Maid] Error parsing chats:', error);
             return [];
         }
     }
@@ -596,7 +610,7 @@ export class DataMaidService {
                             allMetadata.push(...Object.values(groupData.past_metadata).filter(filterFn));
                         }
                     } catch (error) {
-                        console.error(`[Data Maid] Error parsing group chat file ${file.name}:`, error);
+                        this.recordScanError(`[Data Maid] Error parsing group chat file ${file.name}:`, error);
                     }
                 }
             }
@@ -630,7 +644,7 @@ export class DataMaidService {
 
             return allMetadata;
         } catch (error) {
-            console.error('[Data Maid] Error parsing chats:', error);
+            this.recordScanError('[Data Maid] Error parsing chats:', error);
             return [];
         }
     }
@@ -644,10 +658,15 @@ export class DataMaidService {
     async #parseChatFile(filePath) {
         try {
             const content = await fs.promises.readFile(filePath, 'utf-8');
-            const chatData = content.split('\n').map(tryParse).filter(Boolean);
-            return chatData;
+            const lines = content.split('\n').filter(line => line.trim());
+            const chatData = lines.map(tryParse);
+            if (this.strict && chatData.some(message => !message)) {
+                this.recordScanError(`[Data Maid] Error parsing chat file ${filePath}: Invalid JSON line`);
+            }
+            const validChatData = chatData.filter(Boolean);
+            return validChatData;
         } catch (error) {
-            console.error(`[Data Maid] Error reading chat file ${filePath}:`, error);
+            this.recordScanError(`[Data Maid] Error reading chat file ${filePath}:`, error);
             return [];
         }
     }
@@ -685,8 +704,12 @@ router.post('/report', async (req, res) => {
             return res.sendStatus(403);
         }
 
-        const dataMaid = new DataMaidService(req.user.profile.handle, req.user.directories);
+        const dataMaid = new DataMaidService(req.user.profile.handle, req.user.directories, req.body?.strict === true);
         const rawReport = await dataMaid.generateReport();
+        if (req.body?.strict === true && dataMaid.scanErrors.length > 0) {
+            console.error(`[Data Maid] Automatic cleanup scan aborted due to ${dataMaid.scanErrors.length} error(s)`);
+            return res.status(500).json({ error: 'Automatic deletion was skipped because the scan could not be completed.' });
+        }
 
         const report = await dataMaid.sanitizeReport(rawReport);
         const token = DataMaidService.generateToken(req.user.profile.handle, rawReport);
