@@ -184,6 +184,17 @@ export const VERTEX_SAFETY = [
     },
 ];
 
+/**
+ * Mirrors `character_names_behavior` in public/scripts/openai.js.
+ * Sent by the client as `names_behavior` with chat completion requests.
+ */
+export const CHARACTER_NAMES_BEHAVIOR = {
+    NONE: -1,
+    DEFAULT: 0,
+    COMPLETION: 1,
+    CONTENT: 2,
+};
+
 export const CHAT_COMPLETION_SOURCES = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
