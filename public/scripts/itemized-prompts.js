@@ -7,13 +7,38 @@ import { power_user, registerDebugFunction } from './power-user.js';
 import { isMobile } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { getFriendlyTokenizerName, getTokenCountAsync } from './tokenizers.js';
-import { copyText } from './utils.js';
-
-let PromptArrayItemForRawPromptDisplay;
-let priorPromptArrayItemForRawPromptDisplay;
+import { copyText, uuidv4 } from './utils.js';
 
 const promptStorage = localforage.createInstance({ name: 'SillyTavern_Prompts' });
 export let itemizedPrompts = [];
+
+/**
+ * Link one generation snapshot to the reply. Swipe metadata copies the ID,
+ * not the raw prompt; alternatives from the same request share one cache entry.
+ * @param {number} mesId Message index
+ * @param {ChatMessage} message Reply being written
+ * @param {object} snapshot Captured generation parameters
+ */
+export function attachItemizedPrompt(mesId, message, snapshot) {
+    const promptId = uuidv4();
+    message.extra.itemized_prompt_id = promptId;
+    itemizedPrompts.push({ ...snapshot, mesId, promptId });
+}
+
+/**
+ * Remove a deleted or superseded snapshot only after its last swipe is gone.
+ * @param {number} mesId Message index
+ * @param {string} promptId ID of the snapshot that may no longer be used
+ */
+export function releaseItemizedPrompt(mesId, promptId) {
+    if (!promptId || chat[mesId]?.swipe_info?.some(info => info?.extra?.itemized_prompt_id === promptId)) {
+        return;
+    }
+    const index = itemizedPrompts.findIndex(record => record.mesId === mesId && record.promptId === promptId);
+    if (index !== -1) {
+        itemizedPrompts.splice(index, 1);
+    }
+}
 
 /**
  * Gets the itemized prompts for a chat.
@@ -67,7 +92,8 @@ export async function replaceItemizedPromptText(mesId, promptText) {
         itemizedPrompts = [];
     }
 
-    const itemizedPrompt = itemizedPrompts.find(x => x.mesId === mesId);
+    const index = findItemizedPromptSet(itemizedPrompts, mesId);
+    const itemizedPrompt = itemizedPrompts[index];
 
     if (!itemizedPrompt) {
         return;
@@ -225,36 +251,33 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMes
     return params;
 }
 
-export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
-    let thisPromptSet = undefined;
-    priorPromptArrayItemForRawPromptDisplay = -1;
+function isSelectedPrompt(record) {
+    // An untagged swipe can still read an old message-level record, but never a tagged sibling.
+    return record.promptId === chat[record.mesId]?.extra?.itemized_prompt_id;
+}
 
-    for (let i = 0; i < itemizedPrompts.length; i++) {
-        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
-        if (itemizedPrompts[i].mesId === incomingMesId) {
-            console.log(`found matching mesID ${i}`);
-            thisPromptSet = i;
-            PromptArrayItemForRawPromptDisplay = i;
-            console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
-            console.log(itemizedPrompts[thisPromptSet]);
-            break;
-        } else if (itemizedPrompts[i].rawPrompt) {
-            priorPromptArrayItemForRawPromptDisplay = i;
-        }
-    }
-    return thisPromptSet;
+export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
+    const index = itemizedPrompts.findIndex(record => record.mesId === incomingMesId && isSelectedPrompt(record));
+    return index === -1 ? undefined : index;
 }
 
 export async function promptItemize(itemizedPrompts, requestedMesId) {
-    console.log('PROMPT ITEMIZE ENTERED');
-    var incomingMesId = Number(requestedMesId);
-    console.debug(`looking for MesId ${incomingMesId}`);
-    var thisPromptSet = findItemizedPromptSet(itemizedPrompts, incomingMesId);
-
+    const incomingMesId = Number(requestedMesId);
+    const thisPromptSet = findItemizedPromptSet(itemizedPrompts, incomingMesId);
     if (thisPromptSet === undefined) {
-        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
-        console.log(itemizedPrompts);
         return null;
+    }
+
+    const currentPrompt = itemizedPrompts[thisPromptSet];
+    if (!currentPrompt.promptId && chat[incomingMesId]?.swipes?.length > 1) {
+        toastr.info(t`This prompt was saved for the message. Its original swipe was not recorded.`);
+    }
+    // Compare with the selected reply of the preceding message, not a sibling swipe.
+    let previousPrompt;
+    for (const record of itemizedPrompts) {
+        if (record.rawPrompt && record.mesId < incomingMesId && record.mesId > (previousPrompt?.mesId ?? -1) && isSelectedPrompt(record)) {
+            previousPrompt = record;
+        }
     }
 
     const params = await itemizedParams(itemizedPrompts, thisPromptSet, incomingMesId);
@@ -268,12 +291,12 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
 
     /** @type {HTMLElement} */
     const diffPrevPrompt = popup.dlg.querySelector('#diffPrevPrompt');
-    if (priorPromptArrayItemForRawPromptDisplay >= 0) {
+    if (previousPrompt) {
         diffPrevPrompt.style.display = '';
         diffPrevPrompt.addEventListener('click', function () {
             const dmp = new DiffMatchPatch();
-            const text1 = flatten(itemizedPrompts[priorPromptArrayItemForRawPromptDisplay].rawPrompt);
-            const text2 = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+            const text1 = flatten(previousPrompt.rawPrompt);
+            const text2 = flatten(currentPrompt.rawPrompt);
 
             dmp.Diff_Timeout = 2.0;
 
@@ -293,7 +316,7 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
         diffPrevPrompt.style.display = 'none';
     }
     popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('pointerup', async function () {
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPrompt = currentPrompt.rawPrompt;
         let rawPromptValues = rawPrompt;
 
         if (Array.isArray(rawPrompt)) {
@@ -305,12 +328,7 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
     });
 
     popup.dlg.querySelector('#showRawPrompt').addEventListener('click', async function () {
-        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
-        console.log(PromptArrayItemForRawPromptDisplay);
-        console.log(itemizedPrompts);
-        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
-
-        const rawPrompt = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+        const rawPrompt = flatten(currentPrompt.rawPrompt);
 
         // Mobile needs special handholding. The side-view on the popup wouldn't work,
         // so we just show an additional popup for this.
@@ -323,7 +341,6 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
             return;
         }
 
-        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
         const rawPromptWrapper = document.getElementById('rawPromptWrapper');
         rawPromptWrapper.innerText = rawPrompt;
         $('#rawPromptPopup').slideToggle();

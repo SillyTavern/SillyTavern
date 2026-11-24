@@ -275,7 +275,7 @@ import { extractReasoningFromData, extractReasoningSignatureFromData, initReason
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
-import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
+import { attachItemizedPrompt, clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, releaseItemizedPrompt, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
@@ -2507,13 +2507,8 @@ export function addCopyToCodeBlocks(messageElement) {
  * @return {void}
  */
 function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
-    //if we have itemized messages, and the array isn't null..
-    if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
-        if (itemizedPrompt) {
-            messageElement.find('.mes_prompt').show();
-        }
-    }
+    const hasPrompt = !message.is_user && findItemizedPromptSet(itemizedPrompts, messageId) !== undefined;
+    messageElement.find('.mes_prompt').toggle(hasPrompt);
 }
 
 /**
@@ -3549,8 +3544,9 @@ class StreamingProcessor {
      * @param {Date} timeStarted Date when generation was started
      * @param {string} continueMessage Previous message if the type is 'continue'
      * @param {PromptReasoning} promptReasoning Prompt reasoning instance
+     * @param {object} itemizedPrompt Prompt snapshot for this generation
      */
-    constructor(type, forceName2, timeStarted, continueMessage, promptReasoning) {
+    constructor(type, forceName2, timeStarted, continueMessage, promptReasoning, itemizedPrompt) {
         this.result = '';
         this.messageId = -1;
         /** @type {HTMLElement} */
@@ -3583,6 +3579,7 @@ class StreamingProcessor {
         this.reasoningHandler = new ReasoningHandler(timeStarted);
         /** @type {PromptReasoning} */
         this.promptReasoning = promptReasoning;
+        this.itemizedPrompt = itemizedPrompt;
         /** @type {string[]} */
         this.images = [];
         /** @type {string?} */
@@ -3634,7 +3631,7 @@ class StreamingProcessor {
             this.sendTextarea.value = '';
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-            await saveReply({ type: this.type, getMessage: text, fromStreaming: true });
+            await saveReply({ type: this.type, getMessage: text, fromStreaming: true, itemizedPrompt: this.itemizedPrompt });
             messageId = chat.length - 1;
             await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
@@ -5349,8 +5346,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         return Promise.resolve();
     }
 
+    // Keep the request snapshot until a reply is actually attached to the chat.
+    let itemizedPrompt;
+
     /**
-     * Saves itemized prompt bits and calls streaming or non-streaming generation API.
+     * Collects itemized prompt bits and calls the streaming or non-streaming generation API.
      * @returns {Promise<void|*|Awaited<*>|String|{fromStream}|string|undefined|Object>}
      * @throws {Error|object} Error with message text, or Error with response JSON (OAI/Horde), or the actual response JSON (novel|textgenerationwebui|kobold)
      */
@@ -5365,10 +5365,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         //set array object for prompt token itemization of this message
         let currentArrayEntry = Number(thisPromptBits.length - 1);
-        let additionalPromptStuff = {
+        itemizedPrompt = {
             ...thisPromptBits[currentArrayEntry],
             rawPrompt: generate_data.prompt || generate_data.input,
-            mesId: getNextMessageId(type),
             allAnchors: await getAllExtensionPrompts(),
             chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
@@ -5399,19 +5398,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             examplesCount: main_api !== 'openai' ? (pinExmString ? mesExamplesArray.length : count_exm_add) : oaiMessageExamples.length,
         };
 
-        //console.log(additionalPromptStuff);
-        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === additionalPromptStuff.mesId);
-
-        if (itemizedIndex !== -1) {
-            itemizedPrompts[itemizedIndex] = additionalPromptStuff;
-        } else {
-            itemizedPrompts.push(additionalPromptStuff);
-        }
-
-        console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
-
         if (isStreamingEnabled() && type !== 'quiet') {
-            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag, promptReasoning);
+            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag, promptReasoning, itemizedPrompt);
             if (isContinue) {
                 // Save reply does add cycle text to the prompt, so it's not needed here
                 streamingProcessor.firstMessageText = '';
@@ -5555,9 +5543,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         } else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature, itemizedPrompt }));
             } else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature, itemizedPrompt }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6660,12 +6648,13 @@ async function processImageAttachment(message, { imageUrls }) {
  * @property {string} [reasoning] Message reasoning
  * @property {string[]} [imageUrls] Links to images
  * @property {string?} [reasoningSignature] Encrypted signature of the reasoning text
+ * @property {object} [itemizedPrompt] Prompt snapshot captured for this generation
  *
  * @typedef {object} SaveReplyResult
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null, itemizedPrompt }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
@@ -6690,6 +6679,14 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 
     if (!reasoning) {
         reasoning = '';
+    }
+
+    const previousPromptId = lastMessage?.swipe_info?.[lastMessage.swipe_id]?.extra?.itemized_prompt_id;
+    if (itemizedPrompt && ['swipe', 'append', 'continue', 'appendFinal'].includes(type)) {
+        attachItemizedPrompt(chat.length - 1, lastMessage, itemizedPrompt);
+    } else if (type === 'swipe') {
+        // A swipe created without a generation snapshot must not inherit the preceding swipe's prompt.
+        delete lastMessage.extra.itemized_prompt_id;
     }
 
     let oldMessage = '';
@@ -6769,6 +6766,9 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         const newMessage = {};
         chat.push(newMessage);
         newMessage.extra = {};
+        if (itemizedPrompt) {
+            attachItemizedPrompt(chat.length - 1, newMessage, itemizedPrompt);
+        }
         newMessage.name = name2;
         newMessage.is_user = false;
         newMessage.send_date = getMessageTimeStamp();
@@ -6851,6 +6851,9 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         item.swipe_info.push(...swipeInfoArray);
     }
 
+    if (item === lastMessage && previousPromptId) {
+        releaseItemizedPrompt(chat.length - 1, previousPromptId);
+    }
     statMesProcess(item, type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }
@@ -9407,7 +9410,8 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
     message.swipes.splice(swipeId, 1);
 
     if (Array.isArray(message.swipe_info) && message.swipe_info.length) {
-        message.swipe_info.splice(swipeId, 1);
+        const [removed] = message.swipe_info.splice(swipeId, 1);
+        releaseItemizedPrompt(Number(messageId), removed?.extra?.itemized_prompt_id);
     }
 
     let newSwipeId;

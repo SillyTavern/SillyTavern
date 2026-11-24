@@ -101,6 +101,8 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
+        /** Reference to the generation's prompt itemization in this browser's local cache. */
+        itemized_prompt_id?: string;
         /** When false, the message cannot be swiped. */
         swipeable?: boolean;
         overswipe_behavior?: OVERSWIPE_BEHAVIOR;
