@@ -3340,11 +3340,15 @@ export async function getExtensionPrompt(position = extension_prompt_types.IN_PR
  * @param {string} value Input string
  * @param {string?} name1Override Override for name1
  * @param {string?} name2Override Override for name2
+ * @param {Object} [options] Macro substitution options
+ * @param {boolean} [options.deferOriginal=false] Preserve {{original}} for the prompt override pass
  * @returns {string} Processed string
  */
-export function baseChatReplace(value, name1Override = null, name2Override = null) {
+export function baseChatReplace(value, name1Override = null, name2Override = null, { deferOriginal = false } = {}) {
     if (typeof value === 'string' && value.length > 0) {
-        value = substituteParams(value, { name1Override, name2Override, replaceCharacterCard: false });
+        // The experimental engine needs an explicit placeholder until the base prompt is available.
+        const dynamicMacros = deferOriginal && power_user.experimental_macro_engine ? { original: '{{original}}' } : undefined;
+        value = substituteParams(value, { name1Override, name2Override, replaceCharacterCard: false, dynamicMacros });
 
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
@@ -3417,11 +3421,11 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
         system: () => {
             if (!character) return '';
             const systemPrompt = chat_metadata.system_prompt || character.data?.system_prompt || '';
-            return power_user.prefer_character_prompt ? baseChatReplace(systemPrompt.trim()) : '';
+            return power_user.prefer_character_prompt ? baseChatReplace(systemPrompt.trim(), null, null, { deferOriginal: true }) : '';
         },
         jailbreak: () => {
             if (!character) return '';
-            return power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim()) : '';
+            return power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim(), null, null, { deferOriginal: true }) : '';
         },
         version: () => character?.data?.character_version ?? '',
         charDepthPrompt: () => {
