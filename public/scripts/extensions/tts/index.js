@@ -37,6 +37,7 @@ import { MiniMaxTtsProvider } from './minimax.js';
 import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
+import { AniwaffleTtsProvider } from './aniwaffle.js';
 import { applyLocale, t } from '/scripts/i18n.js';
 
 const UPDATE_INTERVAL = 1000;
@@ -122,6 +123,7 @@ export function registerTtsProvider(name, provider) {
 
 const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
+    Aniwaffle: AniwaffleTtsProvider,
     Azure: AzureTtsProvider,
     Chatterbox: ChatterboxTtsProvider,
     Chutes: ChutesTtsProvider,
