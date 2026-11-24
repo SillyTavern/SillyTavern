@@ -197,8 +197,6 @@ jobs:
     # Override permissions, as this needs to write a check
     permissions:
       checks: write
-      contents: read
-      pull-requests: read
 
     steps:
       - name: Check Merge Blocking

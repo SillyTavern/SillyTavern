@@ -66,7 +66,7 @@ Write at least somewhat meaningful PR descriptions and commit messages. There's 
 
 Do not use a completed pull request as the first product discussion for a new named external provider or service.
 
-- Model routers, resellers, rerouters, gateways, and aggregators should use **Custom (OpenAI-compatible)** and publish provider-owned setup instructions. Provider-specific convenience may be implemented as a third-party UI extension or server plugin.
+- Model routers, resellers, rerouters, gateways, and aggregators should use **Custom (OpenAI-compatible)** and publish provider-owned setup instructions. A third-party UI extension can register the service as a named Custom provider: it then appears by name in the Chat Completion source list, with its endpoint, model list, key handling and request adjustments in place. The guide is [Build a provider extension](https://docs.sillytavern.app/for-contributors/provider-integrations/#option-1-build-a-provider-extension), and the [provider extension example](https://github.com/SillyTavern/Extension-ProviderExample) is a working extension to fork. Anything beyond that may be implemented as a third-party UI extension or server plugin.
 - New first-party model, TTS, speech, web search, image, vectorization, embedding, reranking, and similar integrations are exceptional and should begin with a public issue and maintainer discussion before implementation.
 - Existing-provider maintenance and provider-neutral improvements to generic compatibility remain welcome.
 

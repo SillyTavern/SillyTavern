@@ -5,6 +5,7 @@ import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
 import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate, oai_settings } from './openai.js';
 import EventSourceStream from './sse-stream.js';
+import { settingsForCustomRequest } from './custom-providers.js';
 
 // #region Type Definitions
 /**
@@ -536,27 +537,29 @@ export class ChatCompletionService {
      * @param {ChatCompletionPayload} requestData - payload data, overriding preset if given
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
+     * @param {import('./custom-providers.js').CustomConnectionSnapshot} [options.customConnection] - Complete isolated Custom tuple
      * @param {boolean} [extractData=true] - Whether to extract structured data from response
      * @param {AbortSignal?} [signal] - Abort signal
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
     static async processRequest(requestData, options, extractData = true, signal = null) {
-        const { presetName } = options;
+        const { presetName, customConnection } = options;
         requestData = this.createRequestData(requestData);
 
         // Apply generation preset if specified
-        if (presetName) {
+        if (presetName || customConnection) {
             const presetManager = getPresetManager(this.TYPE);
             if (presetManager) {
-                const preset = presetManager.getCompletionPresetByName(presetName);
+                const preset = (presetName ? presetManager.getCompletionPresetByName(presetName) : {}) ?? (customConnection ? {} : undefined);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    requestData = await this.presetToGeneratePayload(preset, {}, requestData);
+                    requestData = await this.presetToGeneratePayload(preset, {}, requestData, customConnection);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
             } else {
+                if (customConnection) requestData = await this.presetToGeneratePayload({}, {}, requestData, customConnection);
                 console.warn('Preset manager not found, continuing with default settings');
             }
         }
@@ -571,8 +574,9 @@ export class ChatCompletionService {
      * @param {Object} overridePreset - Additional parameters to override preset values
      * @param {Object} overridePayload - Additional parameters to override payload values
      * @returns {Promise<any>} - Formatted payload for chat completion API
+     * @param {import('./custom-providers.js').CustomConnectionSnapshot} [customConnection] - Resolved Custom tuple applied before generation construction
      */
-    static async presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}) {
+    static async presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}, customConnection = undefined) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
@@ -584,7 +588,7 @@ export class ChatCompletionService {
         preset.bias_preset_selected = preset.bias_presets !== undefined ? preset.bias_preset_selected : undefined;  // presets might have bias_preset_selected but not bias_presets, but settings need both or neither.
 
         // Convert from preset to ChatCompletionSettings
-        const settings = structuredClone(oai_settings);
+        let settings = structuredClone(oai_settings);
         for (const [key, value] of Object.entries(preset)) {
             const settingToUpdate = settingsToUpdate[key];
             if (!settingToUpdate) continue;
@@ -593,9 +597,21 @@ export class ChatCompletionService {
 
         // Ensure api-url is properly applied for all sources that accept it
         ['custom_url', 'vertexai_region', 'zai_endpoint', 'siliconflow_endpoint', 'minimax_endpoint', 'pollinations_endpoint'].forEach(field => {
+            if (customConnection && field === 'custom_url') return;
             // The order is: connection profile => CC preset => CC settings
-            overridePayload[field] = overridePayload[field] || settings[field] || oai_settings[field];
+            overridePayload[field] = overridePayload[field] ?? settings[field] ?? oai_settings[field];
         });
+
+        if (customConnection) {
+            settings = settingsForCustomRequest(settings, customConnection, overridePayload);
+            // The snapshot is authoritative; do not overlay compatibility projections afterward.
+            for (const field of ['custom_url', 'custom_include_headers', 'custom_include_body', 'custom_exclude_body', 'custom_prompt_post_processing', 'custom_auth', 'secret_id']) delete overridePayload[field];
+            overridePayload.model = settings.custom_model;
+            overridePayload.chat_completion_source = 'custom';
+        } else if (overridePayload.chat_completion_source && overridePayload.chat_completion_source !== 'custom') {
+            delete settings.custom_provider_state;
+            settings.chat_completion_source = overridePayload.chat_completion_source;
+        }
 
         // Convert from settings to generation payload
         const data = await createGenerationParameters(settings, overridePayload.model, 'quiet', overridePayload.messages);

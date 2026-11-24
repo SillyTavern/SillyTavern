@@ -313,6 +313,12 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
         return summary;
     }
 
+    // Assets live in a folder named after the character, so the name must be usable as a folder name
+    if (typeof characterFolder !== 'string' || !characterFolder || sanitize(characterFolder) !== characterFolder) {
+        console.warn('CharX: Character name cannot be used as a folder name, skipping auxiliary assets.');
+        return summary;
+    }
+
     let spritesPath = null;
     let miscPath = null;
 

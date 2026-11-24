@@ -1283,7 +1283,7 @@
                                         <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="typical_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type-mode="except" data-tg-type="generic,ollama" data-tg-samplers="typical_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Typical P">Typical P</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable." data-i18n="[title]Typical_P_desc"></div>
@@ -2053,7 +2053,7 @@
                                             </em>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes,workers_ai">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes,workers_ai,deepseek">
                                         <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_media_inlining" type="checkbox" />
                                             <span data-i18n="Send inline media">Send inline media</span>
@@ -2920,11 +2920,11 @@
                             Chat Completion Source
                         </h4>
                         <select id="chat_completion_source">
-                            <optgroup>
+                            <optgroup label="OpenAI-compatible" data-i18n="[label]OpenAI-compatible">
                                 <option value="openai">OpenAI</option>
                                 <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                             </optgroup>
-                            <optgroup>
+                            <optgroup label="Other Providers" data-i18n="[label]Other Providers">
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
                                 <option value="azure_openai">Azure OpenAI</option>
@@ -3067,6 +3067,8 @@
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
                                     <optgroup label="GPT-6">
+                                        <option value="gpt-6.1-sol">gpt-6.1-sol</option>
+                                        <option value="gpt-6.1-terra">gpt-6.1-terra</option>
                                         <option value="gpt-6-astra">gpt-6-astra</option>
                                         <option value="gpt-6-sol">gpt-6-sol</option>
                                         <option value="gpt-6-luna">gpt-6-luna</option>
@@ -3188,25 +3190,24 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-fable-5-2">claude-fable-5-2</option>
                                         <option value="claude-fable-5-1">claude-fable-5-1</option>
                                         <option value="claude-fable-5">claude-fable-5</option>
                                         <option value="claude-opus-5-5">claude-opus-5-5</option>
                                         <option value="claude-opus-5">claude-opus-5</option>
+                                        <option value="claude-sonnet-5-5">claude-sonnet-5-5</option>
                                         <option value="claude-sonnet-5">claude-sonnet-5</option>
+                                        <option value="claude-haiku-5-5">claude-haiku-5-5</option>
                                         <option value="claude-opus-4-8">claude-opus-4-8</option>
                                         <option value="claude-opus-4-7">claude-opus-4-7</option>
                                         <option value="claude-opus-4-6">claude-opus-4-6</option>
                                         <option value="claude-opus-4-5">claude-opus-4-5</option>
                                         <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                                         <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-                                        <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
-                                        <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929</option>
+                                        <option value="claude-sonnet-4-5">claude-sonnet-4-5 (deprecated)</option>
+                                        <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929 (deprecated)</option>
                                         <option value="claude-haiku-4-5">claude-haiku-4-5</option>
                                         <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
-                                        <option value="claude-opus-4-0">claude-opus-4-0 (deprecated)</option>
-                                        <option value="claude-opus-4-20250514">claude-opus-4-20250514 (deprecated)</option>
-                                        <option value="claude-sonnet-4-0">claude-sonnet-4-0 (deprecated)</option>
-                                        <option value="claude-sonnet-4-20250514">claude-sonnet-4-20250514 (deprecated)</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -3709,7 +3710,8 @@
                             <div>
                                 <h4 data-i18n="DeepSeek Model">DeepSeek Model</h4>
                                 <select id="model_deepseek_select">
-                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                    <option value="deepseek-flash">deepseek-flash</option>
+                                    <option value="deepseek-v4-pro">deepseek-v4-pro</option>
                                 </select>
                             </div>
                         </div>
@@ -3816,6 +3818,30 @@
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">
+                            <div id="custom_provider_card" class="custom_provider_card displayNone">
+                                <div class="flex-container alignItemsCenter justifySpaceBetween">
+                                    <h3 id="custom_provider_name" class="margin0"></h3>
+                                    <div class="flex-container alignItemsCenter">
+                                        <a id="custom_provider_documentation" class="menu_button menu_button_icon margin0" target="_blank" rel="noopener noreferrer">
+                                            <i class="fa-solid fa-book"></i>
+                                            <span data-i18n="Documentation">Documentation</span>
+                                        </a>
+                                        <a id="custom_provider_support" class="menu_button menu_button_icon margin0" target="_blank" rel="noopener noreferrer">
+                                            <i class="fa-solid fa-life-ring"></i>
+                                            <span data-i18n="Support">Support</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="custom_provider_origin">
+                                    <i class="fa-solid fa-puzzle-piece"></i>
+                                    <span data-i18n="Added by the extension">Added by the extension</span>
+                                    <b id="custom_provider_owner"></b>
+                                </div>
+                                <small id="custom_provider_info"></small>
+                                <div id="custom_provider_extension_settings"></div>
+                            </div>
+                            <div id="custom_provider_error" role="status" aria-live="polite"></div>
+                            <div id="custom_endpoint_block">
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
                                 <input id="custom_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
@@ -3826,10 +3852,16 @@
                                     <b data-i18n="completions note prefix"></b><code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
                                 </small>
                             </div>
+                            </div>
+                            <div id="custom_key_block">
                             <h4>
-                                <span data-i18n="Custom API Key">Custom API Key</span>
-                                <small data-i18n="(Optional)">(Optional)</small>
+                                <span id="custom_key_title" data-i18n="Custom API Key">Custom API Key</span>
+                                <small id="custom_key_optional" data-i18n="(Optional)">(Optional)</small>
                             </h4>
+                            <div id="custom_credential_binding" class="displayNone">
+                                <select id="custom_credential_select" class="text_pole wide100p" aria-describedby="custom_credential_info"></select>
+                                <small id="custom_credential_info" data-i18n="Pick one of your saved keys, or enter a new one below and click Connect.">Pick one of your saved keys, or enter a new one below and click Connect.</small>
+                            </div>
                             <div class="flex-container">
                                 <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_custom"></div>
@@ -3837,14 +3869,31 @@
                             <div data-for="api_key_custom" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                 For privacy reasons, your API key will be hidden after you click 'Connect'.
                             </div>
+                            </div>
+                            <div id="custom_model_id_block">
                             <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
                             <div class="flex-container">
                                 <input list="model_custom_select_fill" id="custom_model_id" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-4o" placeholder="Example: gpt-4o">
                                 <datalist id="model_custom_select_fill" class="text_pole model_custom_select"></datalist>
                             </div>
-                            <h4 data-i18n="Available Models">Available Models</h4>
+                            </div>
+                            <div id="custom_model_select_block">
+                            <h4 id="custom_model_select_title" data-i18n="Available Models">Available Models</h4>
                             <div class="flex-container">
                                 <select id="model_custom_select" class="text_pole model_custom_select"></select>
+                            </div>
+                            </div>
+                            <div id="custom_provider_advanced" class="displayNone">
+                                <label id="custom_provider_details" class="checkbox_label" for="custom_provider_details_toggle">
+                                    <input id="custom_provider_details_toggle" type="checkbox" />
+                                    <span data-i18n="Advanced: show endpoint and connection details">Advanced: show endpoint and connection details</span>
+                                </label>
+                                <div id="custom_provider_actions" class="flex-container alignItemsCenter displayNone">
+                                    <small id="custom_provider_modified"></small>
+                                    <button id="custom_provider_reset" type="button" class="menu_button menu_button_icon" data-i18n="Reset provider defaults">Reset provider defaults</button>
+                                    <button id="custom_provider_detach" type="button" class="menu_button menu_button_icon" data-i18n="Use these settings manually">Use these settings manually</button>
+                                    <button id="custom_provider_forget" type="button" class="menu_button menu_button_icon" data-i18n="Forget saved setup">Forget saved setup</button>
+                                </div>
                             </div>
                         </form>
                         <div id="xai_form" data-source="xai">
@@ -3954,6 +4003,8 @@
                             </select>
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
+                                <option value="glm-5.3">glm-5.3</option>
+                                <option value="glm-5.3-flash">glm-5.3-flash</option>
                                 <option value="glm-5.2">glm-5.2</option>
                                 <option value="glm-5-turbo">glm-5-turbo</option>
                                 <option value="glm-5v-turbo">glm-5v-turbo</option>
@@ -5329,6 +5380,9 @@
                             <div id="CustomCSS-block" class="flex-container flexFlowColumn">
                                 <h4 class="title_restorable" title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
                                     <span data-i18n="Custom CSS">Custom CSS</span>
+                                    <label class="checkbox_label margin0" for="customCSSEnabled" title="Apply the Custom CSS. Uncheck to turn it off without deleting it." data-i18n="[title]Apply the Custom CSS. Uncheck to turn it off without deleting it.">
+                                        <input id="customCSSEnabled" type="checkbox" checked />
+                                    </label>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </h4>
                                 <div id="CustomCSS-textAreaBlock" class="flex-container flexnowrap alignitemscenter">
@@ -7167,7 +7221,7 @@
                                 <div class="flex-container alignitemscenter wide100p">
                                     <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                         <div class="flex-container flex1">
-                                            <textarea class="text_pole" rows="1" name="comment" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                            <textarea class="text_pole" rows="1" name="comment" placeholder="Entry Title/Memo"></textarea>
                                         </div>
                                         <!-- <span class="world_entry_form_position_value"></span> -->
                                         <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized" name="entryStateSelector" class="text_pole widthNatural margin0">

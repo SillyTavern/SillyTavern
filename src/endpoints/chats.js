@@ -538,6 +538,21 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
         throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
     }
+
+    // A confirmed overwrite (skipIntegrityCheck === true) replaces the existing chat file,
+    // which would permanently destroy the previous content. Before the file is overwritten,
+    // snapshot its current bytes so the user can always restore the pre-overwrite state.
+    // This must run synchronously (bypassing the throttled backup function) to guarantee the
+    // snapshot is on disk before the overwrite below. The dedicated prefix keeps these
+    // snapshots separate from regular backups while still being listable and restorable
+    // through the backup browser (they start with the CHAT_BACKUPS_PREFIX guard).
+    if (skipIntegrityCheck) {
+        const previousContent = tryReadFileSync(filePath);
+        if (previousContent) {
+            backupChat(backupDirectory, cardName, previousContent, 'chat_pre_overwrite_');
+        }
+    }
+
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle, cardName)(backupDirectory, cardName, jsonlData);
 }
@@ -979,7 +994,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             // Find group chat files for given group ID
             const groupChatsDir = path.join(request.user.directories.groupChats);
             chatFiles = targetGroup.chats
-                .map(chatId => path.join(groupChatsDir, `${chatId}.jsonl`))
+                .map(chatId => path.join(groupChatsDir, sanitize(`${chatId}.jsonl`)))
                 .filter(fileName => fs.existsSync(fileName));
         } else {
             // Regular character chat directory
@@ -1095,7 +1110,7 @@ router.post('/recent', async function (request, response) {
 
                     if (Array.isArray(groupData.chats)) {
                         for (const chat of groupData.chats) {
-                            const filePath = path.join(request.user.directories.groupChats, `${chat}.jsonl`);
+                            const filePath = path.join(request.user.directories.groupChats, sanitize(`${chat}.jsonl`));
                             if (!fs.existsSync(filePath)) {
                                 continue;
                             }
