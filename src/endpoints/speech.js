@@ -8,6 +8,7 @@ import mime from 'mime-types';
 import { getPipeline } from '../transformers.js';
 import { forwardFetchResponse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { router as fishAudioRouter } from './fish-audio.js';
 
 export const router = express.Router();
 
@@ -173,6 +174,7 @@ pollinations.post('/generate', async (req, res) => {
 });
 
 router.use('/pollinations', pollinations);
+router.use('/fish-audio', fishAudioRouter);
 
 const elevenlabs = express.Router();
 
