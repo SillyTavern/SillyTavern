@@ -2062,5 +2062,6 @@
     "Deleting chat…": "Suppression de la discussion…",
     "Loading chat…": "Chargement de la discussion…",
     "Bulk Delete": "Suppression groupée",
-    "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…"
+    "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…",
+    "Select tag to merge into": "Sélectionnez la balise dans laquelle fusionner"
 }

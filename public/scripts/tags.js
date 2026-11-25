@@ -613,7 +613,15 @@ function filterByFolder(filterHelper) {
 
 function loadTagsSettings(settings) {
     tags = settings.tags !== undefined ? settings.tags : DEFAULT_TAGS;
-    tag_map = settings.tag_map !== undefined ? settings.tag_map : Object.create(null);
+
+    const rawMap = settings.tag_map !== undefined ? settings.tag_map : Object.create(null);
+
+    tag_map = Object.create(null);
+    for (const [key, value] of Object.entries(rawMap)) {
+        if (Array.isArray(value)) {
+            tag_map[key] = value;
+        }
+    }
 }
 
 function renameTagKey(oldKey, newKey) {
@@ -2114,9 +2122,17 @@ function updateDrawTagFolder(element, tag) {
     indicator.css('font-size', `calc(var(--mainFontSize) * ${tagFolder.size})`);
 }
 
+/**
+ * Event handler for deleting a tag and optionally merging its references into another tag.
+ * @this {HTMLElement}
+ */
 async function onTagDeleteClick() {
     const id = $(this).closest('.tag_view_item').attr('id');
+    if (!id) return;
+
     const tag = tags.find(x => x.id === id);
+    if (!tag) return;
+
     const otherTags = sortTags(tags.filter(x => x.id !== id).map(x => ({ id: x.id, name: x.name })));
 
     const popupContent = $(await renderTemplateAsync('deleteTag', { otherTags }));
@@ -2124,43 +2140,64 @@ async function onTagDeleteClick() {
     appendTagToList(popupContent.find('#tag_to_delete'), tag);
 
     // Make the select control more fancy on not mobile
-    if (!isMobile()) {
+    setTimeout(() => {
+        const $liveSelect = $('#merge_tag_select');
         // Delete the empty option in the dropdown, and make the select2 be empty by default
-        popupContent.find('#merge_tag_select option[value=""]').remove();
-        popupContent.find('#merge_tag_select').select2({
-            width: '50%',
-            placeholder: 'Select tag to merge into',
-            allowClear: true,
-        }).val(null).trigger('change');
-    }
+        if ($liveSelect.length && !isMobile()) {
+            $liveSelect.find('option[value=""]').remove();
+            $liveSelect.select2({
+                width: 'auto',
+                placeholder: t`Select tag to merge into`,
+                allowClear: true,
+                dropdownParent: $liveSelect.closest('.popup'),
+            }).val('').trigger('change');
+        }
+    }, 10);
 
-    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM);
+    /** @type {string|null} */
+    let mergeTagId = null;
+
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, undefined, {
+        onClose: () => {
+            const val = $('#merge_tag_select').val();
+            if (val && val !== 'null' && val !== '') {
+                mergeTagId = Array.isArray(val) ? String(val[0]) : String(val);
+            }
+        },
+    });
+
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
         return;
     }
-
-    const mergeTagId = $('#merge_tag_select').val() ? String($('#merge_tag_select').val()) : null;
 
     // Remove the tag from all entities that use it
     // If we have a replacement tag, add that one instead
     for (const key of Object.keys(tag_map)) {
         if (tag_map[key].includes(id)) {
             tag_map[key] = tag_map[key].filter(x => x !== id);
-            if (mergeTagId) tag_map[key].push(mergeTagId);
+            if (mergeTagId && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
         }
     }
 
     const index = tags.findIndex(x => x.id === id);
-    tags.splice(index, 1);
+    if (index > -1) tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
 
-    toastr.success(`'${tag.name}' deleted${mergeTagId ? ` and merged into '${tags.find(x => x.id === mergeTagId).name}'` : ''}`, 'Delete Tag');
+    const targetTag = mergeTagId ? tags.find(x => x.id === mergeTagId) : null;
+
+    toastr.success(`'${tag.name}' deleted${targetTag ? ` and merged into '${targetTag.name}'` : ''}`, 'Delete Tag');
 
     printCharactersDebounced();
     saveSettingsDebounced();
-
     applyCharacterTagsToMessageDivs();
+
+    if (mergeTagId) {
+        const tagContainer = $('#tag_view_list .tag_view_list_tags');
+        if (tagContainer.length) {
+            printViewTagList(tagContainer);
+        }
+    }
 }
 
 function onTagRenameInput() {

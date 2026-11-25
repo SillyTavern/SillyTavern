@@ -1452,5 +1452,6 @@
     "Deleting chat…": "Đang xóa cuộc trò chuyện…",
     "Loading chat…": "Đang tải cuộc trò chuyện…",
     "Bulk Delete": "Xóa hàng loạt",
-    "Deleting ${0} character(s)…": "Đang xóa ${0} nhân vật…"
+    "Deleting ${0} character(s)…": "Đang xóa ${0} nhân vật…",
+    "Select tag to merge into": "Chọn thẻ để hợp nhất vào"
 }
