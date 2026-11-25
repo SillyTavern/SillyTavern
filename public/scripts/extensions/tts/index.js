@@ -4,6 +4,7 @@ import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique, regexFro
 import { accountStorage } from '../../util/AccountStorage.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
+import { FishAudioTtsProvider } from './fish-audio.js';
 import { SileroTtsProvider } from './silerotts.js';
 import { GptSovitsV2Provider } from './gpt-sovits-v2.js';
 import { GptSoVITSAdapterProvider } from './gpt-sovits-adapter.js';
@@ -130,6 +131,7 @@ const ttsProviders = {
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     'Electron Hub': ElectronHubTtsProvider,
+    'Fish Audio': FishAudioTtsProvider,
     'Google Translate': GoogleTranslateTtsProvider,
     'Google Gemini TTS': GoogleNativeTtsProvider,
     GSVI: GSVITtsProvider,
