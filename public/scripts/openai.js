@@ -7199,11 +7199,7 @@ function initCustomProviderSetup() {
     eventSource.on(event_types.SETTINGS_LOADED_AFTER, renderCustomProviderSetup);
     eventSource.on(event_types.SECRET_WRITTEN, renderCustomProviderSetup);
     eventSource.on(event_types.SECRET_DELETED, renderCustomProviderSetup);
-    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => {
-        customConnectionRevision++;
-        cancelStatusCheck();
-        renderCustomProviderSetup();
-    });
+    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, renderCustomProviderSetup);
     renderCustomProviderSetup();
 }
 
@@ -7425,6 +7421,7 @@ export function initOpenAI() {
             toggleChatCompletionForms();
             return;
         }
+        customConnectionRevision++;
         cancelStatusCheck('Chat Completion source changed');
         model_list = [];
         oai_settings.chat_completion_source = source;
