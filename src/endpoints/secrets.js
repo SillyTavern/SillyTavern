@@ -60,6 +60,7 @@ export const SECRET_KEYS = {
     VERTEXAI_SERVICE_ACCOUNT: 'vertexai_service_account_json',
     MINIMAX: 'api_key_minimax',
     MINIMAX_GROUP_ID: 'minimax_group_id',
+    DASHSCOPE: 'api_key_dashscope',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
     AZURE_OPENAI: 'api_key_azure_openai',
