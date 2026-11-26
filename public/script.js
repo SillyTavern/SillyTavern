@@ -419,6 +419,7 @@ let importFlashTimeout;
 export let isChatSaving = false;
 let chatLoadGeneration = 0;
 let currentChatLoad = null;
+let latestChatOpenRequest = 0;
 let firstRun = false;
 export let settingsReady = false;
 let currentVersion = '0.0.0';
@@ -1589,6 +1590,7 @@ export async function clearChat({ clearData = false } = {}) {
     if (clearData) {
         currentChatLoad = { generation: ++chatLoadGeneration, pending: true };
     }
+    const clearingVisit = currentChatLoad;
     cancelDebouncedChatSave();
     cancelDebouncedMetadataSave();
     closeMessageEditor();
@@ -1604,6 +1606,7 @@ export async function clearChat({ clearData = false } = {}) {
     } else { console.debug('saw no avatars'); }
 
     await saveItemizedPrompts(getCurrentChatId());
+    if (currentChatLoad !== clearingVisit) return;
     itemizedPrompts.length = 0;
 
     if (clearData) chat.length = 0;
@@ -7828,11 +7831,25 @@ function getFirstMessage() {
 }
 
 export async function openCharacterChat(file_name) {
+    const request = ++latestChatOpenRequest;
+    const characterId = this_chid;
+    const ownsSelection = () => request === latestChatOpenRequest && !selected_group && this_chid === characterId;
+
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-    await clearChat({ clearData: true });
-    characters[this_chid].chat = file_name;
+    if (!ownsSelection()) return;
+
+    const clearing = clearChat({ clearData: true });
+    const clearingVisit = currentChatLoad;
+    await clearing;
+    if (!ownsSelection() || currentChatLoad !== clearingVisit) return;
+
+    characters[characterId].chat = file_name;
     chat_metadata = {};
-    await getChat();
+    const loading = getChat();
+    const visit = currentChatLoad;
+    await loading;
+    if (!ownsSelection() || currentChatLoad !== visit || visit.pending || characters[characterId].chat !== file_name) return;
+
     $('#selected_chat_pole').val(file_name);
     await createOrEditCharacter(new CustomEvent('newChat'));
 }
