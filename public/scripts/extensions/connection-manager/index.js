@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS = {
 const ALLOW_EMPTY = [
     'stop-strings',
     'start-reply-with',
+    'prompt-post-processing',
 ];
 
 const CC_COMMANDS = [
@@ -214,7 +215,8 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
             const args = getNamedArguments();
             const result = await SlashCommandParser.commands[command].callback(args, '');
             if (result || (allowEmpty && result === '')) {
-                profile[command] = result;
+                // The /prompt-post-processing getter reports "none" for an empty setting; store the real value.
+                profile[command] = command === 'prompt-post-processing' && result === 'none' ? '' : result;
                 continue;
             }
         } catch (error) {
@@ -447,7 +449,8 @@ async function applyConnectionProfile(profile, isCurrent, qualifyConnection) {
         if (resolvedCustomConnection) await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
         for (const command of commands) {
             if ((snapshot !== undefined || resolvedCustomConnection) && CUSTOM_CONNECTION_COMMANDS.includes(command)) continue;
-            const argument = profile[command];
+            // Profiles saved before the fix may hold the getter's "none" instead of an empty value.
+            const argument = command === 'prompt-post-processing' && profile[command] === 'none' ? '' : profile[command];
             const allowEmpty = ALLOW_EMPTY.includes(command);
             if (!argument && !(allowEmpty && argument === '')) {
                 continue;

@@ -3573,14 +3573,15 @@ export function initDefaultSlashCommands() {
                 enumProvider: promptPostProcessingEnumProvider,
             }),
         ],
-        callback: (_args, value) => {
+        callback: (args, value) => {
             const stringValue = String(value ?? '').trim().toLowerCase();
-            if (!stringValue) {
+            // An empty value only clears the setting when forced (e.g. by connection profiles); otherwise it is a getter.
+            if (!stringValue && !isTrueBoolean(args?.force?.toString())) {
                 return oai_settings.custom_prompt_post_processing || 'none';
             }
 
             const validValues = promptPostProcessingEnumProvider().map(option => option.value);
-            if (!validValues.includes(stringValue)) {
+            if (stringValue && !validValues.includes(stringValue)) {
                 throw new Error(t`Invalid value "${stringValue}". Valid values are: ${validValues.join(', ')}`);
             }
 
