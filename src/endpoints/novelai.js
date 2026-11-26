@@ -455,7 +455,7 @@ router.post('/generate-voice', async (request, response) => {
     }
 
     try {
-        const url = `${API_NOVELAI}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
+        const url = `${TEXT_NOVELAI}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
         const result = await fetch(url, {
             method: 'GET',
             headers: {
