@@ -337,14 +337,20 @@ export {
 
 /**
  * Wait for page to load before continuing the app initialization.
+ * Not a top-level await: modules evaluated after this one in the import cycle
+ * (e.g. power-user.js) would wait on it, and WebKit may then run the ready
+ * handler below before they initialize, throwing a TDZ ReferenceError.
+ * @returns {Promise<void>}
  */
-await new Promise((resolve) => {
-    if (document.readyState === 'complete') {
-        resolve();
-    } else {
-        window.addEventListener('load', resolve);
-    }
-});
+function waitForPageLoad() {
+    return new Promise((resolve) => {
+        if (document.readyState === 'complete') {
+            resolve();
+        } else {
+            window.addEventListener('load', () => resolve(), { once: true });
+        }
+    });
+}
 
 // Configure toast library:
 toastr.options = {
@@ -11157,6 +11163,8 @@ function initCharacterSearch() {
 
 // MARK: DOM Handlers Start
 jQuery(async function () {
+    await waitForPageLoad();
+
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
