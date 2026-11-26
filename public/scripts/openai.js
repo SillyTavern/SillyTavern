@@ -5220,7 +5220,7 @@ function getGeminiMaxTemp(model) {
         }
     }
 
-    if (/(vision|ultra|gemma)/.test(model)) {
+    if (/(vision|ultra)/.test(model)) {
         return 1.0;
     }
 
