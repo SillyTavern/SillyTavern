@@ -144,7 +144,7 @@ export function getSystemMessageByType(type, text, extra = {}) {
         newMessage.extra = {};
     }
 
-    newMessage.extra = Object.assign(newMessage.extra, extra);
+    newMessage.extra = Object.assign(lodash.cloneDeep(newMessage.extra), extra);
     newMessage.extra.type = type;
     return newMessage;
 }
