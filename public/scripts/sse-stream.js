@@ -14,7 +14,7 @@ class EventSourceStream {
         let streamBuffer = '';
         let lastEventId = '';
 
-        function processChunk(controller) {
+        function processChunk(controller, isFinal = false) {
             // Events are separated by two newlines
             const events = streamBuffer.split(/\r\n\r\n|\r\r|\n\n/g);
             if (events.length === 0) return;
@@ -22,6 +22,10 @@ class EventSourceStream {
             // The leftover text to remain in the buffer is whatever doesn't have two newlines after it. If the buffer ended
             // with two newlines, this will be an empty string.
             streamBuffer = events.pop();
+            if (isFinal && streamBuffer) {
+                events.push(streamBuffer);
+                streamBuffer = '';
+            }
 
             for (const eventChunk of events) {
                 let eventType = '';
@@ -70,6 +74,9 @@ class EventSourceStream {
             transform(chunk, controller) {
                 streamBuffer += chunk;
                 processChunk(controller);
+            },
+            flush(controller) {
+                processChunk(controller, true);
             },
         });
 
