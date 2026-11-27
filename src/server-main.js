@@ -239,7 +239,17 @@ app.get('/login', loginPageMiddleware);
 const webpackMiddleware = getWebpackServeMiddleware();
 app.use(webpackMiddleware);
 app.use(userCssMiddleware);
-app.use(express.static(path.join(serverDirectory, 'public'), {}));
+app.use(express.static(path.join(serverDirectory, 'public'), {
+    maxAge: '1d',
+    etag: true,
+    setHeaders: (res, filePath) => {
+        if (/\.(html|js|css)$/.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-cache');
+        } else if (/\.(woff2?|ttf|eot)$/.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    },
+}));
 
 // Public API
 app.use('/api/users', usersPublicRouter);
