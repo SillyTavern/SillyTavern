@@ -9,7 +9,9 @@ import crypto from 'node:crypto';
 import { imageSize } from 'image-size';
 import writeFileAtomic from 'write-file-atomic';
 import express from 'express';
+import extract from 'png-chunks-extract';
 import { Jimp } from '../jimp.js';
+import encodePng from '../png/encode.js';
 import { getConfigValue, isPathUnderParent, uuidv4 } from '../util.js';
 
 export const METADATA_FILE = 'image-metadata.json';
@@ -64,6 +66,22 @@ export function getThumbnailResolution(type) {
  */
 export function isAnimatedApng(buffer) {
     return buffer.subarray(0, 200).includes('acTL');
+}
+
+const APNG_ANIMATION_CHUNKS = new Set(['acTL', 'fcTL', 'fdAT']);
+
+/**
+ * Converts an APNG into a static PNG by dropping the animation chunks, leaving its default image.
+ * @param {Buffer} buffer The PNG file buffer.
+ * @returns {Buffer} A static PNG buffer, or the original buffer if it has no animation chunks.
+ */
+export function stripApngAnimation(buffer) {
+    const chunks = extract(new Uint8Array(buffer));
+    const staticChunks = chunks.filter(chunk => !APNG_ANIMATION_CHUNKS.has(chunk.name));
+    if (staticChunks.length === chunks.length) {
+        return buffer;
+    }
+    return Buffer.from(encodePng(staticChunks));
 }
 
 /**

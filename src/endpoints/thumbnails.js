@@ -8,7 +8,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { imageSize as sizeOf } from 'image-size';
 
 import { getConfigValue, invalidateFirefoxCache } from '../util.js';
-import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, thumbnailDimensions as dimensions } from './image-metadata.js';
+import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, stripApngAnimation, thumbnailDimensions as dimensions } from './image-metadata.js';
 import { ResizeStrategy } from '@jimp/plugin-resize';
 
 export const publicRouter = express.Router();
@@ -20,10 +20,20 @@ export const ALLOWED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif'
 const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
 const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
 const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
+const staticAnimatedAvatars = !!getConfigValue('thumbnails.staticAnimatedAvatars', true, 'boolean');
 
 /**
  * @typedef {'bg' | 'avatar' | 'persona'} ThumbnailType
  */
+
+/**
+ * Checks if animated PNGs of this type should get a static thumbnail.
+ * @param {ThumbnailType} type Thumbnail type
+ * @returns {boolean}
+ */
+function allowStaticApng(type) {
+    return staticAnimatedAvatars && (type === 'avatar' || type === 'persona');
+}
 
 
 /**
@@ -160,7 +170,8 @@ export async function generateThumbnail(directories, type, file, forceGenerate =
         }
 
         // For PNG files, check if they are actually APNGs.
-        if (fileExtension === '.png' && isKnownAnimated !== false) {
+        // Avatars and personas can get a static thumbnail instead, see processSingleImage.
+        if (fileExtension === '.png' && isKnownAnimated !== false && !allowStaticApng(type)) {
             const buffer = fs.readFileSync(pathToOriginalFile);
             const isAnimated = isAnimatedApng(buffer);
             if (isAnimated) {
@@ -200,7 +211,11 @@ async function processSingleImage(file, originalFolder, thumbnailFolder, type) {
     const pathToCachedFile = path.join(thumbnailFolder, file);
 
     try {
-        const fileBuffer = fs.readFileSync(pathToOriginalFile);
+        let fileBuffer = fs.readFileSync(pathToOriginalFile);
+        // Jimp can't decode APNGs, so use the static default image.
+        if (path.extname(file).toLowerCase() === '.png' && allowStaticApng(type)) {
+            fileBuffer = stripApngAnimation(fileBuffer);
+        }
         const image = await Jimp.read(fileBuffer);
 
         // Calculate aspect ratio from original image dimensions

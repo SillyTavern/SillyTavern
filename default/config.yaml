@@ -244,6 +244,10 @@ thumbnails:
   quality: 95
   # Maximum thumbnail dimensions per type [width, height]
   dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144] }
+  # Generate static thumbnails for animated PNG (APNG) avatars and personas instead of serving the full original file.
+  # Disable to keep them animated in lists. Backgrounds are not affected.
+  # After disabling, clear out the /thumbnails folder in your user data to remove existing static thumbnails.
+  staticAnimatedAvatars: true
 
 # PERFORMANCE-RELATED CONFIGURATION
 performance:
