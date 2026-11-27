@@ -15,6 +15,7 @@ import {
     menu_type,
     name1,
     name2,
+    refreshThumbnail,
     reloadCurrentChat,
     saveChatConditional,
     saveMetadata,
@@ -65,7 +66,6 @@ import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from '
 import { commonEnumMatchProviders, commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { isFirefox } from './browser-fixes.js';
 import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 
 /**
@@ -240,7 +240,7 @@ function getUserAvatarBlock(avatarId) {
     template.attr('data-avatar-id', avatarId);
     template.find('.avatar').attr('data-avatar-id', avatarId).attr('title', avatarId);
     template.toggleClass('default_persona', avatarId === power_user.default_persona);
-    const avatarUrl = getThumbnailUrl('persona', avatarId, isFirefox());
+    const avatarUrl = getThumbnailUrl('persona', avatarId);
     template.find('img').attr('src', avatarUrl);
 
     // Make sure description block has at least three rows. Otherwise height looks inconsistent. I don't have a better idea for this.
@@ -437,7 +437,7 @@ async function changeUserAvatar(e) {
         // If the user uploaded a new avatar, we want to make sure it's not cached
         if (overwriteName && dataPath) {
             await fetch(getUserAvatar(String(dataPath)), { cache: 'reload' });
-            await fetch(getThumbnailUrl('persona', String(dataPath)), { cache: 'reload' });
+            refreshThumbnail('persona', String(dataPath));
             reloadUserAvatar(true);
         }
 
@@ -2049,7 +2049,7 @@ async function uploadPersonaAvatar(avatarId, base64Data, { resizePrompt = false 
 
         // Cache bust for the updated avatar
         await fetch(getUserAvatar(avatarId), { cache: 'reload' });
-        await fetch(getThumbnailUrl('persona', avatarId), { cache: 'reload' });
+        refreshThumbnail('persona', avatarId);
         reloadUserAvatar(true);
         return true;
     } catch (error) {
