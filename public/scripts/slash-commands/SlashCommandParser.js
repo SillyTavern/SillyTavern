@@ -599,7 +599,12 @@ export class SlashCommandParser {
         // -> TOAST: *:}* {:
         // -> TOAST: *{:* :}
         const escapeOffset = this.jumpedEscapeSequence ? -1 : 0;
-        const escapes = this.text.slice(this.index + offset + escapeOffset).replace(/^(\\*).*$/s, '$1').length;
+        // Count the backslash run in place to avoid O(n^2) slicing/regex scanning on large arguments
+        const escapeStart = this.index + offset + escapeOffset;
+        let escapes = 0;
+        while (this.text[escapeStart + escapes] === '\\') {
+            escapes++;
+        }
         const test = (sequence instanceof RegExp) ?
             (text) => new RegExp(`^${sequence.source}`).test(text) :
             (text) => text.startsWith(sequence)
