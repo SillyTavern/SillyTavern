@@ -7573,23 +7573,32 @@ export function getThumbnailUrl(type, file, t = false) {
 }
 
 /**
- * Updates all visible images of a character's avatar after it was changed.
- * Firefox keeps showing a cached image for an unchanged URL, so the thumbnail gets a new URL.
- * @param {string} avatarKey Avatar file name of the character
+ * Gives a thumbnail a new URL and updates all visible images that use it.
+ * Firefox keeps showing a cached image for an unchanged URL, so a changed image needs a new one.
+ * @param {import('../src/endpoints/thumbnails.js').ThumbnailType} type The type of the thumbnail
+ * @param {string} file The file name or path of the changed image
  */
-export async function refreshCharacterAvatar(avatarKey) {
-    const oldUrl = getThumbnailUrl('avatar', avatarKey);
-    const newUrl = getThumbnailUrl('avatar', avatarKey, true);
-    await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
+export function refreshThumbnail(type, file) {
+    const oldUrl = getThumbnailUrl(type, file);
+    const newUrl = getThumbnailUrl(type, file, true);
 
-    // This handles messages, character list, and any other place using the thumbnail
-    const avatarImages = document.querySelectorAll(`img[src^="${oldUrl}"]`);
-    for (const img of avatarImages) {
+    // This handles messages, character and persona lists, and any other place using the thumbnail
+    const images = document.querySelectorAll(`img[src^="${oldUrl}"]`);
+    for (const img of images) {
         if (img instanceof HTMLImageElement) {
             img.src = newUrl;
         }
     }
-    console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
+    console.debug(`Refreshed ${images.length} ${type} images for ${file}`);
+}
+
+/**
+ * Updates all visible images of a character's avatar after it was changed.
+ * @param {string} avatarKey Avatar file name of the character
+ */
+export async function refreshCharacterAvatar(avatarKey) {
+    await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
+    refreshThumbnail('avatar', avatarKey);
 }
 
 export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, interactable = false, highlightFavs = true } = {}) {
@@ -10645,7 +10654,7 @@ async function importCharacter(file, { preserveFileName = '', importTags = false
 
             // Refresh existing thumbnail
             if (exists && this_chid !== undefined) {
-                await fetch(getThumbnailUrl('avatar', avatarFileName), { cache: 'reload' });
+                await refreshCharacterAvatar(avatarFileName);
             }
 
             $('#character_search_bar').val('').trigger('input');
