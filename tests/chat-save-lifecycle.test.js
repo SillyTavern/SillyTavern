@@ -58,14 +58,17 @@ function harness() {
         loadItemizedPrompts: async () => {}, printMessages: async () => { renders++; await hooks.render?.(); },
         select_selected_character() {}, event_types: { CHAT_CHANGED: 'changed', CHAT_CREATED: 'created', CHAT_LOADED: 'loaded', MESSAGE_RECEIVED: 'received', CHARACTER_MESSAGE_RENDERED: 'rendered' },
         eventSource: { emit: async event => { events.push(event); await hooks.event?.(event); } },
-        document: { activeElement: {} }, $: () => element, delay: async () => {},
+        document: { activeElement: {} }, delay: async () => {},
+        $: selector => selector === '#selected_chat_pole' ? { val: value => events.push(`pick:${value}`) } : element,
+        CustomEvent: class { constructor(type) { this.type = type; } },
+        createOrEditCharacter: async event => events.push(`commit:${event.type}`),
         closeMessageEditor() {}, extension_prompts: {}, is_delete_mode: false, chatElement: { children: () => element }, itemizedPrompts: [],
-        saveTokenCache: () => tokenSaves++, saveItemizedPrompts: async () => {},
+        saveTokenCache: () => tokenSaves++, saveItemizedPrompts: async () => hooks.savePrompts?.(),
         saveGroupChat: async groupId => events.push(`save-group:${groupId}`),
         getContext: () => ({ saveMetadata: () => sandbox.saveChatConditional() }),
     });
-    vm.runInContext('let chatLoadGeneration = 0; let currentChatLoad = null; let chatSaveTimeout; let saveMetadataTimeout; let isChatSaving = false;', sandbox);
-    const names = ['getCurrentChatId', 'getChatSaveContext', 'isChatSaveContextCurrent', 'warnIfLoadedChatCannotSave', 'cancelDebouncedChatSave', 'saveChatDebounced', 'saveChat', 'saveChatConditional', 'clearChat', 'getChat', 'getChatResult'];
+    vm.runInContext('let chatLoadGeneration = 0; let currentChatLoad = null; let latestChatOpenRequest = 0; let chatSaveTimeout; let saveMetadataTimeout; let isChatSaving = false;', sandbox);
+    const names = ['getCurrentChatId', 'getChatSaveContext', 'isChatSaveContextCurrent', 'warnIfLoadedChatCannotSave', 'cancelDebouncedChatSave', 'saveChatDebounced', 'saveChat', 'saveChatConditional', 'clearChat', 'getChat', 'getChatResult', 'openCharacterChat'];
     vm.runInContext(names.map(name => functionSource(script, name)).join('\n') + '\n'
         + ['cancelDebouncedMetadataSave', 'saveMetadataDebounced'].map(name => functionSource(extensions, name)).join('\n'), sandbox);
     return {
@@ -251,6 +254,59 @@ test('reopening the same file discards the previous response and previous save t
     assert.equal(h.requests.length, before);
     assert.equal(h.api.chat_metadata.integrity, 'newer');
     assert.equal(h.api.chat[0].mes, 'Newer load'); assert.equal(h.renders, 1);
+});
+
+test.each(['Chat B', 'Chat A'])('only the latest chat open commits the selection (%s)', async name => {
+    const h = harness(), first = deferred();
+    let reads = 0;
+    h.hooks.fetch = async () => ++reads === 1 ? first.promise : response(loadedChat('latest', 'Selected message'));
+
+    const pending = h.api.openCharacterChat('Chat A');
+    await h.waitForRequests(1);
+    await h.api.openCharacterChat(name);
+    first.resolve(response(loadedChat('previous', 'Previous message')));
+    await pending;
+
+    assert.equal(h.api.chat[0].mes, 'Selected message');
+    assert.deepEqual(h.events.filter(event => event.startsWith('pick:')), [`pick:${name}`]);
+    assert.deepEqual(h.events.filter(event => event.startsWith('commit:')), ['commit:newChat']);
+});
+
+test('a previous open waiting for the save lock yields to a later selection', async () => {
+    const h = harness(), waiting = deferred(), resume = deferred();
+    h.hooks.wait = () => {
+        delete h.hooks.wait;
+        waiting.resolve();
+        return resume.promise;
+    };
+
+    const pending = h.api.openCharacterChat('Chat A');
+    await waiting.promise;
+    await h.api.openCharacterChat('Chat B');
+    resume.resolve();
+    await pending;
+
+    assert.deepEqual(h.requests.map(request => request.body.file_name), ['Chat B']);
+    assert.equal(h.api.characters[0].chat, 'Chat B');
+});
+
+test('a slow previous clear leaves the newly selected chat intact', async () => {
+    const h = harness(), clearing = deferred(), resume = deferred();
+    h.hooks.savePrompts = () => {
+        delete h.hooks.savePrompts;
+        clearing.resolve();
+        return resume.promise;
+    };
+
+    const pending = h.api.openCharacterChat('Chat A');
+    await clearing.promise;
+    await h.api.openCharacterChat('Chat B');
+    resume.resolve();
+    await pending;
+
+    assert.equal(h.api.characters[0].chat, 'Chat B');
+    assert.equal(h.api.chat[0].mes, 'Existing message');
+    assert.deepEqual(h.events.filter(event => event.startsWith('pick:')), ['pick:Chat B']);
 });
 
 test('a late load failure does not block or show an error over a newer loaded chat', async () => {
