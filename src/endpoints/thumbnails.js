@@ -7,7 +7,7 @@ import { Jimp, JimpMime } from '../jimp.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { imageSize as sizeOf } from 'image-size';
 
-import { getConfigValue, invalidateFirefoxCache } from '../util.js';
+import { getConfigValue } from '../util.js';
 import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, thumbnailDimensions as dimensions } from './image-metadata.js';
 import { ResizeStrategy } from '@jimp/plugin-resize';
 
@@ -261,7 +261,6 @@ publicRouter.get('/', async function (request, response) {
             const folder = getOriginalFolder(request.user.directories, type);
             const pathToOriginalFile = path.resolve(path.join(folder, file));
             if (!fs.existsSync(pathToOriginalFile)) return response.sendStatus(404);
-            invalidateFirefoxCache(pathToOriginalFile, request, response);
             return response.sendFile(pathToOriginalFile);
         };
 
@@ -295,7 +294,6 @@ publicRouter.get('/', async function (request, response) {
         }
 
         if (fs.existsSync(pathToCachedFile)) {
-            invalidateFirefoxCache(pathToCachedFile, request, response);
             return response.sendFile(file, { root: thumbnailFolder, dotfiles: 'allow' });
         }
 

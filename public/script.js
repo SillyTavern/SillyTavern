@@ -7544,36 +7544,52 @@ async function read_avatar_load(input) {
         const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
         const avatarKey = formData.get('avatar_url').toString();
 
-        // Bust cache for the avatar thumbnail and character image
-        const thumbnailUrl = getThumbnailUrl('avatar', avatarKey);
-        await fetch(thumbnailUrl, { method: 'GET', cache: 'reload' });
-        await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
-
-        // Refresh all visible avatar images that use this thumbnail URL
-        // This handles messages, character list, and any other place using the thumbnail
-        const avatarImages = document.querySelectorAll(`img[src^="${thumbnailUrl}"]`);
-        for (const img of avatarImages) {
-            if (img instanceof HTMLImageElement) {
-                const originalSrc = img.src;
-                img.src = '';
-                img.src = originalSrc;
-            }
-        }
-        console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
+        await refreshCharacterAvatar(avatarKey);
 
         console.log('Avatar refreshed');
     }
 }
 
 /**
+ * Cache-busting timestamps of thumbnails that were updated during this session.
+ * @type {Map<string, number>}
+ */
+const thumbnailTimestamps = new Map();
+
+/**
  * Gets the URL for a thumbnail of a specific type and file.
  * @param {import('../src/endpoints/thumbnails.js').ThumbnailType} type The type of the thumbnail to get
  * @param {string} file The file name or path for which to get the thumbnail URL
- * @param {boolean} [t=false] Whether to add a cache-busting timestamp to the URL
+ * @param {boolean} [t=false] Whether to add a new cache-busting timestamp to the URL. Later calls for the same file reuse it.
  * @returns {string} The URL for the thumbnail
  */
 export function getThumbnailUrl(type, file, t = false) {
-    return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}${t ? `&t=${Date.now()}` : ''}`;
+    const key = `${type}/${file}`;
+    if (t) {
+        thumbnailTimestamps.set(key, Date.now());
+    }
+    const timestamp = thumbnailTimestamps.get(key);
+    return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}${timestamp ? `&t=${timestamp}` : ''}`;
+}
+
+/**
+ * Updates all visible images of a character's avatar after it was changed.
+ * Firefox keeps showing a cached image for an unchanged URL, so the thumbnail gets a new URL.
+ * @param {string} avatarKey Avatar file name of the character
+ */
+export async function refreshCharacterAvatar(avatarKey) {
+    const oldUrl = getThumbnailUrl('avatar', avatarKey);
+    const newUrl = getThumbnailUrl('avatar', avatarKey, true);
+    await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
+
+    // This handles messages, character list, and any other place using the thumbnail
+    const avatarImages = document.querySelectorAll(`img[src^="${oldUrl}"]`);
+    for (const img of avatarImages) {
+        if (img instanceof HTMLImageElement) {
+            img.src = newUrl;
+        }
+    }
+    console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
 }
 
 export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, interactable = false, highlightFavs = true } = {}) {
