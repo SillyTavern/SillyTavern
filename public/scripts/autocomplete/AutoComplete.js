@@ -132,8 +132,10 @@ export class AutoComplete {
                 }
             });
         }
+        // Only re-position when a popup or details hint is actually mounted in the DOM;
+        // render() repositions on open, and skipping hidden instances avoids layout thrashing on mobile keyboard resize.
         window.addEventListener('resize', () => {
-            if (this.isActive) {
+            if (this.domWrap?.isConnected || this.detailsWrap?.isConnected) {
                 this.updatePositionDebounced();
             }
         });
