@@ -304,7 +304,11 @@ test('summary reads begin just after an old summary rather than silently skippin
     assert.deepEqual(store.snapshot(), snapshot);
     assert.equal(messages.length, 10);
     assert.ok(calls.filter(call => call.url.endsWith('/page')).length <= 3);
+    const changes = [];
+    store.subscribeChanges(change => changes.push(change));
     await store.saveSummary(messages, header, seen.at(-1), 'now summarized through twenty');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(changes.at(-1), { scope, revision: store.revision, changedIds: ['m20'], deletedIds: [] });
     assert.equal(rows()[20].message.extra.memory, 'now summarized through twenty');
     assert.equal(rows()[12].message.extra.memory, 'already summarized through twelve');
     assert.equal(store.start, 990);

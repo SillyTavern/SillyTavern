@@ -130,6 +130,7 @@ const pendingMessageDeletes = new Map();
 const skippedMessageVersions = new Set();
 
 activeChatStore.subscribeChanges(change => {
+    chatMemorySync.enqueueChanges(change);
     if (change.changedIds.length) onChatEvent();
     if (!change.deletedIds.length) return;
     const collectionId = chatMemoryCollection(change.scope);
@@ -497,7 +498,8 @@ async function synchronizeChat(batchSize = 5, { all = false } = {}) {
         await flushMessageDeletes();
         const selection = snapshot ? (all
             ? await chatMemorySync.next(batchSize, profile, settings.keep_hidden)
-            : await chatMemorySync.loaded(context.chat, batchSize, profile, settings.keep_hidden, skippedMessageVersions))
+            : (await chatMemorySync.changed(batchSize, profile, settings.keep_hidden, skippedMessageVersions)) ||
+                await chatMemorySync.loaded(context.chat, batchSize, profile, settings.keep_hidden, skippedMessageVersions))
             : power_user.chat_full_history ? await selectFullHistoryBatch(context.chat, batchSize, profile) : null;
         if (!selection) return -1;
         let batch = selection.items.map(envelope => ({
@@ -506,6 +508,7 @@ async function synchronizeChat(batchSize = 5, { all = false } = {}) {
             index: envelope.seq, messageId: envelope.id, version: envelope.revision,
             swipeId: envelope.message.swipe_id ?? 0,
         })).filter(item => !skippedHashes.has(item.hash));
+        let hasFailures = false;
 
         if (settings.summarize) {
             const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
@@ -514,9 +517,12 @@ async function synchronizeChat(batchSize = 5, { all = false } = {}) {
                 await summarize(toSummarize, settings.summary_source, { skipOnFailure: true });
                 const failed = toSummarize.filter(x => x.summaryFailed);
                 if (failed.length > 0) {
-                    for (const item of failed) {
-                        skippedHashes.add(item.hash);
-                        skippedMessageVersions.add(`${item.messageId}:${item.version}`);
+                    hasFailures = true;
+                    if (!selection.complete) {
+                        for (const item of failed) {
+                            skippedHashes.add(item.hash);
+                            skippedMessageVersions.add(`${item.messageId}:${item.version}`);
+                        }
                     }
                     batch = batch.filter(x => !x.summaryFailed);
                 }
@@ -532,16 +538,21 @@ async function synchronizeChat(batchSize = 5, { all = false } = {}) {
                 for (const requestItems of memoryWriteBatches(batch, splitByChunks)) {
                     await insertVectorItems(selection.collectionId, requestItems, { profile });
                 }
+                selection.complete?.(batch.map(item => item.messageId));
             } catch (insertError) {
                 if (FATAL_CAUSES.has(insertError?.cause)) throw insertError;
                 console.warn('Vectors: insert failed for batch — marking for skip', insertError);
-                for (const item of batch) {
-                    skippedHashes.add(item.hash);
-                    skippedMessageVersions.add(`${item.messageId}:${item.version}`);
+                hasFailures = true;
+                if (!selection.complete) {
+                    for (const item of batch) {
+                        skippedHashes.add(item.hash);
+                        skippedMessageVersions.add(`${item.messageId}:${item.version}`);
+                    }
                 }
             }
         }
 
+        if (!all && selection.remaining > 0 && !hasFailures) onChatEvent();
         return selection.remaining;
     } catch (error) {
         /**
@@ -2213,6 +2224,8 @@ export async function init() {
     eventSource.on(event_types.MESSAGE_SENT, onChatEvent);
     eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
+    eventSource.on(event_types.GENERATION_ENDED, onChatEvent);
+    eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);

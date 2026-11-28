@@ -47,6 +47,12 @@ export class ChatStore {
         return () => this.listeners.delete(listener);
     }
 
+    notifyChanges(change) {
+        for (const listener of this.listeners) {
+            Promise.resolve().then(() => listener(change)).catch(console.error);
+        }
+    }
+
     messageRef(message) {
         const ref = this.refs.get(message);
         return ref ? { ...ref } : null;
@@ -131,10 +137,7 @@ export class ChatStore {
                 id: envelope.id, revision: envelope.revision, seq: envelope.seq,
             }));
             this.saved = saved;
-            const changedScope = { ...this.scope };
-            for (const listener of this.listeners) {
-                Promise.resolve().then(() => listener({ scope: changedScope, revision: page.revision, deletedIds, changedIds: [...responseIds] })).catch(console.error);
-            }
+            this.notifyChanges({ scope: { ...this.scope }, revision: page.revision, deletedIds, changedIds: [...responseIds] });
         });
         this.queue = operation.catch(() => {});
         return operation;
@@ -273,6 +276,7 @@ export class ChatStore {
             }, epoch);
             this.revision = page.revision;
             this.latestSummary = page.latestSummary ?? null;
+            this.notifyChanges({ scope: { ...this.scope }, revision: page.revision, deletedIds: [], changedIds: [envelope.id] });
             const loaded = messages.find(body => this.refs.get(body)?.id === envelope.id);
             if (loaded) {
                 loaded.extra = { ...loaded.extra, memory };

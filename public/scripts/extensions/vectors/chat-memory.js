@@ -8,6 +8,17 @@ export class ChatMemorySync {
         this.store = store;
         this.lookup = lookup;
         this.session = null;
+        this.changes = new Map();
+        this.changeSequence = 0;
+    }
+
+    enqueueChanges({ scope, changedIds, deletedIds }) {
+        const collectionId = chatMemoryCollection(scope);
+        const queue = this.changes.get(collectionId) || new Map();
+        for (const id of changedIds) queue.set(id, ++this.changeSequence);
+        for (const id of deletedIds) queue.delete(id);
+        if (queue.size) this.changes.set(collectionId, queue);
+        else this.changes.delete(collectionId);
     }
 
     begin(profile) {
@@ -48,6 +59,40 @@ export class ChatMemorySync {
         }
         const pending = (await this.missing(snapshot, refs, profile)).filter(ref => !skipped.has(`${ref.id}:${ref.revision}`));
         return { snapshot, collectionId: chatMemoryCollection(snapshot.scope), items: pending.slice(0, limit), remaining: Math.max(0, pending.length - limit) };
+    }
+
+    /** Process explicit saved IDs, including messages outside the current UI window. */
+    async changed(limit, profile, keepHidden, skipped = new Set()) {
+        await this.store.queue;
+        const snapshot = this.store.snapshot();
+        if (!snapshot) return null;
+        const collectionId = chatMemoryCollection(snapshot.scope);
+        const queue = this.changes.get(collectionId);
+        if (!queue?.size) return null;
+        const entries = [...queue].slice(0, 100);
+        const tokens = new Map(entries);
+        const acknowledge = ids => {
+            for (const id of ids) if (queue.get(id) === tokens.get(id)) queue.delete(id);
+            if (!queue.size) this.changes.delete(collectionId);
+        };
+        const metadata = await this.store.request('metadata', {
+            ...snapshot.scope, expectedRevision: snapshot.revision, ids: entries.map(([id]) => id),
+        });
+        this.assertSnapshot(snapshot);
+        const missing = await this.missing(snapshot, metadata.items.filter(x => keepHidden || !x.is_system), profile);
+        const pending = new Set(missing.map(x => x.id));
+        acknowledge(entries.map(([id]) => id).filter(id => !pending.has(id)));
+        const eligible = missing.filter(ref => !skipped.has(`${ref.id}:${ref.revision}`));
+        if (!eligible.length && ![...queue.keys()].some(id => !tokens.has(id))) return null;
+        const selected = eligible.slice(0, limit);
+        const result = selected.length ? await this.store.readByIds(selected.map(x => x.id)) : { messages: [] };
+        this.assertSnapshot(snapshot);
+        const expected = new Map(selected.map(x => [x.id, x.revision]));
+        return {
+            snapshot, collectionId, items: result.messages.filter(x => x.revision === expected.get(x.id)),
+            remaining: Math.max(0, eligible.length - limit) + [...queue.keys()].filter(id => !tokens.has(id)).length,
+            complete: acknowledge,
+        };
     }
 
     async next(limit, profile, keepHidden) {

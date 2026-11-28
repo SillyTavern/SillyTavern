@@ -70,6 +70,14 @@ window. A later summary continues from that point, preserving any unprocessed
 gap before recent messages. The final chat message remains excluded. In paged
 mode the default summary builder uses this bounded raw prompt as well.
 
+Vector synchronization consumes explicit saved message IDs, including a summary
+saved outside the current body window. It checks those IDs against chat metadata
+and the selected vector profile's recorded revisions before reading only the
+changed bodies. A successful vector write acknowledges that queued change;
+failed writes retain it for retry. This in-memory queue is scoped to the chat.
+After a browser restart, **Vectorize All** can repair any outstanding revisions:
+it scans small metadata pages and skips already indexed message versions.
+
 Itemized prompt caches retain their original global `mesId` values. Rendering,
 generation, edits, deletion, message movement, and manual insertion translate
 local window indices at the cache boundary. Insertion/deletion also shifts

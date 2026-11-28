@@ -88,6 +88,51 @@ describe('on-demand chat vector synchronization', () => {
         expect(f.reads).toHaveLength(1);
     });
 
+    test('refreshes an explicitly changed unloaded message by ID without scanning or downloading its surrounding history', async () => {
+        const f = fixture(1000);
+        f.indexed.set('m20', 1);
+        f.metadata[20].revision = 2;
+        f.sync.enqueueChanges({ scope: f.scope, changedIds: ['m20'], deletedIds: [] });
+        const batch = await f.sync.changed(5, 'profile', false);
+        expect(batch.items.map(x => x.id)).toEqual(['m20']);
+        expect(f.pages).toHaveLength(1);
+        expect(f.pages[0]).toMatchObject({ ids: ['m20'] });
+        expect(f.reads).toEqual([['m20']]);
+        expect(f.lookups[0].ids).toEqual(['m20']);
+        // Persisting the matching vector revision is the acknowledgement boundary.
+        f.indexed.set('m20', 2);
+        batch.complete(['m20']);
+        expect(await f.sync.changed(5, 'profile', false)).toBeNull();
+    });
+
+    test('retains failed changed-ID work and does not acknowledge a newer edit arriving during an embedding request', async () => {
+        const f = fixture(1000);
+        f.indexed.set('m20', 1);
+        f.metadata[20].revision = 2;
+        f.sync.enqueueChanges({ scope: f.scope, changedIds: ['m20'], deletedIds: [] });
+        await f.sync.changed(5, 'profile', false); // no acknowledgement: embedding failed
+        const retry = await f.sync.changed(5, 'profile', false);
+        expect(retry.items.map(x => x.id)).toEqual(['m20']);
+        f.sync.enqueueChanges({ scope: f.scope, changedIds: ['m20'], deletedIds: [] });
+        f.metadata[20].revision = 3;
+        f.indexed.set('m20', 2);
+        retry.complete(['m20']); // must leave the newer queued edit intact
+        expect((await f.sync.changed(5, 'profile', false)).items[0].revision).toBe(3);
+    });
+
+    test('does not fetch bodies for already indexed changed IDs and isolates queued work by chat scope', async () => {
+        const f = fixture(1000);
+        f.indexed.set('m20', 1);
+        f.sync.enqueueChanges({ scope: { avatar_url: 'other.png', file_name: 'shared-name' }, changedIds: ['m20'], deletedIds: [] });
+        expect(await f.sync.changed(5, 'profile', false)).toBeNull();
+        expect(f.pages).toEqual([]);
+        f.sync.enqueueChanges({ scope: f.scope, changedIds: ['m20'], deletedIds: [] });
+        expect(await f.sync.changed(5, 'profile', false)).toBeNull();
+        expect(f.reads).toEqual([]);
+        f.sync.enqueueChanges({ scope: f.scope, changedIds: ['m21'], deletedIds: ['m21'] });
+        expect(await f.sync.changed(5, 'profile', false)).toBeNull();
+    });
+
     test('uses the exact character/group scope independent of object key order', () => {
         expect(chatMemoryCollection({ file_name: 'same', avatar_url: 'a' })).toBe(chatMemoryCollection({ avatar_url: 'a', file_name: 'same' }));
         expect(chatMemoryCollection({ file_name: 'same', avatar_url: 'a' })).not.toBe(chatMemoryCollection({ file_name: 'same', avatar_url: 'b' }));
