@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
 
-import vectra from 'vectra';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
@@ -17,6 +16,7 @@ import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors
 import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
 import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
 import { getOllamaVector, getOllamaBatchVector } from '../vectors/ollama-vectors.js';
+import { withVectorStore, purgeVectorStores } from '../vectors/disk-index.js';
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -151,10 +151,10 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
                 break;
             case 'webllm':
-                results.push(...texts.map(x => sourceSettings.embeddings[x]));
+                results.push(...batch.map(x => sourceSettings.embeddings[x]));
                 break;
             case 'koboldcpp':
-                results.push(...texts.map(x => sourceSettings.embeddings[x]));
+                results.push(...batch.map(x => sourceSettings.embeddings[x]));
                 break;
             case 'chutes':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
@@ -280,191 +280,41 @@ function getSourceSettings(source, request) {
     }
 }
 
-/**
- * Gets the model scope for the source.
- * @param {object} sourceSettings - The settings for the source
- * @returns {string} The model scope for the source
- */
-function getModelScope(sourceSettings) {
-    return (sourceSettings?.model || '');
+/** Only embedding identity belongs in a disk index scope; credentials never do. */
+function getProfile(sourceSettings, requestProfile = '') {
+    return {
+        model: sourceSettings.model || '',
+        apiUrl: sourceSettings.apiUrl || sourceSettings.extrasUrl || sourceSettings.urlOverride || '',
+        transform: String(requestProfile || ''),
+    };
 }
 
-/**
- * Gets the index for the vector collection
- * @param {import('../users.js').UserDirectoryList} directories - User directories
- * @param {string} collectionId - The collection ID
- * @param {string} source - The source of the vector
- * @param {object} sourceSettings - The model for the source
- * @returns {Promise<vectra.LocalIndex>} - The index for the collection
- */
-async function getIndex(directories, collectionId, source, sourceSettings) {
-    const model = getModelScope(sourceSettings);
-    const pathToFile = path.join(directories.vectors, sanitize(source), sanitize(collectionId), sanitize(model));
-    const store = new vectra.LocalIndex(pathToFile);
-
-    if (!await store.isIndexCreated()) {
-        await store.createIndex();
-    }
-
-    return store;
+async function useIndex(directories, collectionId, source, sourceSettings, profile, callback) {
+    return withVectorStore(directories.vectors, collectionId, source, getProfile(sourceSettings, profile), callback);
 }
 
-/**
- * Inserts items into the vector collection
- * @param {import('../users.js').UserDirectoryList} directories - User directories
- * @param {string} collectionId - The collection ID
- * @param {string} source - The source of the vector
- * @param {Object} sourceSettings - Settings for the source, if it needs any
- * @param {{ hash: number; text: string; index: number; }[]} items - The items to insert
- */
-async function insertVectorItems(directories, collectionId, source, sourceSettings, items) {
-    const store = await getIndex(directories, collectionId, source, sourceSettings);
-
-    await store.beginUpdate();
-
+async function insertVectorItems(directories, collectionId, source, sourceSettings, items, profile) {
+    if (items.length > 500) throw new RangeError('At most 500 vector chunks per request');
     const vectors = await getBatchVector(source, sourceSettings, items.map(x => x.text), false, directories);
-
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const vector = vectors[i];
-        await store.upsertItem({ vector: vector, metadata: { hash: item.hash, text: item.text, index: item.index } });
-    }
-
-    await store.endUpdate();
+    if (vectors.length !== items.length) throw new Error('Embedding provider returned an incomplete batch');
+    return useIndex(directories, collectionId, source, sourceSettings, profile,
+        store => store.upsert(items.map((item, i) => ({ ...item, vector: vectors[i] }))));
 }
 
-/**
- * Gets the hashes of the items in the vector collection
- * @param {import('../users.js').UserDirectoryList} directories - User directories
- * @param {string} collectionId - The collection ID
- * @param {string} source - The source of the vector
- * @param {Object} sourceSettings - Settings for the source, if it needs any
- * @returns {Promise<number[]>} - The hashes of the items in the collection
- */
-async function getSavedHashes(directories, collectionId, source, sourceSettings) {
-    const store = await getIndex(directories, collectionId, source, sourceSettings);
-
-    const items = await store.listItems();
-    const hashes = items.map(x => Number(x.metadata.hash));
-
-    return hashes;
-}
-
-/**
- * Deletes items from the vector collection by hash
- * @param {import('../users.js').UserDirectoryList} directories - User directories
- * @param {string} collectionId - The collection ID
- * @param {string} source - The source of the vector
- * @param {Object} sourceSettings - Settings for the source, if it needs any
- * @param {number[]} hashes - The hashes of the items to delete
- */
-async function deleteVectorItems(directories, collectionId, source, sourceSettings, hashes) {
-    const store = await getIndex(directories, collectionId, source, sourceSettings);
-    const items = await store.listItemsByMetadata({ hash: { '$in': hashes } });
-
-    await store.beginUpdate();
-
-    for (const item of items) {
-        await store.deleteItem(item.id);
-    }
-
-    await store.endUpdate();
-}
-
-/**
- * Gets the hashes of the items in the vector collection that match the search text
- * @param {import('../users.js').UserDirectoryList} directories - User directories
- * @param {string} collectionId - The collection ID
- * @param {string} source - The source of the vector
- * @param {Object} sourceSettings - Settings for the source, if it needs any
- * @param {string} searchText - The text to search for
- * @param {number} topK - The number of results to return
- * @param {number} threshold - The threshold for the search
- * @returns {Promise<{hashes: number[], metadata: object[]}>} - The metadata of the items that match the search text
- */
-async function queryCollection(directories, collectionId, source, sourceSettings, searchText, topK, threshold) {
-    const store = await getIndex(directories, collectionId, source, sourceSettings);
-    const vector = await getVector(source, sourceSettings, searchText, true, directories);
-
-    const result = await store.queryItems(vector, topK);
-    const metadata = result.filter(x => x.score >= threshold).map(x => x.item.metadata);
-    const hashes = result.map(x => Number(x.item.metadata.hash));
-    return { metadata, hashes };
-}
-
-/**
- * Queries multiple collections for the given search queries. Returns the overall top K results.
- * @param {import('../users.js').UserDirectoryList} directories - User directories
- * @param {string[]} collectionIds - The collection IDs to query
- * @param {string} source - The source of the vector
- * @param {Object} sourceSettings - Settings for the source, if it needs any
- * @param {string} searchText - The text to search for
- * @param {number} topK - The number of results to return
- * @param {number} threshold - The threshold for the search
- *
- * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - The top K results from each collection
- */
-async function multiQueryCollection(directories, collectionIds, source, sourceSettings, searchText, topK, threshold) {
-    const vector = await getVector(source, sourceSettings, searchText, true, directories);
-    const results = [];
-
-    for (const collectionId of collectionIds) {
-        const store = await getIndex(directories, collectionId, source, sourceSettings);
-        const result = await store.queryItems(vector, topK);
-        results.push(...result.map(result => ({ collectionId, result })));
-    }
-
-    // Sort results by descending similarity, apply threshold, and take top K
-    const sortedResults = results
-        .sort((a, b) => b.result.score - a.result.score)
-        .filter(x => x.result.score >= threshold)
-        .slice(0, topK);
-
-    /**
-     * Group the results by collection ID
-     * @type {Record<string, { hashes: number[], metadata: object[] }>}
-     */
-    const groupedResults = {};
-    for (const result of sortedResults) {
-        if (!groupedResults[result.collectionId]) {
-            groupedResults[result.collectionId] = { hashes: [], metadata: [] };
+async function queryCollection(directories, collectionId, source, sourceSettings, vector, topK, threshold, profile, metadataOnly) {
+    return useIndex(directories, collectionId, source, sourceSettings, profile, async store => {
+        const metadata = await store.query(vector, topK, threshold);
+        if (!metadataOnly && metadata.length) {
+            const bodies = new Map((await store.bodies(metadata.map(x => x.id))).map(x => [x.id, x.text]));
+            for (const item of metadata) item.text = bodies.get(item.id);
         }
-
-        groupedResults[result.collectionId].hashes.push(Number(result.result.item.metadata.hash));
-        groupedResults[result.collectionId].metadata.push(result.result.item.metadata);
-    }
-
-    return groupedResults;
+        return { metadata, hashes: metadata.map(x => x.hash) };
+    });
 }
 
-/**
- * Performs a request to regenerate the index if it is corrupted.
- * @param {import('express').Request} req Express request object
- * @param {import('express').Response} res Express response object
- * @param {Error} error Error object
- * @returns {Promise<any>} Promise
- */
-async function regenerateCorruptedIndexErrorHandler(req, res, error) {
-    if (error instanceof SyntaxError && !req.query.regenerated) {
-        const collectionId = String(req.body.collectionId);
-        const source = String(req.body.source) || 'transformers';
-        const sourceSettings = getSourceSettings(source, req);
-
-        if (collectionId && source) {
-            const index = await getIndex(req.user.directories, collectionId, source, sourceSettings);
-            const exists = await index.isIndexCreated();
-
-            if (exists) {
-                const path = index.folderPath;
-                console.warn(`Corrupted index detected at ${path}, regenerating...`);
-                await index.deleteIndex();
-                return res.redirect(307, req.originalUrl + '?regenerated=true');
-            }
-        }
-    }
-
-    console.error(error);
-    return res.sendStatus(500);
+function vectorError(res, error) {
+    console.error('Vector storage request failed:', error);
+    return res.status(error instanceof TypeError || error instanceof RangeError ? 400 : 500).json({ error: error.message });
 }
 
 export const router = express.Router();
@@ -479,13 +329,14 @@ router.post('/query', async (req, res) => {
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
         const threshold = Number(req.body.threshold) || 0.0;
-        const source = String(req.body.source) || 'transformers';
+        const source = String(req.body.source || 'transformers');
         const sourceSettings = getSourceSettings(source, req);
 
-        const results = await queryCollection(req.user.directories, collectionId, source, sourceSettings, searchText, topK, threshold);
+        const vector = await getVector(source, sourceSettings, searchText, true, req.user.directories);
+        const results = await queryCollection(req.user.directories, collectionId, source, sourceSettings, vector, topK, threshold, req.body.profile, Boolean(req.body.metadataOnly));
         return res.json(results);
     } catch (error) {
-        return regenerateCorruptedIndexErrorHandler(req, res, error);
+        return vectorError(res, error);
     }
 });
 
@@ -499,13 +350,34 @@ router.post('/query-multi', async (req, res) => {
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
         const threshold = Number(req.body.threshold) || 0.0;
-        const source = String(req.body.source) || 'transformers';
+        const source = String(req.body.source || 'transformers');
         const sourceSettings = getSourceSettings(source, req);
 
-        const results = await multiQueryCollection(req.user.directories, collectionIds, source, sourceSettings, searchText, topK, threshold);
+        if (collectionIds.length > 100) return res.sendStatus(400);
+        const vector = await getVector(source, sourceSettings, searchText, true, req.user.directories);
+        const candidates = [];
+        for (const collectionId of collectionIds) {
+            const results = await queryCollection(req.user.directories, collectionId, source, sourceSettings, vector, topK, threshold, req.body.profile, true);
+            candidates.push(...results.metadata.map(item => ({ collectionId, ...item })));
+        }
+        const selected = candidates.sort((a, b) => b.score - a.score).slice(0, Math.min(500, Math.max(1, topK)));
+        const results = {};
+        for (const item of selected) {
+            const group = results[item.collectionId] ||= { hashes: [], metadata: [] };
+            group.hashes.push(item.hash);
+            group.metadata.push(item);
+        }
+        if (!req.body.metadataOnly) {
+            for (const [collectionId, group] of Object.entries(results)) {
+                const bodies = await useIndex(req.user.directories, collectionId, source, sourceSettings, req.body.profile,
+                    store => store.bodies(group.metadata.map(x => x.id)));
+                const byId = new Map(bodies.map(x => [x.id, x.text]));
+                for (const item of group.metadata) item.text = byId.get(item.id);
+            }
+        }
         return res.json(results);
     } catch (error) {
-        return regenerateCorruptedIndexErrorHandler(req, res, error);
+        return vectorError(res, error);
     }
 });
 
@@ -516,14 +388,17 @@ router.post('/insert', async (req, res) => {
         }
 
         const collectionId = String(req.body.collectionId);
-        const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
-        const source = String(req.body.source) || 'transformers';
+        const items = req.body.items.map(x => ({
+            hash: x.hash, text: String(x.text ?? ''), index: x.index, chunk: x.chunk,
+            messageId: x.messageId, version: x.version, swipeId: x.swipeId,
+        }));
+        const source = String(req.body.source || 'transformers');
         const sourceSettings = getSourceSettings(source, req);
 
-        await insertVectorItems(req.user.directories, collectionId, source, sourceSettings, items);
+        await insertVectorItems(req.user.directories, collectionId, source, sourceSettings, items, req.body.profile);
         return res.sendStatus(200);
     } catch (error) {
-        return regenerateCorruptedIndexErrorHandler(req, res, error);
+        return vectorError(res, error);
     }
 });
 
@@ -534,13 +409,13 @@ router.post('/list', async (req, res) => {
         }
 
         const collectionId = String(req.body.collectionId);
-        const source = String(req.body.source) || 'transformers';
+        const source = String(req.body.source || 'transformers');
         const sourceSettings = getSourceSettings(source, req);
 
-        const hashes = await getSavedHashes(req.user.directories, collectionId, source, sourceSettings);
+        const hashes = await useIndex(req.user.directories, collectionId, source, sourceSettings, req.body.profile, store => store.hashes());
         return res.json(hashes);
     } catch (error) {
-        return regenerateCorruptedIndexErrorHandler(req, res, error);
+        return vectorError(res, error);
     }
 });
 
@@ -552,18 +427,19 @@ router.post('/delete', async (req, res) => {
 
         const collectionId = String(req.body.collectionId);
         const hashes = req.body.hashes.map(x => Number(x));
-        const source = String(req.body.source) || 'transformers';
+        const source = String(req.body.source || 'transformers');
         const sourceSettings = getSourceSettings(source, req);
 
-        await deleteVectorItems(req.user.directories, collectionId, source, sourceSettings, hashes);
+        await useIndex(req.user.directories, collectionId, source, sourceSettings, req.body.profile, store => store.deleteHashes(hashes));
         return res.sendStatus(200);
     } catch (error) {
-        return regenerateCorruptedIndexErrorHandler(req, res, error);
+        return vectorError(res, error);
     }
 });
 
 router.post('/purge-all', async (req, res) => {
     try {
+        await purgeVectorStores(req.user.directories.vectors);
         for (const source of SOURCES) {
             const sourcePath = path.join(req.user.directories.vectors, sanitize(source));
             if (!fs.existsSync(sourcePath)) {
@@ -587,6 +463,7 @@ router.post('/purge', async (req, res) => {
         }
 
         const collectionId = String(req.body.collectionId);
+        await purgeVectorStores(req.user.directories.vectors, collectionId);
 
         for (const source of SOURCES) {
             const sourcePath = path.join(req.user.directories.vectors, sanitize(source), sanitize(collectionId));
@@ -601,5 +478,45 @@ router.post('/purge', async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
+    }
+});
+
+// Bounded metadata reconciliation: absence from a loaded chat window never deletes history.
+router.post('/state', async (req, res) => {
+    try {
+        if (!req.body.collectionId || !Array.isArray(req.body.messageIds) || req.body.messageIds.length > 500) return res.sendStatus(400);
+        const source = String(req.body.source || 'transformers');
+        const settings = getSourceSettings(source, req);
+        const items = await useIndex(req.user.directories, String(req.body.collectionId), source, settings, req.body.profile,
+            store => store.messageState(req.body.messageIds));
+        return res.json({ items });
+    } catch (error) {
+        return vectorError(res, error);
+    }
+});
+
+router.post('/bodies', async (req, res) => {
+    try {
+        if (!req.body.collectionId || !Array.isArray(req.body.ids) || req.body.ids.length > 500) return res.sendStatus(400);
+        const source = String(req.body.source || 'transformers');
+        const settings = getSourceSettings(source, req);
+        const items = await useIndex(req.user.directories, String(req.body.collectionId), source, settings, req.body.profile,
+            store => store.bodies(req.body.ids));
+        return res.json({ items });
+    } catch (error) {
+        return vectorError(res, error);
+    }
+});
+
+router.post('/delete-messages', async (req, res) => {
+    try {
+        if (!req.body.collectionId || !Array.isArray(req.body.messageIds) || req.body.messageIds.length > 500) return res.sendStatus(400);
+        const source = String(req.body.source || 'transformers');
+        const settings = getSourceSettings(source, req);
+        await useIndex(req.user.directories, String(req.body.collectionId), source, settings, req.body.profile,
+            store => store.deleteMessages(req.body.messageIds));
+        return res.sendStatus(200);
+    } catch (error) {
+        return vectorError(res, error);
     }
 });
