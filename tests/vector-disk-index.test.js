@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, test } from '@jest/globals';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { withVectorStore, vectorStorePath, purgeVectorStores } from '../src/vectors/disk-index.js';
+import { withVectorStore, vectorStorePath, purgeVectorStores, deleteMessageProfiles } from '../src/vectors/disk-index.js';
 
 let root;
 const profile = { model: 'synthetic-3', apiUrl: '', transform: '' };
@@ -147,5 +147,23 @@ describe('local DiskANN vector storage', () => {
         await purgeVectorStores(root, 'chat');
         await use(async store => { expect(await store.hashes()).toEqual([]); });
         await withVectorStore(root, 'other', 'webllm', profile, async store => { expect(await store.hashes()).toEqual([9]); });
+    });
+
+    test('explicit deletion removes all profiles of that chat without touching another chat', async () => {
+        for (const selectedProfile of [profile, { ...profile, transform: 'summary' }]) {
+            await withVectorStore(root, 'chat', 'webllm', selectedProfile, store => store.upsert([
+                item(1, [1, 0, 0], { messageId: 'deleted', version: 1 }),
+                item(2, [0, 1, 0], { messageId: 'kept', version: 1 }),
+            ]));
+        }
+        await withVectorStore(root, 'another-chat', 'webllm', profile, store => store.upsert([item(3, [1, 0, 0], { messageId: 'deleted', version: 1 })]));
+        await deleteMessageProfiles(root, 'chat', ['deleted']);
+        for (const selectedProfile of [profile, { ...profile, transform: 'summary' }]) {
+            await withVectorStore(root, 'chat', 'webllm', selectedProfile, async store => {
+                expect(await store.messageState(['deleted'])).toEqual([]);
+                expect(await store.stats()).toEqual({ chunks: 1, messages: 1, uniqueHashes: 1 });
+            });
+        }
+        await withVectorStore(root, 'another-chat', 'webllm', profile, async store => { expect(await store.hashes()).toEqual([3]); });
     });
 });

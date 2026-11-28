@@ -54,7 +54,7 @@ export function vectorOperation(request, { onStarted } = {}) {
 /** Native libSQL indexing/search runs on one bounded worker, outside the HTTP event loop. */
 export async function withVectorWorker(root, collectionId, source, profile, callback) {
     const proxy = {};
-    for (const method of ['upsert', 'query', 'bodies', 'hashes', 'messageState', 'deleteHashes', 'deleteMessages']) {
+    for (const method of ['upsert', 'query', 'bodies', 'hashes', 'stats', 'messageState', 'deleteHashes', 'deleteMessages']) {
         proxy[method] = (...args) => vectorOperation({ root, collectionId, source, profile, method, args });
     }
     return callback(proxy);

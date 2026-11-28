@@ -172,6 +172,12 @@ export class DiskVectorIndex {
         return result.rows.map(x => Number(x.hash));
     }
 
+    async stats() {
+        if (!this.dimensions) return { chunks: 0, messages: 0, uniqueHashes: 0 };
+        const result = await this.client.execute('SELECT count(*) AS chunks, count(DISTINCT message_id) AS messages, count(DISTINCT hash) AS uniqueHashes FROM records');
+        return Object.fromEntries(Object.entries(result.rows[0]).map(([key, value]) => [key, Number(value)]));
+    }
+
     async messageState(messageIds) {
         if (!this.dimensions || !messageIds.length) return [];
         if (messageIds.length > MAX_BATCH) throw new RangeError('Too many message IDs');
@@ -272,5 +278,25 @@ export async function purgeVectorStores(root, collectionId) {
     }
     for (const source of await fs.promises.readdir(base).catch(() => [])) {
         await fs.promises.rm(path.join(base, source, digest(collectionId)), { recursive: true, force: true });
+    }
+}
+
+/** An explicit chat deletion invalidates that message in every provider profile. */
+export async function deleteMessageProfiles(root, collectionId, ids) {
+    if (!Array.isArray(ids) || ids.length > MAX_BATCH) throw new RangeError('Too many deleted message IDs');
+    const base = path.join(root, '.diskann');
+    for (const source of await fs.promises.readdir(base).catch(() => [])) {
+        const collectionPath = path.join(base, source, digest(collectionId));
+        for (const profile of await fs.promises.readdir(collectionPath).catch(() => [])) {
+            const filename = path.join(collectionPath, profile, 'index.sqlite');
+            if (!fs.existsSync(filename)) continue;
+            const store = new DiskVectorIndex(createClient({ url: pathToFileURL(filename).href }));
+            try {
+                await store.initialize();
+                await store.deleteMessages(ids);
+            } finally {
+                store.close();
+            }
+        }
     }
 }

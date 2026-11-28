@@ -21,7 +21,7 @@ import {
     doExtrasFetch, getApiUrl,
     openThirdPartyExtensionMenu,
 } from '../../extensions.js';
-import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
+import { collapseNewlines, registerDebugFunction, power_user } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml, isTrueBoolean } from '../../utils.js';
@@ -38,6 +38,8 @@ import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
 import { removeReasoningFromString } from '../../reasoning.js';
 import { oai_settings } from '../../openai.js';
+import { activeChatStore } from '../../chat-store.js';
+import { ChatMemorySync, chatMemoryCollection, queryTail, memoryWriteBatches, fullHistoryDelta, selectFullHistoryMemories } from './chat-memory.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -121,6 +123,21 @@ const settings = {
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 const webllmProvider = new WebLlmVectorProvider();
+const chatMemorySync = new ChatMemorySync(activeChatStore, getSavedMessageState);
+let vectorizingHistory = false;
+let lastChatVectorIdentity = '';
+const pendingMessageDeletes = new Map();
+const skippedMessageVersions = new Set();
+
+activeChatStore.subscribeChanges(change => {
+    if (change.changedIds.length) onChatEvent();
+    if (!change.deletedIds.length) return;
+    const collectionId = chatMemoryCollection(change.scope);
+    const pending = pendingMessageDeletes.get(collectionId) || new Set();
+    for (const id of change.deletedIds) pending.add(id);
+    pendingMessageDeletes.set(collectionId, pending);
+    return flushMessageDeletes();
+});
 /**
  * Cache for storing summaries of messages by their hash.
  * @type {Map<number, string>}
@@ -135,7 +152,7 @@ const skippedHashes = new Set();
  * Error causes treated as fatal — abort Vectorize All rather than skip.
  * @type {Set<string>}
  */
-const FATAL_CAUSES = new Set(['account_id_missing', 'api_key_missing', 'api_url_missing', 'api_model_missing', 'extras_module_missing', 'webllm_not_supported', 'summary_endpoint_invalid']);
+const FATAL_CAUSES = new Set(['account_id_missing', 'api_key_missing', 'api_url_missing', 'api_model_missing', 'extras_module_missing', 'webllm_not_supported', 'summary_endpoint_invalid', 'chunk_limit']);
 const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
 
 /**
@@ -201,6 +218,7 @@ function getFileCollectionId(fileUrl) {
 }
 
 async function onVectorizeAllClick() {
+    if (vectorizingHistory) return;
     try {
         if (!settings.enabled_chats) {
             return;
@@ -217,6 +235,11 @@ async function onVectorizeAllClick() {
         // upon request of a full vectorise
         cachedSummaries.clear();
         skippedHashes.clear();
+        skippedMessageVersions.clear();
+        await activeChatStore.queue;
+        if (activeChatStore.snapshot()) chatMemorySync.begin(getChatVectorProfile());
+        else if (!power_user.chat_full_history) throw new Error('The chat has not finished loading');
+        vectorizingHistory = true;
 
         const batchSize = getBatchSize();
         const elapsedLog = [];
@@ -233,7 +256,7 @@ async function onVectorizeAllClick() {
             }
 
             const startTime = Date.now();
-            const remaining = await synchronizeChat(batchSize);
+            const remaining = await synchronizeChat(batchSize, { all: true });
             const elapsed = Date.now() - startTime;
 
             if (remaining === null) {
@@ -270,6 +293,8 @@ async function onVectorizeAllClick() {
     } catch (error) {
         console.error('Vectors: Failed to vectorize all', error);
     } finally {
+        vectorizingHistory = false;
+        chatMemorySync.end();
         $('#vectorize_progress').hide();
     }
 }
@@ -304,8 +329,8 @@ function splitByChunks(items) {
 
     for (const item of items) {
         const chunks = splitRecursive(item.text, settings.message_chunk_size, getChunkDelimiters());
-        for (const chunk of chunks) {
-            const chunkedItem = { ...item, text: chunk };
+        for (const [index, chunk] of chunks.entries()) {
+            const chunkedItem = { ...item, text: chunk, chunk: index };
             chunkedItems.push(chunkedItem);
         }
     }
@@ -433,17 +458,18 @@ async function summarize(hashedMessages, endpoint = 'main', { skipOnFailure = fa
             throw new Error(`Summarization failed after ${maxAttempts} attempt(s)`, { cause: 'summary_failed' });
         }
         cachedSummaries.set(element.hash, element.text);
+        if (cachedSummaries.size > 256) cachedSummaries.delete(cachedSummaries.keys().next().value);
     }
     return hashedMessages;
 }
 
-async function synchronizeChat(batchSize = 5) {
-    if (!settings.enabled_chats) {
+async function synchronizeChat(batchSize = 5, { all = false } = {}) {
+    if (!settings.enabled_chats || (!all && vectorizingHistory)) {
         return -1;
     }
 
     try {
-        await waitUntilCondition(() => !syncBlocked && !is_send_press, 1000);
+        await waitUntilCondition(() => !syncBlocked && !is_send_press, all ? 30000 : 1000);
     } catch {
         console.log('Vectors: Synchronization blocked by another process');
         return -1;
@@ -459,16 +485,27 @@ async function synchronizeChat(batchSize = 5) {
             return -1;
         }
 
-        /** @type {HashedMessage[]} */
-        const hashedMessages = context.chat.filter(x => settings.keep_hidden || !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
-        const hashesInCollection = await getSavedHashes(chatId);
-
-        const newVectorItems = hashedMessages
-            .filter(x => !hashesInCollection.includes(x.hash))
-            .filter(x => !skippedHashes.has(x.hash));
-        const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
-
-        let batch = newVectorItems.slice(0, batchSize);
+        const profile = getChatVectorProfile();
+        const snapshot = activeChatStore.snapshot();
+        const identity = snapshot ? `${chatMemoryCollection(snapshot.scope)}:${profile}` : profile;
+        if (lastChatVectorIdentity !== identity) {
+            cachedSummaries.clear();
+            skippedHashes.clear();
+            skippedMessageVersions.clear();
+            lastChatVectorIdentity = identity;
+        }
+        await flushMessageDeletes();
+        const selection = snapshot ? (all
+            ? await chatMemorySync.next(batchSize, profile, settings.keep_hidden)
+            : await chatMemorySync.loaded(context.chat, batchSize, profile, settings.keep_hidden, skippedMessageVersions))
+            : power_user.chat_full_history ? await selectFullHistoryBatch(context.chat, batchSize, profile) : null;
+        if (!selection) return -1;
+        let batch = selection.items.map(envelope => ({
+            text: String(substituteParams(envelope.message.mes)),
+            hash: getStringHash(substituteParams(envelope.message.mes)),
+            index: envelope.seq, messageId: envelope.id, version: envelope.revision,
+            swipeId: envelope.message.swipe_id ?? 0,
+        })).filter(item => !skippedHashes.has(item.hash));
 
         if (settings.summarize) {
             const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
@@ -477,33 +514,35 @@ async function synchronizeChat(batchSize = 5) {
                 await summarize(toSummarize, settings.summary_source, { skipOnFailure: true });
                 const failed = toSummarize.filter(x => x.summaryFailed);
                 if (failed.length > 0) {
-                    for (const item of failed) skippedHashes.add(item.hash);
+                    for (const item of failed) {
+                        skippedHashes.add(item.hash);
+                        skippedMessageVersions.add(`${item.messageId}:${item.version}`);
+                    }
                     batch = batch.filter(x => !x.summaryFailed);
                 }
             }
         }
 
         if (batch.length > 0) {
-            const chunkedBatch = splitByChunks(batch);
-
-            console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batch.length}...`);
+            if (selection.snapshot) chatMemorySync.assertSnapshot(selection.snapshot);
+            else if (chatId !== getCurrentChatId() || !power_user.chat_full_history) throw new Error('Chat changed during synchronization');
+            if (profile !== getChatVectorProfile()) throw new Error('Embedding settings changed during synchronization');
             try {
-                await insertVectorItems(chatId, chunkedBatch);
-            } catch (insertError) {
-                if (FATAL_CAUSES.has(insertError?.cause)) {
-                    throw insertError;
+                // Keep every message atomic: a message may never span two replacing writes.
+                for (const requestItems of memoryWriteBatches(batch, splitByChunks)) {
+                    await insertVectorItems(selection.collectionId, requestItems, { profile });
                 }
+            } catch (insertError) {
+                if (FATAL_CAUSES.has(insertError?.cause)) throw insertError;
                 console.warn('Vectors: insert failed for batch — marking for skip', insertError);
-                for (const item of batch) skippedHashes.add(item.hash);
+                for (const item of batch) {
+                    skippedHashes.add(item.hash);
+                    skippedMessageVersions.add(`${item.messageId}:${item.version}`);
+                }
             }
         }
 
-        if (deletedHashes.length > 0) {
-            await deleteVectorItems(chatId, deletedHashes);
-            console.log(`Vectors: Deleted ${deletedHashes.length} old hashes`);
-        }
-
-        return newVectorItems.length - batchSize;
+        return selection.remaining;
     } catch (error) {
         /**
          * Gets the error message for a given cause
@@ -528,6 +567,8 @@ async function synchronizeChat(batchSize = 5) {
                     return 'Summarization endpoint is not supported.';
                 case 'summary_failed':
                     return 'Summarization failed after the configured number of retries.';
+                case 'chunk_limit':
+                    return error.message;
                 default:
                     return 'Check server console for more details';
             }
@@ -564,6 +605,7 @@ function getStringHash(str) {
 
     // Store the hash in the cache
     hashCache.set(str, hash);
+    if (hashCache.size > 256) hashCache.delete(hashCache.keys().next().value);
 
     return hash;
 }
@@ -815,34 +857,28 @@ async function rearrangeChat(chat, _contextSize, _abort, type) {
             return;
         }
 
-        // Get the most relevant messages, excluding the last few
-        const queryResults = await queryCollection(chatId, queryText, settings.insert);
-        const queryHashes = queryResults.hashes.filter(onlyUnique);
-        const queriedMessages = [];
-        const insertedHashes = new Set();
-        const retainMessages = chat.slice(-settings.protect);
-
-        for (const message of chat) {
-            if (retainMessages.includes(message) || !message.mes) {
-                continue;
-            }
-            const hash = getStringHash(substituteParams(message.mes));
-            if (queryHashes.includes(hash) && !insertedHashes.has(hash)) {
-                queriedMessages.push(message);
-                insertedHashes.add(hash);
-            }
+        const snapshot = activeChatStore.snapshot();
+        if (!snapshot) {
+            if (power_user.chat_full_history) await rearrangeFullHistory(chat, queryText);
+            return;
         }
-
-        // Rearrange queried messages to match query order
-        // Order is reversed because more relevant are at the lower indices
-        queriedMessages.sort((a, b) => queryHashes.indexOf(getStringHash(substituteParams(b.mes))) - queryHashes.indexOf(getStringHash(substituteParams(a.mes))));
-
-        // Remove queried messages from the original chat array
-        for (const message of chat) {
-            if (queriedMessages.includes(message)) {
-                chat.splice(chat.indexOf(message), 1);
-            }
+        const profile = getChatVectorProfile();
+        const collectionId = chatMemoryCollection(snapshot.scope);
+        const candidateCount = Math.min(500, Math.max(32, (Number(settings.insert) + Number(settings.protect)) * 4));
+        const queryResults = await queryCollection(collectionId, queryText, candidateCount, { metadataOnly: true, profile });
+        chatMemorySync.assertSnapshot(snapshot);
+        const selected = await chatMemorySync.hydrate(queryResults.metadata, {
+            total: snapshot.total, protect: Number(settings.protect) || 0, limit: Number(settings.insert) || 1,
+            keepHidden: settings.keep_hidden, hash: message => getStringHash(substituteParams(message.mes)),
+        }, snapshot);
+        const selectedIds = new Set(selected.map(x => x.id));
+        // The generation copy carries stable refs; removing a recalled message cannot
+        // confuse window-local positions with its absolute sequence in the chat.
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const ref = chat[i].chatStoreRef || activeChatStore.messageRef(chat[i]);
+            if (ref && selectedIds.has(ref.id)) chat.splice(i, 1);
         }
+        const queriedMessages = selected.reverse().map(envelope => envelope.message);
 
         if (queriedMessages.length === 0) {
             console.debug('Vectors: No relevant messages found');
@@ -904,11 +940,9 @@ async function getQueryText(chat, initiator) {
         return String(x?.mes || '').substring(fileLength).trim();
     };
 
-    let hashedMessages = chat
-        .map(x => ({ text: substituteParams(getTextWithoutAttachments(x)), hash: getStringHash(substituteParams(getTextWithoutAttachments(x))), index: chat.indexOf(x) }))
-        .filter(x => x.text)
-        .reverse()
-        .slice(0, settings.query);
+    const hashedMessages = queryTail(chat, Math.max(1, Number(settings.query) || 1),
+        message => substituteParams(getTextWithoutAttachments(message)))
+        .map(item => ({ ...item, hash: getStringHash(item.text) }));
 
     if (initiator === 'chat' && settings.enabled_chats && settings.summarize && settings.summarize_sent) {
         const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
@@ -961,6 +995,9 @@ function getVectorsRequestBody(args = {}) {
         case 'vllm':
             body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
             body.model = extension_settings.vectors.vllm_model;
+            break;
+        case 'koboldcpp':
+            body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP];
             break;
         case 'webllm':
             body.model = extension_settings.vectors.webllm_model;
@@ -1017,12 +1054,83 @@ async function getAdditionalArgs(items) {
     return args;
 }
 
+function fullHistoryCollection() {
+    const context = getContext();
+    const scope = context.groupId
+        ? { is_group: true, id: getCurrentChatId() }
+        : { avatar_url: context.characters?.[context.characterId]?.avatar, file_name: getCurrentChatId() };
+    if (!scope.id && (!scope.avatar_url || !scope.file_name)) throw new Error('No chat selected');
+    return chatMemoryCollection(scope);
+}
+
+async function selectFullHistoryBatch(messages, batchSize, profile) {
+    const collectionId = fullHistoryCollection();
+    const saved = await getSavedHashes(collectionId, { profile });
+    const delta = fullHistoryDelta(messages, saved, {
+        keepHidden: settings.keep_hidden, skipped: skippedHashes,
+        hash: message => getStringHash(substituteParams(message.mes)),
+    });
+    if (delta.deletedHashes.length) await deleteVectorItems(collectionId, delta.deletedHashes, { profile });
+    return { collectionId, snapshot: null, items: delta.items.slice(0, batchSize), remaining: Math.max(0, delta.items.length - batchSize) };
+}
+
+async function rearrangeFullHistory(chat, queryText) {
+    const collectionId = fullHistoryCollection();
+    const profile = getChatVectorProfile();
+    const result = await queryCollection(collectionId, queryText, Math.min(500, Math.max(32, Number(settings.insert) * 4)), { metadataOnly: true, profile });
+    if (!power_user.chat_full_history || collectionId !== fullHistoryCollection()) return;
+    const selected = selectFullHistoryMemories(chat, result.metadata, {
+        protect: Number(settings.protect) || 0, limit: Number(settings.insert) || 1,
+        keepHidden: settings.keep_hidden,
+        hash: message => getStringHash(substituteParams(message.mes)),
+    });
+    const indices = new Set(selected.map(item => item.index));
+    for (let i = chat.length - 1; i >= 0; i--) if (indices.has(i)) chat.splice(i, 1);
+    if (selected.length) setExtensionPrompt(EXTENSION_PROMPT_TAG, getPromptText(selected.reverse().map(item => item.message)), settings.position, settings.depth, settings.include_wi);
+}
+
+function getChatVectorProfile() {
+    const provider = getVectorsRequestBody();
+    return JSON.stringify({
+        format: 1, mode: power_user.chat_full_history ? 'full-history' : 'windowed', chunkSize: settings.message_chunk_size, delimiter: settings.force_chunk_delimiter,
+        summarize: settings.summarize, summarySource: settings.summary_source,
+        summaryPrompt: settings.summary_prompt, summaryThreshold: settings.summary_threshold,
+        source: settings.source, model: provider.model, apiUrl: provider.apiUrl || provider.extrasUrl,
+        endpoint: provider.siliconflow_endpoint, account: provider.workers_ai_account_id, metric: 'cosine',
+    });
+}
+
+async function getSavedMessageState(collectionId, messageIds, profile) {
+    const args = await getAdditionalArgs([]);
+    const response = await fetch('/api/vector/state', {
+        method: 'POST', headers: getRequestHeaders(),
+        body: JSON.stringify({ ...getVectorsRequestBody(args), collectionId, messageIds, profile, source: settings.source }),
+    });
+    if (!response.ok) throw new Error(`Failed to read vector message state (${response.status})`);
+    return (await response.json()).items;
+}
+
+async function flushMessageDeletes() {
+    for (const [collectionId, pending] of pendingMessageDeletes) {
+        while (pending.size) {
+            const messageIds = [...pending].slice(0, 500);
+            const response = await fetch('/api/vector/delete-messages', {
+                method: 'POST', headers: getRequestHeaders(),
+                body: JSON.stringify({ collectionId, messageIds, allProfiles: true }),
+            });
+            if (!response.ok) throw new Error('Failed to remove deleted chat vectors; synchronization will retry');
+            for (const id of messageIds) pending.delete(id);
+        }
+        pendingMessageDeletes.delete(collectionId);
+    }
+}
+
 /**
  * Gets the saved hashes for a collection
 * @param {string} collectionId
 * @returns {Promise<number[]>} Saved hashes
 */
-async function getSavedHashes(collectionId) {
+async function getSavedHashes(collectionId, options = {}) {
     const args = await getAdditionalArgs([]);
     const response = await fetch('/api/vector/list', {
         method: 'POST',
@@ -1031,6 +1139,7 @@ async function getSavedHashes(collectionId) {
             ...getVectorsRequestBody(args),
             collectionId: collectionId,
             source: settings.source,
+            ...options,
         }),
     });
 
@@ -1048,7 +1157,7 @@ async function getSavedHashes(collectionId) {
  * @param {{ hash: number, text: string }[]} items - The items to insert
  * @returns {Promise<void>}
  */
-async function insertVectorItems(collectionId, items) {
+async function insertVectorItems(collectionId, items, options = {}) {
     throwIfSourceInvalid();
 
     const args = await getAdditionalArgs(items.map(x => x.text));
@@ -1060,6 +1169,7 @@ async function insertVectorItems(collectionId, items) {
             collectionId: collectionId,
             items: items,
             source: settings.source,
+            ...options,
         }),
     });
 
@@ -1124,7 +1234,7 @@ function throwIfSourceInvalid() {
  * @param {number[]} hashes - The hashes of the items to delete
  * @returns {Promise<void>}
  */
-async function deleteVectorItems(collectionId, hashes) {
+async function deleteVectorItems(collectionId, hashes, options = {}) {
     const args = await getAdditionalArgs([]);
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
@@ -1134,6 +1244,7 @@ async function deleteVectorItems(collectionId, hashes) {
             collectionId: collectionId,
             hashes: hashes,
             source: settings.source,
+            ...options,
         }),
     });
 
@@ -1148,7 +1259,7 @@ async function deleteVectorItems(collectionId, hashes) {
  * @param {number} topK - The number of results to return
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
-async function queryCollection(collectionId, searchText, topK) {
+async function queryCollection(collectionId, searchText, topK, options = {}) {
     const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query', {
         method: 'POST',
@@ -1160,6 +1271,7 @@ async function queryCollection(collectionId, searchText, topK) {
             topK: topK,
             source: settings.source,
             threshold: settings.score_threshold,
+            ...options,
         }),
     });
 
@@ -1491,7 +1603,8 @@ async function onPurgeClick() {
         toastr.info('No chat selected', 'Purge aborted');
         return;
     }
-    if (await purgeVectorIndex(chatId)) {
+    const snapshot = activeChatStore.snapshot();
+    if (await purgeVectorIndex(snapshot ? chatMemoryCollection(snapshot.scope) : power_user.chat_full_history ? fullHistoryCollection() : chatId)) {
         toastr.success('Vector index purged', 'Purge successful');
     } else {
         toastr.error('Failed to purge vector index', 'Purge failed');
@@ -1505,25 +1618,37 @@ async function onViewStatsClick() {
         return;
     }
 
-    const hashesInCollection = await getSavedHashes(chatId);
-    const totalHashes = hashesInCollection.length;
-    const uniqueHashes = hashesInCollection.filter(onlyUnique).length;
-
-    toastr.info(`Total hashes: <b>${totalHashes}</b><br>
-    Unique hashes: <b>${uniqueHashes}</b><br><br>
-    I'll mark collected messages with a green circle.`,
-    `Stats for chat ${escapeHtml(chatId)}`,
-    { timeOut: 10000, escapeHtml: false },
-    );
-
-    $('#chat .mes.vectorized').removeClass('vectorized');
+    const snapshot = activeChatStore.snapshot();
+    if (!snapshot && !power_user.chat_full_history) return;
+    const collectionId = snapshot ? chatMemoryCollection(snapshot.scope) : fullHistoryCollection();
+    const profile = getChatVectorProfile();
+    const response = await fetch('/api/vector/stats', {
+        method: 'POST', headers: getRequestHeaders(),
+        body: JSON.stringify({ ...getVectorsRequestBody(await getAdditionalArgs([])), collectionId, profile, source: settings.source }),
+    });
+    if (!response.ok) throw new Error('Failed to read vector statistics');
+    const stats = await response.json();
+    toastr.info(`Messages: <b>${snapshot ? stats.messages : stats.uniqueHashes}</b><br>Chunks: <b>${stats.chunks}</b><br><br>Indexed messages in this window have a green circle.`,
+        `Stats for chat ${escapeHtml(chatId)}`, { timeOut: 10000, escapeHtml: false });
     const chat = getContext().chat;
-    for (const message of chat) {
-        if (hashesInCollection.includes(getStringHash(substituteParams(message.mes)))) {
-            const messageElement = $(`#chat .mes[mesid="${chat.indexOf(message)}"]`);
-            messageElement.addClass('vectorized');
-        }
+    if (!snapshot) {
+        const hashes = new Set(await getSavedHashes(collectionId, { profile }));
+        $('#chat .mes.vectorized').removeClass('vectorized');
+        chat.forEach((message, index) => {
+            if (hashes.has(getStringHash(substituteParams(message.mes)))) $(`#chat .mes[mesid="${index}"]`).addClass('vectorized');
+        });
+        return;
     }
+    const refs = chat.map(message => activeChatStore.messageRef(message)).filter(Boolean);
+    const indexed = new Map();
+    for (let i = 0; i < refs.length; i += 500) {
+        for (const item of await getSavedMessageState(collectionId, refs.slice(i, i + 500).map(x => x.id), profile)) indexed.set(item.messageId, item.version);
+    }
+    $('#chat .mes.vectorized').removeClass('vectorized');
+    chat.forEach((message, index) => {
+        const ref = activeChatStore.messageRef(message);
+        if (ref && String(indexed.get(ref.id)) === String(ref.revision)) $(`#chat .mes[mesid="${index}"]`).addClass('vectorized');
+    });
 }
 
 async function onVectorizeAllFilesClick() {

@@ -16,7 +16,7 @@ import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors
 import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
 import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
 import { getOllamaVector, getOllamaBatchVector } from '../vectors/ollama-vectors.js';
-import { withVectorWorker, purgeVectorWorker } from '../vectors/disk-worker-client.js';
+import { withVectorWorker, purgeVectorWorker, vectorOperation } from '../vectors/disk-worker-client.js';
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -250,6 +250,7 @@ function getSourceSettings(source, request) {
         case 'koboldcpp':
             return {
                 model: String(request.body.model),
+                apiUrl: String(request.body.apiUrl || ''),
                 embeddings: request.body.embeddings ?? {},
             };
         case 'chutes':
@@ -314,6 +315,7 @@ async function queryCollection(directories, collectionId, source, sourceSettings
 
 function vectorError(res, error) {
     console.error('Vector storage request failed:', error);
+    if (error.code === 'VECTOR_STORAGE_BUSY') return res.status(503).set('Retry-After', '1').json({ error: error.message, retryable: true });
     return res.status(error instanceof TypeError || error instanceof RangeError ? 400 : 500).json({ error: error.message });
 }
 
@@ -511,11 +513,27 @@ router.post('/bodies', async (req, res) => {
 router.post('/delete-messages', async (req, res) => {
     try {
         if (!req.body.collectionId || !Array.isArray(req.body.messageIds) || req.body.messageIds.length > 500) return res.sendStatus(400);
+        if (req.body.allProfiles) {
+            await vectorOperation({ root: req.user.directories.vectors, collectionId: String(req.body.collectionId), method: 'deleteMessageProfiles', args: [req.body.messageIds] });
+            return res.sendStatus(200);
+        }
         const source = String(req.body.source || 'transformers');
         const settings = getSourceSettings(source, req);
         await useIndex(req.user.directories, String(req.body.collectionId), source, settings, req.body.profile,
             store => store.deleteMessages(req.body.messageIds));
         return res.sendStatus(200);
+    } catch (error) {
+        return vectorError(res, error);
+    }
+});
+
+router.post('/stats', async (req, res) => {
+    try {
+        if (!req.body.collectionId) return res.sendStatus(400);
+        const source = String(req.body.source || 'transformers');
+        const settings = getSourceSettings(source, req);
+        const stats = await useIndex(req.user.directories, String(req.body.collectionId), source, settings, req.body.profile, store => store.stats());
+        return res.json(stats);
     } catch (error) {
         return vectorError(res, error);
     }
