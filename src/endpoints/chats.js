@@ -431,6 +431,25 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
         return chatData;
     }
 
+    if (!hasMatcher && fs.existsSync(`${pathToFile}.sqlite`)) {
+        try {
+            const cached = await getChatStore(pathToFile).getCachedInfo();
+            if (cached) {
+                const last = cached.lastMessage ?? cached.header;
+                if (withMetadata && _.isObjectLike(cached.header?.chat_metadata)) chatData.chat_metadata = cached.header.chat_metadata;
+                chatData.chat_items = cached.total;
+                chatData.mes = last?.mes || '[The message is empty]';
+                chatData.last_mes = last?.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
+                chatData.match = true;
+                return chatData;
+            }
+        } catch (error) {
+            // A disposable index must not hide a chat if it is corrupt or was
+            // removed while listing. Fall back to the existing streaming scan.
+            console.warn('Could not reuse the chat listing index:', error.message);
+        }
+    }
+
     return new Promise((res, rej) => {
         const fileStream = fs.createReadStream(pathToFile);
 

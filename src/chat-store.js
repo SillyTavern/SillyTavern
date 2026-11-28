@@ -251,6 +251,22 @@ export class ChatStore {
         });
     }
 
+    /**
+     * A listing may reuse an existing, current index. It must never build or
+     * refresh indexes for every chat merely to display recents or a picker.
+     */
+    async getCachedInfo() {
+        return withChatFileLock(this.filePath, async () => {
+            if (!fs.existsSync(this.databasePath)) return null;
+            await this.initialize();
+            const state = await this.state();
+            if (!state || state.fingerprint === 'missing' || state.fingerprint !== await fingerprint(this.filePath)) return null;
+            const last = state.total > 0 ? (await this.envelopes(this.client, state.total - 1, 1))[0]?.message : null;
+            if (state.fingerprint !== await fingerprint(this.filePath)) return null;
+            return { header: state.header, total: state.total, lastMessage: last };
+        });
+    }
+
     async page(options = {}) {
         return withChatFileLock(this.filePath, async () => {
             const state = await this.ensureCurrent();
