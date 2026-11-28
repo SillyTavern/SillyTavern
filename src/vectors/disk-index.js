@@ -7,6 +7,10 @@ import sanitize from 'sanitize-filename';
 
 const MAX_BATCH = 500;
 const queues = new Map();
+export const VECTOR_INDEX_SETTINGS_VERSION = 2;
+export const VECTOR_INDEX_SQL = `CREATE INDEX records_ann ON records(libsql_vector_idx(embedding,
+    'metric=cosine', 'compress_neighbors=float8', 'search_l=512', 'insert_l=70', 'alpha=1.2'))`;
+const INDEX_PARAMETERS = ['metric=cosine', 'compress_neighbors=float8', 'search_l=512', 'insert_l=70', 'alpha=1.2'];
 
 function digest(value) {
     return createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -71,9 +75,10 @@ async function* legacyItems(file) {
 }
 
 export class DiskVectorIndex {
-    constructor(client) {
+    constructor(client, { upgradeIndexes = false } = {}) {
         this.client = client;
         this.dimensions = 0;
+        this.upgradeIndexes = upgradeIndexes;
     }
 
     async initialize() {
@@ -84,6 +89,27 @@ export class DiskVectorIndex {
         await this.client.execute('CREATE TABLE IF NOT EXISTS state (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
         const result = await this.client.execute('SELECT value FROM state WHERE key=\'dimensions\'');
         this.dimensions = Number(result.rows[0]?.value || 0);
+        if (this.dimensions && this.upgradeIndexes) await this.ensureIndexSettings();
+    }
+
+    async ensureIndexSettings() {
+        const result = await this.client.execute(`SELECT
+            (SELECT sql FROM sqlite_master WHERE name='records_ann') AS sql,
+            (SELECT value FROM state WHERE key='ann_settings_version') AS version`);
+        const sql = String(result.rows[0]?.sql || '').toLowerCase();
+        const current = INDEX_PARAMETERS.every(parameter => sql.includes(`'${parameter}'`));
+        if (!current) {
+            // Atomic, local rebuild from existing F32 vectors. No body reads or
+            // embedding provider calls, and a failed rebuild rolls back the old index.
+            await this.client.batch([
+                'DROP INDEX IF EXISTS records_ann', VECTOR_INDEX_SQL,
+                { sql: 'INSERT OR REPLACE INTO state VALUES (\'ann_settings_version\', ?)', args: [String(VECTOR_INDEX_SETTINGS_VERSION)] },
+            ], 'write');
+        } else if (Number(result.rows[0].version) !== VECTOR_INDEX_SETTINGS_VERSION) {
+            await this.client.execute({
+                sql: 'INSERT OR REPLACE INTO state VALUES (\'ann_settings_version\', ?)', args: [String(VECTOR_INDEX_SETTINGS_VERSION)],
+            });
+        }
     }
 
     async ensureDimensions(dimensions) {
@@ -97,11 +123,12 @@ export class DiskVectorIndex {
                 message_id TEXT, version TEXT, swipe_id TEXT, position INTEGER NOT NULL,
                 chunk INTEGER NOT NULL, embedding F32_BLOB(${dimensions}) NOT NULL
             )`,
-            'CREATE INDEX IF NOT EXISTS records_ann ON records(libsql_vector_idx(embedding, \'metric=cosine\'))',
+            VECTOR_INDEX_SQL,
             'CREATE INDEX IF NOT EXISTS records_hash ON records(hash)',
             'CREATE INDEX IF NOT EXISTS records_message ON records(message_id)',
             'CREATE TABLE IF NOT EXISTS bodies (id INTEGER PRIMARY KEY REFERENCES records(id) ON DELETE CASCADE, text TEXT NOT NULL)',
             { sql: 'INSERT OR REPLACE INTO state VALUES (\'dimensions\', ?)', args: [String(dimensions)] },
+            { sql: 'INSERT OR REPLACE INTO state VALUES (\'ann_settings_version\', ?)', args: [String(VECTOR_INDEX_SETTINGS_VERSION)] },
         ], 'write');
         this.dimensions = dimensions;
     }
@@ -241,12 +268,12 @@ export class DiskVectorIndex {
 }
 
 /** Open only for the lifetime of an operation; idle collections retain no native page cache. */
-export async function withVectorStore(root, collectionId, source, profile, callback) {
+export async function withVectorStore(root, collectionId, source, profile, callback, options = {}) {
     const filename = vectorStorePath(root, collectionId, source, profile);
     const previous = queues.get(filename) || Promise.resolve();
     const run = previous.catch(() => {}).then(async () => {
         await fs.promises.mkdir(path.dirname(filename), { recursive: true });
-        const store = new DiskVectorIndex(createClient({ url: pathToFileURL(filename).href }));
+        const store = new DiskVectorIndex(createClient({ url: pathToFileURL(filename).href }), options);
         try {
             await store.initialize();
             const model = profile.model || '';

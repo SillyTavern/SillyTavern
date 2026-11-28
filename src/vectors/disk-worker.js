@@ -14,7 +14,7 @@ async function execute({ id, root, collectionId, source, profile, method, args }
             result = await withVectorStore(root, collectionId, source, profile, store => {
                 parentPort.postMessage({ id, started: true });
                 return store[method](...args);
-            });
+            }, { upgradeIndexes: true });
         }
         parentPort.postMessage({ id, result });
     } catch (error) {

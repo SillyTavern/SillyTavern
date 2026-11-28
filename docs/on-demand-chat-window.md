@@ -78,6 +78,17 @@ failed writes retain it for retry. This in-memory queue is scoped to the chat.
 After a browser restart, **Vectorize All** can repair any outstanding revisions:
 it scans small metadata pages and skips already indexed message versions.
 
+Local vector stores use DiskANN with float32 base vectors, float8 neighbor
+compression, `search_l=512`, `insert_l=70`, and cosine distance. The storage worker
+checks both the index DDL and settings version 2. An old graph is rebuilt once
+from its saved vectors in an atomic transaction, preserving message IDs,
+revisions, and bodies without another embedding request. This one-time local
+upgrade can take minutes for a large store; other server work remains responsive.
+It does not run `VACUUM` automatically, so an upgraded database can retain free
+pages until offline maintenance. Fresh stores use the compressed graph directly.
+Offline benchmark callers opt into upgrades explicitly; copied baseline indexes
+remain unchanged when measured.
+
 Itemized prompt caches retain their original global `mesId` values. Rendering,
 generation, edits, deletion, message movement, and manual insertion translate
 local window indices at the cache boundary. Insertion/deletion also shifts

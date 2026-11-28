@@ -1,8 +1,8 @@
-import { beforeEach, afterEach, describe, expect, test } from '@jest/globals';
+import { beforeEach, afterEach, describe, expect, test, jest } from '@jest/globals';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { withVectorStore, vectorStorePath, purgeVectorStores, deleteMessageProfiles } from '../src/vectors/disk-index.js';
+import { withVectorStore, vectorStorePath, purgeVectorStores, deleteMessageProfiles, VECTOR_INDEX_SETTINGS_VERSION } from '../src/vectors/disk-index.js';
 
 let root;
 const profile = { model: 'synthetic-3', apiUrl: '', transform: '' };
@@ -16,14 +16,14 @@ describe('local DiskANN vector storage', () => {
     test('creates a real native ANN index and reads only candidate metadata until bodies are requested', async () => {
         await use(async store => {
             await store.upsert([item(1, [1, 0, 0]), item(2, [0, 1, 0]), item(3, [-1, 0, 0])]);
-            const schema = await store.client.execute("SELECT sql FROM sqlite_master WHERE name='records_ann'");
+            const schema = await store.client.execute('SELECT sql FROM sqlite_master WHERE name=\'records_ann\'');
             expect(schema.rows[0].sql).toContain('libsql_vector_idx');
             const query = await store.query([1, 0, 0], 1, 0.5);
             expect(query).toHaveLength(1);
             expect(query[0]).toMatchObject({ hash: 1, score: 1 });
             expect(query[0]).not.toHaveProperty('text');
             expect(await store.bodies(query.map(x => x.id))).toEqual([{ id: query[0].id, text: 'body-1' }]);
-            const plan = await store.client.execute("EXPLAIN QUERY PLAN SELECT r.id FROM vector_top_k('records_ann', vector32('[1,0,0]'), 1) c JOIN records r ON r.id=c.id");
+            const plan = await store.client.execute('EXPLAIN QUERY PLAN SELECT r.id FROM vector_top_k(\'records_ann\', vector32(\'[1,0,0]\'), 1) c JOIN records r ON r.id=c.id');
             expect(plan.rows.map(x => x.detail).join('\n')).toMatch(/VIRTUAL TABLE/);
             expect(plan.rows.map(x => x.detail).join('\n')).toMatch(/INTEGER PRIMARY KEY/);
         });
@@ -165,5 +165,71 @@ describe('local DiskANN vector storage', () => {
             });
         }
         await withVectorStore(root, 'another-chat', 'webllm', profile, async store => { expect(await store.hashes()).toEqual([3]); });
+    });
+
+    test('upgrades an old graph atomically from persisted vectors and preserves all message bodies and IDs', async () => {
+        let original;
+        await use(async store => {
+            await store.upsert([item(1, [1, 0, 0], { messageId: 'm1', version: 3, swipeId: 1 }), item(2, [0, 1, 0])]);
+            original = await store.bodies(['1', '2']);
+            await store.client.batch([
+                'DROP INDEX records_ann',
+                'CREATE INDEX records_ann ON records(libsql_vector_idx(embedding, \'metric=cosine\'))',
+                'DELETE FROM state WHERE key=\'ann_settings_version\'',
+            ], 'write');
+        });
+        // Offline comparisons can opt out; a benchmark must not mutate its baseline graph.
+        await use(async store => {
+            const schema = await store.client.execute('SELECT sql FROM sqlite_master WHERE name=\'records_ann\'');
+            expect(schema.rows[0].sql).not.toContain('search_l=512');
+        });
+        await withVectorStore(root, 'chat', 'webllm', profile, async store => {
+            const schema = await store.client.execute('SELECT sql FROM sqlite_master WHERE name=\'records_ann\'');
+            expect(schema.rows[0].sql).toContain('search_l=512');
+            expect(schema.rows[0].sql).toContain('compress_neighbors=float8');
+            const version = await store.client.execute('SELECT value FROM state WHERE key=\'ann_settings_version\'');
+            expect(Number(version.rows[0].value)).toBe(VECTOR_INDEX_SETTINGS_VERSION);
+            expect(await store.bodies(['1', '2'])).toEqual(original);
+            expect(await store.messageState(['m1'])).toMatchObject([{ version: '3', swipeId: '1' }]);
+            expect((await store.query([1, 0, 0], 1))[0]).toMatchObject({ id: '1', messageId: 'm1' });
+        }, { upgradeIndexes: true });
+    });
+
+    test('reopens a current graph without rebuilding it and detects a mismatched DDL even when its version marker exists', async () => {
+        await use(async store => {
+            await store.upsert([item(1, [1, 0, 0])]);
+            const version = await store.client.execute('PRAGMA schema_version');
+            await store.ensureIndexSettings();
+            expect((await store.client.execute('PRAGMA schema_version')).rows).toEqual(version.rows);
+            await store.client.batch([
+                'DROP INDEX records_ann',
+                'CREATE INDEX records_ann ON records(libsql_vector_idx(embedding, \'search_l=64\'))',
+            ], 'write');
+            await store.ensureIndexSettings();
+            const schema = await store.client.execute('SELECT sql FROM sqlite_master WHERE name=\'records_ann\'');
+            expect(schema.rows[0].sql).toContain('search_l=512');
+            expect(await store.hashes()).toEqual([1]);
+        });
+    });
+
+    test('rolls back the old graph and its revision marker if the upgrade transaction fails', async () => {
+        await use(async store => {
+            await store.upsert([item(1, [1, 0, 0])]);
+            await store.client.batch([
+                'DROP INDEX records_ann',
+                'CREATE INDEX records_ann ON records(libsql_vector_idx(embedding))',
+                'DELETE FROM state WHERE key=\'ann_settings_version\'',
+            ], 'write');
+            const originalBatch = store.client.batch.bind(store.client);
+            const failure = jest.spyOn(store.client, 'batch').mockImplementationOnce(statements =>
+                originalBatch([...statements, 'SELECT * FROM missing_upgrade_table'], 'write'));
+            await expect(store.ensureIndexSettings()).rejects.toThrow();
+            failure.mockRestore();
+            const schema = await store.client.execute('SELECT sql FROM sqlite_master WHERE name=\'records_ann\'');
+            expect(schema.rows[0].sql).not.toContain('search_l=512');
+            expect((await store.client.execute('SELECT value FROM state WHERE key=\'ann_settings_version\'')).rows).toEqual([]);
+            expect((await store.query([1, 0, 0], 1))[0].hash).toBe(1);
+            expect(await store.bodies(['1'])).toEqual([{ id: '1', text: 'body-1' }]);
+        });
     });
 });

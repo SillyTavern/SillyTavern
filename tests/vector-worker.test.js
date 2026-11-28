@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { closeVectorWorker, withVectorWorker, vectorOperation } from '../src/vectors/disk-worker-client.js';
+import { withVectorStore } from '../src/vectors/disk-index.js';
 
 afterEach(async () => { await closeVectorWorker(); });
 
@@ -70,6 +71,31 @@ describe('vector storage worker', () => {
             expect(beats).toBeGreaterThan(1);
         } finally {
             clearInterval(heartbeat);
+            await fs.rm(root, { recursive: true, force: true });
+        }
+    });
+
+    test('upgrades an existing default graph in the storage worker without calling an embedding provider', async () => {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'st-vector-worker-upgrade-'));
+        const profile = { model: 'local' };
+        try {
+            await withVectorStore(root, 'chat', 'test', profile, async store => {
+                await store.upsert([{ hash: 1, index: 0, text: 'preserved', vector: [1, 0, 0] }]);
+                await store.client.batch([
+                    'DROP INDEX records_ann',
+                    'CREATE INDEX records_ann ON records(libsql_vector_idx(embedding))',
+                    'DELETE FROM state WHERE key=\'ann_settings_version\'',
+                ], 'write');
+            });
+            const result = await withVectorWorker(root, 'chat', 'test', profile, store => store.query([1, 0, 0], 1));
+            expect(result[0].hash).toBe(1);
+            await withVectorStore(root, 'chat', 'test', profile, async store => {
+                const schema = await store.client.execute('SELECT sql FROM sqlite_master WHERE name=\'records_ann\'');
+                expect(schema.rows[0].sql).toContain('search_l=512');
+                expect(schema.rows[0].sql).toContain('compress_neighbors=float8');
+                expect(await store.bodies([result[0].id])).toEqual([{ id: result[0].id, text: 'preserved' }]);
+            });
+        } finally {
             await fs.rm(root, { recursive: true, force: true });
         }
     });
