@@ -331,7 +331,6 @@ export const OLLAMA_KEYS = [
     'top_k',
     'top_p',
     'tfs_z',
-    'typical_p',
     'seed',
     'repeat_last_n',
     'min_p',
@@ -456,7 +455,7 @@ export const AZURE_OPENAI_KEYS = [
     'reasoning_effort',
 ];
 
-export const OPENAI_VERBOSITY_MODELS = /^(?:gpt-5|gpt-6-astra)/;
+export const OPENAI_VERBOSITY_MODELS = /^(?:gpt-5|gpt-6(?:\.\d+)?-)/;
 
 export const OPENAI_REASONING_EFFORT_MODELS = [
     'o1',
@@ -492,6 +491,10 @@ export const OPENAI_REASONING_EFFORT_MODELS = [
     'gpt-5.6-terra',
     'gpt-5.6-luna',
     'gpt-6-astra',
+    'gpt-6.1-sol',
+    'gpt-6.1-terra',
+    'gpt-6-sol',
+    'gpt-6-luna',
 ];
 
 export const OPENAI_REASONING_EFFORT_MAP = {

@@ -316,7 +316,7 @@ export async function getFileAttachment(url) {
         const text = await result.text();
         return text;
     } catch (error) {
-        toastr.error(error, t`Could not download file`);
+        toastr.error(String(error?.message ?? error), t`Could not download file`);
         console.error('Could not download file', error);
     }
 }
@@ -520,6 +520,9 @@ export async function appendFileContent(message, messageText) {
                 fileTexts.push(fileText);
             }
         }
+        if (!fileTexts.length) {
+            return messageText;
+        }
         const mergedFileTexts = fileTexts.join('\n\n') + '\n\n';
         message.extra.fileLength = mergedFileTexts.length;
         return mergedFileTexts + messageText;
@@ -538,6 +541,93 @@ export function encodeStyleTags(text) {
     return text.replaceAll(styleRegex, (_, match) => {
         return `<custom-style>${encodeURIComponent(match)}</custom-style>`;
     });
+}
+
+/**
+ * Checks if a URL points to a resource outside of this origin.
+ * @param {string} url URL to check
+ * @returns {boolean} True if the URL is external
+ */
+function isExternalUrl(url) {
+    const value = String(url ?? '').trim();
+    if (!value) {
+        return false;
+    }
+
+    try {
+        // Resolve it like the browser would, so that every spelling of a URL is compared the same way
+        const resolved = new URL(value, window.location.href);
+        const networkProtocols = ['http:', 'https:', 'ws:', 'wss:', 'ftp:'];
+        return networkProtocols.includes(resolved.protocol) && resolved.origin !== window.location.origin;
+    } catch {
+        return true;
+    }
+}
+
+/**
+ * Resolves the escapes in a piece of CSS.
+ * @param {string} text CSS text with normalized line breaks
+ * @param {(char: string) => string} [mapEscaped] Called for every character that came from an escape, to replace it
+ * @returns {string} The text with its escapes resolved
+ */
+function unescapeCss(text, mapEscaped = (char) => char) {
+    return text.replace(/\\(?:([0-9a-f]{1,6})[ \t\n]?|([\s\S]))/gi, (_, hex, char) => {
+        if (!hex) return char === '\n' ? '' : mapEscaped(char);
+        const codePoint = parseInt(hex, 16);
+        return mapEscaped(codePoint > 0 && codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : '\uFFFD');
+    });
+}
+
+/**
+ * Collects the contents of all strings in a piece of CSS, the way a browser splits it into strings and comments.
+ * @param {string} text CSS text with normalized line breaks
+ * @returns {string[]} String contents, with their escapes still in place
+ */
+function getCssStrings(text) {
+    const strings = [];
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '\\') {
+            i++;
+        } else if (char === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2);
+            i = end === -1 ? text.length : end + 1;
+        } else if (char === '"' || char === '\'') {
+            let end = i + 1;
+            // A string ends at its quote, at a line break, or with the text
+            while (end < text.length && text[end] !== char && text[end] !== '\n') {
+                end += text[end] === '\\' ? 2 : 1;
+            }
+            strings.push(text.slice(i + 1, end));
+            i = end;
+        }
+    }
+    return strings;
+}
+
+/**
+ * Checks if a CSS value references a resource outside of this origin.
+ * This does not parse CSS. It looks at everything that could be a resource reference, and rather reports one too many:
+ * every url(), and every string, as a string can become a reference through image-set() or var().
+ * @param {string} value CSS declaration value, or the text of a style attribute
+ * @returns {boolean} True if the value contains an external reference
+ */
+export function hasExternalCssReference(value) {
+    const text = String(value ?? '').replace(/\r\n?|\f/g, '\n');
+    const leadingNoise = /^(?:\s|\/\*[\s\S]*?\*\/)*/;
+
+    // url(...) with a quoted or unquoted argument. Escapes are resolved first, as they can be part of the function name.
+    // The start of the argument decides where it points to.
+    // An escaped parenthesis does not end the argument, so it is set aside while the argument is cut out.
+    const escapedParenthesis = '\uE000';
+    for (const match of unescapeCss(text, char => char === ')' ? escapedParenthesis : char).matchAll(/url\(([^)]*)/gi)) {
+        const reference = match[1].replaceAll(escapedParenthesis, ')').replace(leadingNoise, '').replace(/^["']/, '');
+        if (isExternalUrl(reference)) {
+            return true;
+        }
+    }
+
+    return getCssStrings(text).some(string => isExternalUrl(unescapeCss(string)));
 }
 
 /**
@@ -562,7 +652,7 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
             }
         }
         if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
-            rule.declarations = rule.declarations.filter(declaration => !declaration.value.includes('://'));
+            rule.declarations = rule.declarations.filter(declaration => !hasExternalCssReference(declaration.value));
         }
     }
 
@@ -1933,6 +2023,32 @@ export function addDOMPurifyHooks() {
                 }
                 break;
             }
+            case 'style': {
+                if (data.attrValue && !isExternalMediaAllowed() && hasExternalCssReference(data.attrValue)) {
+                    console.warn('External media blocked', data.attrValue);
+                    data.keepAttr = false;
+                }
+                break;
+            }
+            case 'background':
+            case 'poster': {
+                if (data.attrValue && !isExternalMediaAllowed() && isExternalUrl(data.attrValue)) {
+                    console.warn('External media blocked', data.attrValue);
+                    data.keepAttr = false;
+                }
+                break;
+            }
+            case 'src':
+            case 'href':
+            case 'xlink:href': {
+                // Elements that load what they point to, other than the media elements that are removed as a whole
+                const loadingElements = ['image', 'feimage', 'use', 'input'];
+                if (data.attrValue && loadingElements.includes(node.nodeName.toLowerCase()) && !isExternalMediaAllowed() && isExternalUrl(data.attrValue)) {
+                    console.warn('External media blocked', data.attrValue);
+                    data.keepAttr = false;
+                }
+                break;
+            }
         }
     });
 
@@ -1992,7 +2108,6 @@ export function addDOMPurifyHooks() {
             case 'EMBED':
             case 'OBJECT':
             case 'IMG': {
-                const isExternalUrl = (url) => (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
                 const src = node.getAttribute('src');
                 const data = node.getAttribute('data');
                 const srcset = node.getAttribute('srcset');

@@ -390,7 +390,7 @@ export function convertCohereMessages(messages, names) {
     }
 
     messages.forEach((msg, index) => {
-        // Tool calls require an assistent primer
+        // Tool calls require an assistant primer
         if (Array.isArray(msg.tool_calls)) {
             if (index > 0 && messages[index - 1].role === 'assistant') {
                 msg.content = messages[index - 1].content;
@@ -454,7 +454,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const toolNameMap = {};
 
     // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
-    const noPrefillModel = /gemini-3\.[67]-flash|gemini-3\.5-flash-lite/.test(model);
+    const noPrefillModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
 
     const contents = [];
     messages.forEach((message, index) => {
@@ -1122,6 +1122,10 @@ export function cachingSystemPromptForOpenRouter(messages, ttl = undefined) {
  * @returns {number|string|null} Budget tokens, effort string, or null
  */
 export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, isAdaptiveModel) {
+    if (!reasoningEffort) {
+        return null;
+    }
+
     // Adaptive thinking for Opus 4.6+: return effort string (like Gemini 3)
     if (isAdaptiveModel) {
         switch (reasoningEffort) {
@@ -1264,7 +1268,7 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
 
     function getGemini3FlashBudget() {
         // https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash
-        const noMinimalThinking = /gemini-3\.7-flash/.test(model);
+        const noMinimalThinking = /gemini-3\.[78]-flash/.test(model);
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;

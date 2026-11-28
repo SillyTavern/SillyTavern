@@ -101,6 +101,11 @@ describe('convertTextCompletionPrompt', () => {
 
 
 describe('calculateClaudeBudgetTokens', () => {
+    test('missing effort returns null for both model kinds', () => {
+        expect(mod.calculateClaudeBudgetTokens(8192, undefined, true, true)).toBeNull();
+        expect(mod.calculateClaudeBudgetTokens(8192, undefined, true, false)).toBeNull();
+    });
+
     describe('adaptive model (Opus 4.6+)', () => {
         test('auto returns null', () => {
             expect(mod.calculateClaudeBudgetTokens(8192, 'auto', true, true)).toBeNull();
@@ -171,6 +176,13 @@ describe('calculateGoogleBudgetTokens', () => {
         expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.7-flash')).toBe('low');
         expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.7-flash')).toBe('medium');
         expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.7-flash')).toBe('high');
+    });
+
+    test('Gemini 3.8 Flash uses Gemini 3 thinking levels without minimal', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.8-flash')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.8-flash')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'low', 'gemini-3.8-flash')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.8-flash')).toBe('high');
     });
 
     test('Gemini 3.6 Flash uses Gemini 3 thinking levels', () => {
@@ -1062,7 +1074,7 @@ describe('convertGooglePrompt', () => {
         expect(result.contents.filter(c => c.role === 'user')).toHaveLength(1);
     });
 
-    for (const model of ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']) {
+    for (const model of ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']) {
         test(`merges a trailing prefill into the user turn on ${model}`, () => {
             const messages = [
                 { role: 'user', content: 'Hi' },

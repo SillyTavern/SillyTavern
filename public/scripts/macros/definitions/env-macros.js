@@ -189,6 +189,9 @@ export function registerEnvMacros() {
         description: 'Original message content for {{original}} substitution in in character prompt overrides.',
         returns: 'Original message content.',
         handler: ({ env }) => {
+            if (typeof env.functions.original !== 'function') {
+                return '';
+            }
             const value = env.functions.original();
             return value;
         },

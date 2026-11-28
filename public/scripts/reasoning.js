@@ -489,6 +489,10 @@ export class ReasoningHandler {
 
         const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes;
 
+        // Tags are matched case-insensitively, the same way parseReasoningFromString() does it
+        const prefix = power_user.reasoning.prefix;
+        const suffix = power_user.reasoning.suffix;
+
         // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
         if (this.#parsingReasoningMesStartIndex) {
             message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
@@ -497,7 +501,7 @@ export class ReasoningHandler {
 
         if (this.state === ReasoningState.None || this.#isHiddenReasoningModel) {
             // If streamed message starts with the opening, cut it out and put all inside reasoning
-            if (parseTarget.startsWith(power_user.reasoning.prefix) && parseTarget.length > power_user.reasoning.prefix.length) {
+            if (parseTarget.toLowerCase().startsWith(prefix.toLowerCase()) && parseTarget.length > prefix.length) {
                 this.#isParsingReasoning = true;
 
                 // Manually set starting state here, as we might already have received the ending suffix
@@ -511,13 +515,14 @@ export class ReasoningHandler {
             return mesChanged;
 
         // If we are in manual parsing mode, all currently streaming mes tokens will go to the reasoning block
-        this.reasoning = parseTarget.slice(power_user.reasoning.prefix.length);
+        this.reasoning = parseTarget.slice(prefix.length);
         message.mes = '';
 
         // If the reasoning contains the ending suffix, we cut that off and continue as message streaming
-        if (this.reasoning.includes(power_user.reasoning.suffix)) {
-            this.reasoning = this.reasoning.slice(0, this.reasoning.indexOf(power_user.reasoning.suffix));
-            this.#parsingReasoningMesStartIndex = parseTarget.indexOf(power_user.reasoning.suffix) + power_user.reasoning.suffix.length;
+        const suffixIndex = this.reasoning.toLowerCase().indexOf(suffix.toLowerCase());
+        if (suffixIndex !== -1) {
+            this.reasoning = this.reasoning.slice(0, suffixIndex);
+            this.#parsingReasoningMesStartIndex = prefix.length + suffixIndex + suffix.length;
             message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
             this.#isParsingReasoning = false;
         }
@@ -1322,7 +1327,7 @@ function setReasoningEventHandlers() {
         }
         updateReasoningFromValue(message, newReasoning);
         await saveChatConditional();
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(messageId, message, { rerenderMessage: !messageBlock.find('.edit_textarea').length });
         closeReasoningDetailsWithoutContent(messageBlock);
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
@@ -1391,7 +1396,7 @@ function setReasoningEventHandlers() {
         delete message.extra.reasoning_type;
         delete message.extra.reasoning_duration;
         await saveChatConditional();
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(messageId, message, { rerenderMessage: !messageBlock.find('.edit_textarea').length });
         const textarea = messageBlock.find('.reasoning_edit_textarea');
         textarea.remove();
         await eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
@@ -1471,7 +1476,7 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
     }
 
     try {
-        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(template.prefix)}(.*?)${escapeRegex(template.suffix)}`, 's');
+        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(template.prefix)}(.*?)${escapeRegex(template.suffix)}`, 'si');
 
         let didReplace = false;
         let reasoning = '';

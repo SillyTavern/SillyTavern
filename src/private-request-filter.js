@@ -5,6 +5,7 @@ import https from 'node:https';
 import dns from 'node:dns';
 import ipMatch from 'ip-matching';
 import ipRegex from 'ip-regex';
+import ipaddr from 'ipaddr.js';
 import { Agent } from 'agent-base';
 import { color } from './util.js';
 import { filterValidIpPatterns } from './express-common.js';
@@ -13,6 +14,8 @@ const LOG_HEADER = '[Private Request Filter]';
 
 /** @type {import('ip-matching').IPMatch[]} */
 const privateIpRanges = [
+    // "This host on this network", reaches the local machine on most systems (IPv4)
+    ipMatch.getMatch('0.0.0.0/8'),
     // Loopback (IPv4)
     ipMatch.getMatch('127.0.0.0/8'),
     // Class A private network
@@ -23,6 +26,10 @@ const privateIpRanges = [
     ipMatch.getMatch('192.168.0.0/16'),
     // Link-local address (IPv4)
     ipMatch.getMatch('169.254.0.0/16'),
+    // Shared address space, used by carrier-grade NAT and overlay networks
+    ipMatch.getMatch('100.64.0.0/10'),
+    // Unspecified address, reaches the local machine on most systems (IPv6)
+    ipMatch.getMatch('::/128'),
     // Loopback (IPv6)
     ipMatch.getMatch('::1/128'),
     // Unique local address (IPv6)
@@ -30,6 +37,31 @@ const privateIpRanges = [
     // Link-local address (IPv6)
     ipMatch.getMatch('fe80::/10'),
 ];
+
+/**
+ * Gets the address that a connection to the given IP address ends up at.
+ * An IPv6 address can carry an IPv4 address (IPv4-mapped addresses, NAT64), which is then the one to check.
+ * @param {string} address The IP address to connect to.
+ * @returns {string} The carried IPv4 address, or the address itself.
+ */
+function getEffectiveAddress(address) {
+    try {
+        const parsed = ipaddr.parse(address);
+        if (parsed instanceof ipaddr.IPv6) {
+            if (parsed.isIPv4MappedAddress()) {
+                return parsed.toIPv4Address().toString();
+            }
+            // NAT64 well-known prefix, the IPv4 address is in the last 32 bits
+            if (parsed.range() === 'rfc6052') {
+                const [high, low] = parsed.parts.slice(6);
+                return [high >> 8, high & 0xff, low >> 8, low & 0xff].join('.');
+            }
+        }
+    } catch {
+        // Not parseable, check it as it is
+    }
+    return address;
+}
 
 /**
  * Custom HTTP/HTTPS agent that blocks requests to private IP addresses unless they are explicitly allowed in the private address whitelist.
@@ -141,13 +173,16 @@ class PrivateRequestAgent extends Agent {
          * @returns {net.Socket|tls.TLSSocket} A socket connected to the target IP address if it's allowed, otherwise an error is raised.
          */
         const validateIpAddress = (ip) => {
+            // The checks look at where the connection ends up, the connection itself uses the address as given
+            const effectiveIp = getEffectiveAddress(ip);
+
             // Not a private IP address, allow the request
-            if (!this.#isPrivateIp(ip)) {
+            if (!this.#isPrivateIp(effectiveIp)) {
                 return connect(ip);
             }
 
             // Private IP address, check if it's allowed in the whitelist
-            if (this.#isAllowedPrivateAddress(ip)) {
+            if (this.#isAllowedPrivateAddress(effectiveIp) || this.#isAllowedPrivateAddress(ip)) {
                 if (this.logAllowed) {
                     console.info(color.green(LOG_HEADER), 'Allowed request to private IP address:', color.blue(ip));
                 }
@@ -155,7 +190,7 @@ class PrivateRequestAgent extends Agent {
                 return connect(ip);
             }
 
-            return raiseError(`Blocked request to private IP address: ${ip}`, this.logBlocked);
+            return raiseError(`Blocked request to private IP address: ${ip}. To allow it, add the address or its range to privateAddressWhitelist.allowedRanges in config.yaml.`, this.logBlocked);
         };
 
         /**

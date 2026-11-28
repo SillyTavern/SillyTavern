@@ -147,6 +147,17 @@ html {
     -webkit-perspective: 1000;
 }
 
+/* The Chromium workaround above promotes the root element to its own
+   compositing layer. Firefox 157+ stops compositing backdrop-filter
+   correctly once that layer exists, so blurred surfaces lose their
+   transparency. Keep the workaround for Chromium/WebKit and opt Firefox
+   out of it. */
+@supports (-moz-appearance: none) {
+    html {
+        -webkit-transform: none;
+    }
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -3074,6 +3085,32 @@ select option:not(:checked) {
 
 select option[disabled]:not(:checked) {
     color: var(--white30a);
+}
+
+.custom_provider_card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    margin: 5px 0;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
+.custom_provider_card .custom_provider_origin {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.85;
+}
+
+select optgroup {
+    /* group headings of the dropdown list: same dark surface as the options, set apart by weight and colour */
+    background-color: var(--black70a);
+    color: var(--golden);
+    font-weight: bold;
+    font-style: normal;
 }
 
 /*#######################################################################*/

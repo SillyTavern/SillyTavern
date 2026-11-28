@@ -1,4 +1,5 @@
 import { Popper } from '../lib.js';
+import { resumeCustomProviderOwner, suspendCustomProviderOwner } from './custom-providers.js';
 
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
@@ -404,6 +405,8 @@ function hasExtensionHook(name, hookName) {
  * @returns {Promise<void>}
  */
 async function callExtensionHook(name, hookName) {
+    if (['disable', 'delete', 'clean'].includes(hookName)) suspendCustomProviderOwner(name);
+    if (['activate', 'enable'].includes(hookName)) resumeCustomProviderOwner(name);
     const manifest = manifests[name];
 
     if (!manifest) {

@@ -401,7 +401,7 @@
   "Available Models": "โมเดลที่สามารถใช้ได้",
   "Prompt Post-Processing": "การประมวลผลพรอมต์หลังการส่ง",
   "Applies additional processing to the prompt before sending it to the API.": "ใช้การประมวลผลเพิ่มเติมกับพรอมต์ก่อนส่งไปยัง API",
-  "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "ตรวจสอบการเชื่อมต่อ API โดยส่งข้อความทดสอบสั้นๆ โปรดทราบว่าคุณจะถูกเรียกเก็บเงินสำหรับการทดสอบนี้!",
+  "Verifies your API connection by sending a short test message. This may incur usage charges.": "ตรวจสอบการเชื่อมต่อ API โดยส่งข้อความทดสอบสั้นๆ ซึ่งอาจมีค่าใช้จ่ายในการใช้งาน",
   "Test Message": "ทดสอบการส่งข้อความ",
   "Auto-connect to Last Server": "เชื่อมต่อเซิฟเวอร์อัตโนมัติ",
   "Missing key": "โปรดใส่ API Key",

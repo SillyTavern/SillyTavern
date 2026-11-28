@@ -68,6 +68,8 @@ Regression coverage includes revision conflicts, concurrent saving and chat chan
 
 Final local validation: all 480 tests in 26 Jest suites and 30 Node frontend/integration tests passed. ESLint on changed files and `git diff --check` passed.
 
+Before opening the upstream PR, integration with staging `c96a1d0c6` was checked again: all 593 tests in 31 Jest suites, the same 30 Node tests, full `npm run lint`, and the Chromium functional harness passed. On macOS, Jest used the canonical temporary directory path (`/private/var/...` instead of its `/var/...` symlink), which lets the upstream character-edit tests intercept the same path that atomic writes resolve. The performance measurements above were recorded before this staging integration.
+
 Explicit change/deletion queues retry during subsequent synchronization but do not survive browser reloads. Vectorize All can scan metadata to repair missing vectors after a reload or interruption. Retrieval filters deleted and stale revisions before injection. External JSONL changes rebuild the sidecar and replace stable IDs, so that chat's vectors need synchronization again. Older extensions requiring the complete history should use compatibility mode.
 
 ## Reproduction entry points
