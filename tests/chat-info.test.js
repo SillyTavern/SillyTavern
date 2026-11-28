@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, afterEach, describe, test, expect, jest } from '
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { discardChatStore, getChatStore } from '../src/chat-store.js';
 
 // chats.js reads these config values at module load. Environment variables take
 // precedence over config.yaml, so the module imports without a config file.
@@ -34,8 +35,9 @@ describe('getChatInfo', () => {
         chatFile = path.join(tmpDir, 'chat.jsonl');
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         jest.restoreAllMocks();
+        await discardChatStore(chatFile);
         fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
@@ -49,6 +51,47 @@ describe('getChatInfo', () => {
         expect(info.last_mes).toBe('2026-01-02T00:00:00.000Z');
         expect(info.match).toBe(true);
         expect(info.chat_metadata).toEqual({ note: 'meta' });
+    });
+
+    test('uses only the last body of a current existing index without scanning JSONL', async () => {
+        fs.writeFileSync(chatFile, makeChatJsonl());
+        const store = getChatStore(chatFile);
+        await store.page({ limit: 1 });
+        const imported = store.stats.importedBytes;
+        const bodyReads = store.stats.bodyRowsRead;
+        const stream = jest.spyOn(fs, 'createReadStream');
+        const info = await chats.getChatInfo(chatFile, {}, true);
+        expect(info.chat_items).toBe(2);
+        expect(info.mes).toBe('Second message');
+        expect(info.chat_metadata).toEqual({ note: 'meta' });
+        expect(stream).not.toHaveBeenCalled();
+        expect(store.stats.importedBytes).toBe(imported);
+        expect(store.stats.bodyRowsRead).toBe(bodyReads + 1);
+    });
+
+    test('does not create or refresh sidecar indexes just to list chats', async () => {
+        fs.writeFileSync(chatFile, makeChatJsonl());
+        await chats.getChatInfo(chatFile);
+        expect(fs.existsSync(`${chatFile}.sqlite`)).toBe(false);
+        const store = getChatStore(chatFile);
+        await store.page({ limit: 1 });
+        const imported = store.stats.importedBytes;
+        fs.appendFileSync(chatFile, '\n' + JSON.stringify({ name: 'User', mes: 'An external change' }));
+        const stream = jest.spyOn(fs, 'createReadStream');
+        const info = await chats.getChatInfo(chatFile);
+        expect(info.chat_items).toBe(3);
+        expect(info.mes).toBe('An external change');
+        expect(stream).toHaveBeenCalledTimes(1);
+        expect(store.stats.importedBytes).toBe(imported);
+    });
+
+    test('explicit text matching retains the complete streaming search even with an index', async () => {
+        fs.writeFileSync(chatFile, makeChatJsonl());
+        await getChatStore(chatFile).page({ limit: 1 });
+        const stream = jest.spyOn(fs, 'createReadStream');
+        const info = await chats.getChatInfo(chatFile, {}, false, lines => lines.some(line => line.includes('First')));
+        expect(info.match).toBe(true);
+        expect(stream).toHaveBeenCalledTimes(1);
     });
 
     test('returns defaults for an empty chat file', async () => {

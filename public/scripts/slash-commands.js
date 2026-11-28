@@ -1,3 +1,5 @@
+import { deleteItemizedPromptForMessage, shiftItemizedPromptsFrom } from './itemized-prompts.js';
+import { activeChatStore } from './chat-store.js';
 import { Fuse, DOMPurify } from '../lib.js';
 import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, resolveAvatarData } from './utils.js';
 
@@ -62,6 +64,8 @@ import {
     system_message_types,
     this_chid,
     updateMessageElement,
+    loadChatWindowAround,
+    ensureLatestChatWindow,
     updateSwipeCounter,
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -3450,13 +3454,16 @@ export function initDefaultSlashCommands() {
         name: 'chat-jump',
         aliases: ['chat-scrollto', 'floor-teleport'],
         callback: async (_, index) => {
-            const messageIndex = Number(index);
+            let messageIndex = Number(index);
+            const total = activeChatStore.scope ? activeChatStore.total : chat.length;
 
-            if (isNaN(messageIndex) || messageIndex < 0 || messageIndex >= chat.length) {
-                toastr.warning(t`Invalid message index: ${index}. Please enter a number between 0 and ${chat.length}.`);
-                console.warn(`WARN: Invalid message index provided for /chat-jump: ${index}. Max index: ${chat.length}`);
+            if (isNaN(messageIndex) || messageIndex < 0 || messageIndex >= total) {
+                toastr.warning(t`Invalid message index: ${index}. Please enter a number between 0 and ${total}.`);
+                console.warn(`WARN: Invalid message index provided for /chat-jump: ${index}. Max index: ${total}`);
                 return '';
             }
+
+            if (activeChatStore.scope) messageIndex = await loadChatWindowAround(messageIndex);
 
             // Load more messages if needed
             const firstDisplayedMessageId = getFirstDisplayedMessageId();
@@ -4151,11 +4158,31 @@ async function popupCallback(args, value) {
     return String(requestedResult ? result ?? '' : value);
 }
 
+async function resolveChatCommandIndex(value, insertion = false) {
+    let index = Number(value);
+    if (!activeChatStore.scope) {
+        if (!isNaN(index) && (index < 0 || Object.is(index, -0))) index = chat.length + index;
+        return index;
+    }
+    await saveChatConditional();
+    if (isNaN(index)) {
+        await ensureLatestChatWindow();
+        return index;
+    }
+    if (index < 0 || Object.is(index, -0)) index = activeChatStore.total + index;
+    if (insertion && index === activeChatStore.total) {
+        await ensureLatestChatWindow();
+        return chat.length;
+    }
+    return loadChatWindowAround(index);
+}
+
 async function getMessagesCallback(args, value) {
     const includeNames = !isFalseBoolean(args?.names);
     const includeHidden = isTrueBoolean(args?.hidden);
     const role = args?.role;
-    const range = stringToRange(value, 0, chat.length - 1);
+    if (activeChatStore.scope) await saveChatConditional();
+    const range = stringToRange(value, 0, (activeChatStore.scope ? activeChatStore.total : chat.length) - 1);
 
     if (!range) {
         console.warn(`WARN: Invalid range provided for /messages command: ${value}`);
@@ -4184,8 +4211,11 @@ async function getMessagesCallback(args, value) {
         throw new Error(t`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
     };
 
+    const rangeMessages = activeChatStore.scope
+        ? new Map((await activeChatStore.readRange(range.start, range.end)).map(envelope => [envelope.seq, envelope.message]))
+        : null;
     const processMessage = async (mesId) => {
-        const msg = chat[mesId];
+        const msg = rangeMessages ? rangeMessages.get(mesId) : chat[mesId];
         if (!msg) {
             console.warn(`WARN: No message found with ID ${mesId}`);
             return null;
@@ -5026,13 +5056,7 @@ async function sendUserMessageCallback(args, text) {
     const compact = isTrueBoolean(args?.compact);
     const bias = extractMessageBias(text);
 
-    let insertAt = Number(args?.at);
-
-    // Convert possible depth parameter to index
-    if (!isNaN(insertAt) && (insertAt < 0 || Object.is(insertAt, -0))) {
-        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
-        insertAt = chat.length + insertAt;
-    }
+    let insertAt = await resolveChatCommandIndex(args?.at, true);
 
     let message;
     if ('name' in args) {
@@ -5055,6 +5079,30 @@ async function deleteMessagesByNameCallback(_, name) {
     // Search for a matching character to get the real name, or take the name provided
     const character = findChar({ name: name });
     name = character?.name || name;
+
+    if (activeChatStore.scope) {
+        // This is an explicitly requested chat-wide operation. Walk bounded
+        // pages and submit each page's deletes, retaining every other message.
+        await ensureLatestChatWindow();
+        let deleted = 0;
+        while (true) {
+            const before = activeChatStore.start;
+            for (let index = chat.length - 1; index >= 0; index--) {
+                if (chat[index].name === name) {
+                    deleteItemizedPromptForMessage(index);
+                    chat.splice(index, 1);
+                    deleted++;
+                }
+            }
+            const header = { chat_metadata, user_name: 'unused', character_name: 'unused' };
+            await activeChatStore.save(chat, header);
+            if (!before) break;
+            await activeChatStore.navigate(chat, header, { direction: 'older', before, limit: power_user.chat_truncation });
+        }
+        await reloadCurrentChat();
+        toastr.info(t`Deleted ${deleted} messages from ${name}`);
+        return '';
+    }
 
     const messagesToDelete = [];
     chat.forEach((value) => {
@@ -5820,12 +5868,7 @@ export function getNameAndAvatarForMessage(character, name = null) {
  * @returns {Promise<string>} The updated message role.
  */
 async function messageRoleCallback(args, role) {
-    let modifyAt = Number(args?.at ?? (chat.length - 1));
-    // Convert possible depth parameter to index
-    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
-        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
-        modifyAt = chat.length + modifyAt;
-    }
+    let modifyAt = await resolveChatCommandIndex(args?.at ?? -1);
 
     const message = chat[modifyAt];
     if (!message) {
@@ -5869,12 +5912,7 @@ async function messageRoleCallback(args, role) {
  * @returns {Promise<string>} The updated message name.
  */
 async function messageNameCallback(args, name) {
-    let modifyAt = Number(args?.at ?? (chat.length - 1));
-    // Convert possible depth parameter to index
-    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
-        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
-        modifyAt = chat.length + modifyAt;
-    }
+    let modifyAt = await resolveChatCommandIndex(args?.at ?? -1);
 
     const message = chat[modifyAt];
     if (!message) {
@@ -5991,17 +6029,12 @@ export async function sendMessageAs(args, text) {
         },
     }];
 
-    let insertAt = Number(args.at);
-
-    // Convert possible depth parameter to index
-    if (!isNaN(insertAt) && (insertAt < 0 || Object.is(insertAt, -0))) {
-        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
-        insertAt = chat.length + insertAt;
-    }
+    let insertAt = await resolveChatCommandIndex(args.at, true);
 
     chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
+        shiftItemizedPromptsFrom(insertAt);
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
         await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAt, 'command');
@@ -6043,17 +6076,12 @@ export async function sendNarratorMessage(args, text) {
         },
     };
 
-    let insertAt = Number(args.at);
-
-    // Convert possible depth parameter to index
-    if (!isNaN(insertAt) && (insertAt < 0 || Object.is(insertAt, -0))) {
-        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
-        insertAt = chat.length + insertAt;
-    }
+    let insertAt = await resolveChatCommandIndex(args.at, true);
 
     chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
+        shiftItemizedPromptsFrom(insertAt);
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
         await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
@@ -6129,17 +6157,12 @@ async function sendCommentMessage(args, text) {
         },
     };
 
-    let insertAt = Number(args.at);
-
-    // Convert possible depth parameter to index
-    if (!isNaN(insertAt) && (insertAt < 0 || Object.is(insertAt, -0))) {
-        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
-        insertAt = chat.length + insertAt;
-    }
+    let insertAt = await resolveChatCommandIndex(args.at, true);
 
     chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
+        shiftItemizedPromptsFrom(insertAt);
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
         await eventSource.emit(event_types.MESSAGE_SENT, insertAt);

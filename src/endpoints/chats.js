@@ -9,6 +9,8 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
+import { ChatStoreError, discardChatStore, getChatStore, withChatFileLock } from '../chat-store.js';
+
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
 import {
     getConfigValue,
@@ -52,7 +54,7 @@ export function getBackupKey(name) {
  * Saves a chat to the backups directory.
  * @param {string} directory The user's backup directory.
  * @param {string} name The name of the chat.
- * @param {string} data The serialized chat to save.
+ * @param {string|{sourceFile: string}} data Serialized chat or a JSONL projection to copy without loading.
  * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
  * @returns
  */
@@ -66,7 +68,11 @@ function backupChat(directory, name, data, backupPrefix = CHAT_BACKUPS_PREFIX) {
 
         const backupFile = path.join(directory, `${backupPrefix}${name}_${generateTimestamp()}.jsonl`);
 
-        tryWriteFileSync(backupFile, data);
+        if (typeof data === 'object' && data?.sourceFile) {
+            fs.copyFileSync(data.sourceFile, backupFile);
+        } else {
+            tryWriteFileSync(backupFile, data);
+        }
         removeOldBackups(directory, `${backupPrefix}${name}_`);
         if (isNaN(maxTotalChatBackups) || maxTotalChatBackups < 0) {
             return;
@@ -425,6 +431,25 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
         return chatData;
     }
 
+    if (!hasMatcher && fs.existsSync(`${pathToFile}.sqlite`)) {
+        try {
+            const cached = await getChatStore(pathToFile).getCachedInfo();
+            if (cached) {
+                const last = cached.lastMessage ?? cached.header;
+                if (withMetadata && _.isObjectLike(cached.header?.chat_metadata)) chatData.chat_metadata = cached.header.chat_metadata;
+                chatData.chat_items = cached.total;
+                chatData.mes = last?.mes || '[The message is empty]';
+                chatData.last_mes = last?.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
+                chatData.match = true;
+                return chatData;
+            }
+        } catch (error) {
+            // A disposable index must not hide a chat if it is corrupt or was
+            // removed while listing. Fall back to the existing streaming scan.
+            console.warn('Could not reuse the chat listing index:', error.message);
+        }
+    }
+
     return new Promise((res, rej) => {
         const fileStream = fs.createReadStream(pathToFile);
 
@@ -507,6 +532,117 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
 
 export const router = express.Router();
 
+const WINDOW_MARKER = '__chatStoreWindow';
+
+/** Resolve both existing single-chat and group-chat request scopes. */
+function getScopedChatPath(request, scope = request.body) {
+    const group = scope?.is_group === true;
+    const root = group ? request.user.directories.groupChats : request.user.directories.chats;
+    let directory = root;
+    let name;
+    if (group) {
+        if (typeof scope.id !== 'string' || !scope.id) throw new ChatStoreError('A group chat ID is required.');
+        name = scope.id;
+    } else {
+        if (typeof scope?.avatar_url !== 'string' || !scope.avatar_url || typeof scope.file_name !== 'string' || !scope.file_name) throw new ChatStoreError('An avatar and chat file name are required.');
+        directory = path.join(root, scope.avatar_url.replace('.png', ''));
+        name = scope.file_name;
+    }
+    if (!sanitize(name)) throw new ChatStoreError('Invalid chat file name.');
+    const filePath = path.join(directory, sanitize(`${name}.jsonl`));
+    if (!isPathUnderParent(root, filePath)) throw new ChatStoreError('Invalid chat path.');
+    return filePath;
+}
+
+/** Keep the guard in browser metadata, never in the compatible JSONL file. */
+function stripWindowMarker(header) {
+    if (!header || typeof header !== 'object' || Array.isArray(header)) return header;
+    const clean = { ...header };
+    if (clean.chat_metadata && typeof clean.chat_metadata === 'object') {
+        clean.chat_metadata = { ...clean.chat_metadata };
+        delete clean.chat_metadata[WINDOW_MARKER];
+    }
+    return clean;
+}
+
+function protectWindowPage(page) {
+    return { ...page, header: { ...page.header, chat_metadata: { ...page.header?.chat_metadata, [WINDOW_MARKER]: true } } };
+}
+
+function rejectWindowedFullSave(body) {
+    if (body?.windowed || body?.chat?.[0]?.chat_metadata?.[WINDOW_MARKER]) {
+        throw new ChatStoreError('Save a loaded window through /api/chats/window.', 409, 'window_save_required');
+    }
+}
+
+function sendStoreError(response, error) {
+    if (error instanceof ChatStoreError) return response.status(error.status).json({ error: error.code, message: error.message });
+    console.error('Chat store request failed:', error);
+    return response.status(500).json({ error: 'storage_error', message: 'The chat could not be accessed.' });
+}
+
+router.post('/page', validateAvatarUrlMiddleware, async (request, response) => {
+    try {
+        const store = getChatStore(getScopedChatPath(request));
+        const page = await store.page({ limit: request.body.limit, cursor: request.body.cursor, before: request.body.before });
+        return response.json(protectWindowPage(page));
+    } catch (error) {
+        return sendStoreError(response, error);
+    }
+});
+
+router.post('/messages', validateAvatarUrlMiddleware, async (request, response) => {
+    try {
+        const store = getChatStore(getScopedChatPath(request));
+        return response.json(await store.readByIds(request.body.ids, request.body.expectedRevision));
+    } catch (error) {
+        return sendStoreError(response, error);
+    }
+});
+
+router.post('/metadata', validateAvatarUrlMiddleware, async (request, response) => {
+    try {
+        const store = getChatStore(getScopedChatPath(request));
+        return response.json(await store.metadata({ ids: request.body.ids, after: request.body.after, limit: request.body.limit, expectedRevision: request.body.expectedRevision }));
+    } catch (error) {
+        return sendStoreError(response, error);
+    }
+});
+
+router.post('/window', validateAvatarUrlMiddleware, async (request, response) => {
+    try {
+        const filePath = getScopedChatPath(request);
+        const store = getChatStore(filePath);
+        const page = await store.replaceWindow({
+            expectedRevision: request.body.expectedRevision,
+            window: request.body.window,
+            header: stripWindowMarker(request.body.header),
+            messages: request.body.messages,
+        });
+        const name = request.body.is_group ? request.body.id : String(request.body.avatar_url).replace('.png', '');
+        if (fs.existsSync(filePath)) getBackupFunction(request.user.profile.handle, name)(request.user.directories.backups, name, { sourceFile: filePath });
+        return response.json(protectWindowPage(page));
+    } catch (error) {
+        return sendStoreError(response, error);
+    }
+});
+
+router.post('/fork', validateAvatarUrlMiddleware, async (request, response) => {
+    try {
+        const filePath = getScopedChatPath(request);
+        const targetPath = getScopedChatPath(request, request.body.target);
+        const result = await getChatStore(filePath).fork(targetPath, {
+            expectedRevision: request.body.expectedRevision,
+            throughId: request.body.throughId,
+            header: stripWindowMarker(request.body.header),
+            lastMessage: request.body.lastMessage,
+        });
+        return response.json(result);
+    } catch (error) {
+        return sendStoreError(response, error);
+    }
+});
+
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
 class IntegrityMismatchError extends Error {
     constructor(...params) {
@@ -530,35 +666,36 @@ class IntegrityMismatchError extends Error {
  * @param {string} backupDirectory Passed to backupChat.
  */
 export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false, handle, cardName, backupDirectory) {
-    const jsonlData = chatData?.map(m => JSON.stringify(m)).join('\n');
+    rejectWindowedFullSave({ chat: chatData });
+    return withChatFileLock(filePath, async () => {
+        const jsonlData = chatData?.map(m => JSON.stringify(m)).join('\n');
 
-    const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
-    const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
+        const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
+        const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
-    if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
-    }
-
-    // A confirmed overwrite (skipIntegrityCheck === true) replaces the existing chat file,
-    // which would permanently destroy the previous content. Before the file is overwritten,
-    // snapshot its current bytes so the user can always restore the pre-overwrite state.
-    // This must run synchronously (bypassing the throttled backup function) to guarantee the
-    // snapshot is on disk before the overwrite below. The dedicated prefix keeps these
-    // snapshots separate from regular backups while still being listable and restorable
-    // through the backup browser (they start with the CHAT_BACKUPS_PREFIX guard).
-    if (skipIntegrityCheck) {
-        const previousContent = tryReadFileSync(filePath);
-        if (previousContent) {
-            backupChat(backupDirectory, cardName, previousContent, 'chat_pre_overwrite_');
+        if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
+            throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
         }
-    }
 
-    tryWriteFileSync(filePath, jsonlData);
-    getBackupFunction(handle, cardName)(backupDirectory, cardName, jsonlData);
+        // A confirmed overwrite (skipIntegrityCheck === true) replaces the existing chat file,
+        // which would permanently destroy the previous content. Before the file is overwritten,
+        // snapshot its current bytes so the user can always restore the pre-overwrite state.
+        // This must run synchronously (bypassing the throttled backup function) to guarantee the
+        // snapshot is on disk before the overwrite below. The dedicated prefix keeps these
+        // snapshots separate from regular backups while still being listable and restorable
+        // through the backup browser (they start with the CHAT_BACKUPS_PREFIX guard).
+        if (skipIntegrityCheck && fs.existsSync(filePath) && fs.statSync(filePath).size > 0) {
+            backupChat(backupDirectory, cardName, { sourceFile: filePath }, 'chat_pre_overwrite_');
+        }
+
+        tryWriteFileSync(filePath, jsonlData);
+        getBackupFunction(handle, cardName)(backupDirectory, cardName, jsonlData);
+    });
 }
 
 router.post('/save', validateAvatarUrlMiddleware, async function (request, response) {
     try {
+        rejectWindowedFullSave(request.body);
         const handle = request.user.profile.handle;
         const cardName = String(request.body.avatar_url).replace('.png', '');
         const chatData = request.body.chat;
@@ -575,6 +712,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
+        if (error instanceof ChatStoreError) return sendStoreError(response, error);
         if (error instanceof IntegrityMismatchError) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });
@@ -656,8 +794,13 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
             return response.status(400).send({ error: true });
         }
 
-        fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
-        fs.unlinkSync(pathToOriginalFile);
+        const paths = [pathToOriginalFile, pathToRenamedFile].sort();
+        await withChatFileLock(paths[0], () => withChatFileLock(paths[1], async () => {
+            if (!fs.existsSync(pathToOriginalFile) || fs.existsSync(pathToRenamedFile)) throw new ChatStoreError('The chat files changed during rename.', 409, 'conflict');
+            await fs.promises.rename(pathToOriginalFile, pathToRenamedFile);
+            await discardChatStore(pathToOriginalFile);
+            await discardChatStore(pathToRenamedFile);
+        }));
         console.info('Successfully renamed chat file.');
         return response.send({ ok: true, sanitizedFileName });
     } catch (error) {
@@ -666,7 +809,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
     }
 });
 
-router.post('/delete', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/delete', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         if (!path.extname(request.body.chatfile)) {
             request.body.chatfile += '.jsonl';
@@ -679,7 +822,12 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
             return response.sendStatus(400);
         }
         //Return success if the file was deleted.
-        if (tryDeleteFile(chatFilePath)) {
+        const deleted = await withChatFileLock(chatFilePath, async () => {
+            const result = tryDeleteFile(chatFilePath);
+            if (result) await discardChatStore(chatFilePath);
+            return result;
+        });
+        if (deleted) {
             return response.send({ ok: true });
         } else {
             console.error('The chat file was not deleted.');
@@ -912,7 +1060,7 @@ router.post('/group/info', async (request, response) => {
     }
 });
 
-router.post('/group/delete', (request, response) => {
+router.post('/group/delete', async (request, response) => {
     try {
         if (!request.body || !request.body.id) {
             return response.sendStatus(400);
@@ -922,7 +1070,12 @@ router.post('/group/delete', (request, response) => {
         const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
         //Return success if the file was deleted.
-        if (tryDeleteFile(chatFilePath)) {
+        const deleted = await withChatFileLock(chatFilePath, async () => {
+            const result = tryDeleteFile(chatFilePath);
+            if (result) await discardChatStore(chatFilePath);
+            return result;
+        });
+        if (deleted) {
             return response.send({ ok: true });
         } else {
             console.error('The group chat file was not deleted.');
@@ -936,6 +1089,7 @@ router.post('/group/delete', (request, response) => {
 
 router.post('/group/save', async function (request, response) {
     try {
+        rejectWindowedFullSave(request.body);
         if (!request.body || !request.body.id) {
             return response.sendStatus(400);
         }
@@ -952,6 +1106,7 @@ router.post('/group/save', async function (request, response) {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
+        if (error instanceof ChatStoreError) return sendStoreError(response, error);
         if (error instanceof IntegrityMismatchError) {
             console.error(error.message);
             return response.status(400).send({ error: 'integrity' });

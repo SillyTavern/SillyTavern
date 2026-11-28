@@ -13,6 +13,7 @@ import {
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
+import { activeChatStore, toGlobalMessageId, createContextTokenCounter } from './scripts/chat-store.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -275,7 +276,7 @@ import { extractReasoningFromData, extractReasoningSignatureFromData, initReason
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
-import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
+import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts, shiftItemizedPromptsFrom } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
@@ -612,6 +613,7 @@ let deleteToolCallsInDeleteMode = true;
 let this_edit_mes_chname = '';
 /** @type {number|undefined} */
 let this_edit_mes_id = undefined;
+let chatWindowChangeDepth = 0;
 
 //settings
 export let settings;
@@ -1434,6 +1436,9 @@ export async function replaceCurrentChat() {
 }
 
 export async function showMoreMessages(messagesToLoad = null) {
+    if (activeChatStore.scope) {
+        return navigateChatWindow('older', messagesToLoad);
+    }
     const firstDisplayedMesId = chatElement.children('.mes').first().attr('mesid');
     let messageId = Number(firstDisplayedMesId);
     let count = messagesToLoad || power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
@@ -1479,17 +1484,110 @@ export async function showMoreMessages(messagesToLoad = null) {
 
 export async function printMessages() {
     let startIndex = 0;
-    let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
+    let count = activeChatStore.scope ? activeChatStore.pageSize(power_user.chat_truncation) : (power_user.chat_truncation || Number.MAX_SAFE_INTEGER);
+
+    chatElement.children('#show_more_messages, #show_newer_messages').remove();
 
     if (chat.length > count) {
         startIndex = chat.length - count;
         chatElement.append('<div id="show_more_messages">Show more messages</div>');
     }
+    if (activeChatStore.start > 0 && !chatElement.children('#show_more_messages').length) {
+        chatElement.prepend('<div id="show_more_messages">Show more messages</div>');
+    }
 
     await redisplayChat({ startIndex, fade: false });
 
+    if (activeChatStore.after) {
+        chatElement.append('<div id="show_newer_messages" class="menu_button">Show newer messages</div>');
+    }
+
     scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
+}
+
+/** The public chat array uses local message indices within this bounded view. */
+export function getChatStoreState() {
+    return activeChatStore.snapshot();
+}
+
+function getChatWindowHeader(metadata = chat_metadata) {
+    return { chat_metadata: metadata, user_name: 'unused', character_name: 'unused' };
+}
+
+export function isChatWindowChanging() {
+    return chatWindowChangeDepth > 0;
+}
+
+function assertChatWindowEditorClosed() {
+    if (this_edit_mes_id >= 0 || chatElement.find('.edit_textarea, .reasoning_edit_textarea').length) {
+        throw new Error(t`Finish or cancel your message edit before loading another chat window.`);
+    }
+}
+
+async function withChatWindowChange(action) {
+    assertChatWindowEditorClosed();
+    chatWindowChangeDepth++;
+    try {
+        return await action();
+    } finally {
+        chatWindowChangeDepth--;
+    }
+}
+
+/** Fetch a bounded page containing a global zero-based message sequence. */
+export async function loadChatWindowAround(sequence) {
+    if (!activeChatStore.scope) return sequence;
+    if (!Number.isInteger(sequence) || sequence < 0 || sequence >= activeChatStore.total) throw new Error('Message index is outside the chat.');
+    const local = sequence - activeChatStore.start;
+    if (local >= 0 && local < chat.length && chatElement.children(`.mes[mesid="${local}"]`).length) return local;
+    return withChatWindowChange(async () => {
+        await activeChatStore.navigate(chat, getChatWindowHeader(), {
+            direction: 'older', before: sequence + 1, limit: power_user.chat_truncation,
+            beforeAdopt: assertChatWindowEditorClosed,
+        });
+        chat.forEach(ensureMessageMediaIsArray);
+        chatElement.children().remove();
+        await printMessages();
+        return sequence - activeChatStore.start;
+    });
+}
+
+export async function ensureLatestChatWindow() {
+    if (!activeChatStore.after) return;
+    return withChatWindowChange(async () => {
+        await activeChatStore.navigate(chat, getChatWindowHeader(), {
+            direction: 'latest', limit: power_user.chat_truncation, beforeAdopt: assertChatWindowEditorClosed,
+        });
+        chat.forEach(ensureMessageMediaIsArray);
+        chatElement.children().remove();
+        await printMessages();
+    });
+}
+
+async function navigateChatWindow(direction, limit = null) {
+    if (is_send_press || is_group_generating) return;
+    const epoch = activeChatStore.epoch;
+    try {
+        await withChatWindowChange(async () => {
+            const page = await activeChatStore.navigate(chat, getChatWindowHeader(), {
+                direction, limit: limit || power_user.chat_truncation,
+                ...(direction === 'older' ? { before: activeChatStore.start + Number(chatElement.children('.mes').first().attr('mesid') || 0) } : {}),
+                beforeAdopt: assertChatWindowEditorClosed,
+            });
+            if (!page || epoch !== activeChatStore.epoch) return;
+            chat.forEach(ensureMessageMediaIsArray);
+            chatElement.children().remove();
+            await printMessages();
+            if (direction === 'older') chatElement.scrollTop(0);
+            await eventSource.emit(event_types.MORE_MESSAGES_LOADED);
+        });
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error(error);
+            toastr.error(error.message, t`Chat could not be loaded`);
+        }
+    }
 }
 
 /**
@@ -1604,7 +1702,10 @@ export async function clearChat({ clearData = false } = {}) {
     await saveItemizedPrompts(getCurrentChatId());
     itemizedPrompts.length = 0;
 
-    if (clearData) chat.length = 0;
+    if (clearData) {
+        activeChatStore.reset();
+        chat.length = 0;
+    }
 }
 
 export async function deleteLastMessage() {
@@ -1805,7 +1906,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         return '';
     }
 
-    if (Number(messageId) === 0 && !isSystem && !isUser && !isReasoning) {
+    if (Number(messageId) === 0 && (!activeChatStore.scope || activeChatStore.start === 0) && !isSystem && !isUser && !isReasoning) {
         const mesBeforeReplace = mes;
         const chatMessage = chat[messageId];
         mes = substituteParams(mes, undefined, ch_name);
@@ -2509,7 +2610,7 @@ export function addCopyToCodeBlocks(messageElement) {
 function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
     //if we have itemized messages, and the array isn't null..
     if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === toGlobalMessageId(messageId));
         if (itemizedPrompt) {
             messageElement.find('.mes_prompt').show();
         }
@@ -2663,7 +2764,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
     messageElement.find('.avatar img').attr('src', avatarImg);
     messageElement.find('.ch_name .name_text').text(mes.name);
     messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
-    messageElement.find('.mesIDDisplay').text(`#${messageId}`);
+    messageElement.find('.mesIDDisplay').text(`#${messageId + (activeChatStore.scope ? activeChatStore.start : 0)}`);
     tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     mes.title && messageElement.attr('title', mes.title);
     timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -4322,6 +4423,41 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Prevent generation from shallow characters
     await unshallowCharacter(this_chid);
 
+    if (activeChatStore.scope) {
+        try {
+            await withChatWindowChange(async () => {
+                const previousStart = activeChatStore.start;
+                const countContextTokens = createContextTokenCounter({
+                    countTokens: getTokenCountAsync,
+                    reasoning: new PromptReasoning(),
+                    type,
+                    canUseTools: ToolManager.isToolCallingSupported(),
+                    groupCharacter: selected_group ? name2 : null,
+                    formatMessage: async (message, depth) => {
+                        const placement = message.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+                        let text = getRegexedString(message.mes || '', placement, { isPrompt: true, depth });
+                        text = await appendFileContent(message, text);
+                        const titles = [];
+                        if (message.extra?.append_title && message.extra?.title) titles.push(message.extra.title);
+                        if (Array.isArray(message.extra?.media)) {
+                            for (const media of message.extra.media) if (media.append_title && media.title) titles.push(media.title);
+                        }
+                        return titles.length ? `${text}\n\n${titles.join('\n\n')}` : text;
+                    },
+                    formatReasoning: (message, depth) => getRegexedString(String(message.extra?.reasoning || ''), regex_placement.REASONING, { isPrompt: true, depth }),
+                });
+                await activeChatStore.ensureContext(chat, getChatWindowHeader(), getMaxPromptTokens(), countContextTokens, power_user.chat_truncation, assertChatWindowEditorClosed);
+                if (previousStart !== activeChatStore.start) {
+                    chatElement.children().remove();
+                    await printMessages();
+                }
+            });
+        } catch (error) {
+            unblockGeneration(type);
+            throw error;
+        }
+    }
+
     // Occurs every time, even if the generation is aborted due to slash commands execution
     await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
 
@@ -4513,7 +4649,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
-    if (chat.length) {
+    if (chat.length && (!activeChatStore.scope || activeChatStore.start === 0)) {
         chat[0].mes = substituteParams(chat[0].mes);
     }
 
@@ -4553,6 +4689,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             mes: regexedMessage,
             original_mes: message,
             index,
+            chatStoreRef: activeChatStore.messageRef(chatItem),
         };
     }));
 
@@ -5105,7 +5242,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         // Add character's name
         // Force name append on continue (if not continuing on user message or first message)
-        const isContinuingOnFirstMessage = chat.length === 1 && isContinue;
+        const isContinuingOnFirstMessage = chat.length === 1 && isContinue && (!activeChatStore.scope || activeChatStore.start === 0);
         if (!isInstruct && force_name2 && !isContinuingOnFirstMessage) {
             if (!lastMesString.endsWith('\n')) {
                 lastMesString += '\n';
@@ -5368,7 +5505,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let additionalPromptStuff = {
             ...thisPromptBits[currentArrayEntry],
             rawPrompt: generate_data.prompt || generate_data.input,
-            mesId: getNextMessageId(type),
+            mesId: toGlobalMessageId(getNextMessageId(type)),
             allAnchors: await getAllExtensionPrompts(),
             chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
@@ -5898,6 +6035,7 @@ export function removeMacros(str) {
  * @returns {Promise<any>} A promise that resolves to the message when it is inserted.
  */
 export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false, name = name1, avatar = user_avatar) {
+    if (insertAt === null) await ensureLatestChatWindow();
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
     const message = {
@@ -5931,6 +6069,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     chat_metadata.tainted = true;
 
     if (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) {
+        shiftItemizedPromptsFrom(insertAt);
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
         await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
@@ -6123,7 +6262,7 @@ function setInContextMessages(msgInContextCount, type) {
 
     // Update last id to chat. No metadata save on purpose, gets hopefully saved via another call
     const lastMessageId = Math.max(0, chat.length - msgInContextCount);
-    chat_metadata.lastInContextMessageId = lastMessageId;
+    chat_metadata.lastInContextMessageId = lastMessageId + (activeChatStore.scope ? activeChatStore.start : 0);
 }
 
 /**
@@ -7115,6 +7254,7 @@ export function deactivateSendButtons() {
 }
 
 export function resetChatState() {
+    activeChatStore.reset();
     // replaces deleted charcter name with system user since it will be displayed next.
     name2 = (this_chid === undefined && neutralCharacterName) ? neutralCharacterName : systemUserName;
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
@@ -7388,6 +7528,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 export function saveChatDebounced() {
     const chid = this_chid;
     const selectedGroup = selected_group;
+    const chatId = getCurrentChatId();
 
     cancelDebouncedChatSave();
 
@@ -7396,6 +7537,8 @@ export function saveChatDebounced() {
             console.warn('Chat save timeout triggered, but group changed. Aborting.');
             return;
         }
+
+        if (chatId !== getCurrentChatId()) return;
 
         if (chid !== this_chid) {
             console.warn('Chat save timeout triggered, but chid changed. Aborting.');
@@ -7444,6 +7587,29 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
     }
 
     characters[this_chid].date_last_chat = Date.now();
+
+    const sourceScope = { avatar_url: characters[this_chid].avatar, file_name: characters[this_chid].chat };
+    if (activeChatStore.scope) {
+        if (!activeChatStore.matches(sourceScope)) throw new Error('Chat changed before saving. Reload the current chat.');
+        try {
+            if (fileName !== sourceScope.file_name) {
+                await activeChatStore.fork(chat, getChatWindowHeader(),
+                    { avatar_url: sourceScope.avatar_url, file_name: fileName }, getChatWindowHeader(metadata),
+                    mesId, Array.isArray(chatData) ? chatData.at(-1) : undefined);
+            } else {
+                if (Number.isInteger(mesId) && mesId >= 0 && mesId < chat.length && !Array.isArray(chatData)) {
+                    if (activeChatStore.after) throw new Error('Load the latest page before trimming this chat.');
+                    chat.splice(mesId + 1);
+                }
+                if (Array.isArray(chatData) && chatData !== chat) chat.splice(0, chat.length, ...chatData);
+                await activeChatStore.save(chat, getChatWindowHeader(metadata));
+            }
+            return;
+        } catch (error) {
+            if (error.name !== 'AbortError') toastr.error(error.message, t`Chat could not be saved`);
+            throw error;
+        }
+    }
 
     const trimmedChat = Array.isArray(chatData)
         ? chatData
@@ -7659,56 +7825,46 @@ export async function unshallowCharacter(characterId) {
 }
 
 export async function getChat() {
+    const characterId = this_chid;
+    const character = characters[characterId];
+    if (!character) return;
+    const scope = { avatar_url: character.avatar, file_name: character.chat };
     try {
-        await unshallowCharacter(this_chid);
-
-        const response = await fetch('/api/chats/get', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            cache: 'no-cache',
-            body: JSON.stringify({
-                ch_name: characters[this_chid].name,
-                file_name: characters[this_chid].chat,
-                avatar_url: characters[this_chid].avatar,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error('Chat could not be loaded');
-        }
-
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-            /** @type {ChatHeader} */
-            const chatHeader = data.shift();
-            chat_metadata = chatHeader?.chat_metadata ?? {};
-            chat.splice(0, chat.length, ...data);
-            chat.forEach(ensureMessageMediaIsArray);
+        await unshallowCharacter(characterId);
+        if (characterId !== this_chid || character.chat !== scope.file_name || selected_group) return;
+        activeChatStore.headers = getRequestHeaders;
+        let page;
+        if (power_user.chat_full_history) {
+            activeChatStore.reset();
+            const epoch = activeChatStore.epoch;
+            const data = await activeChatStore.request('get', { ...scope, ch_name: character.name }, epoch);
+            if (characterId !== this_chid || character.chat !== scope.file_name || selected_group) return;
+            const header = Array.isArray(data) && data.length ? data.shift() : {};
+            chat.splice(0, chat.length, ...(Array.isArray(data) ? data : []));
+            page = { header };
         } else {
-            // An empty/corrupted chat file
-            chat.splice(0, chat.length);
-            chat_metadata = {};
+            page = await activeChatStore.open(scope, chat, power_user.chat_truncation);
         }
-        if (!chat_metadata.integrity) {
-            chat_metadata.integrity = uuidv4();
-        }
+        if (characterId !== this_chid || character.chat !== scope.file_name || selected_group) return;
+        chat_metadata = page.header?.chat_metadata ?? {};
+        chat.forEach(ensureMessageMediaIsArray);
+        if (!chat_metadata.integrity) chat_metadata.integrity = uuidv4();
         await getChatResult();
-        eventSource.emit(event_types.CHAT_LOADED, { detail: { id: this_chid, character: characters[this_chid] } });
-
-        // Focus on the textarea if not already focused on a visible text input
+        eventSource.emit(event_types.CHAT_LOADED, { detail: { id: characterId, character } });
         delay(debounce_timeout.short).then(() => {
-            if ($(document.activeElement).is('input:visible, textarea:visible')) {
-                return;
-            }
+            if (characterId !== this_chid || character.chat !== scope.file_name) return;
+            if ($(document.activeElement).is('input:visible, textarea:visible')) return;
             $('#send_textarea').trigger('click').trigger('focus');
         });
     } catch (error) {
-        await getChatResult();
-        console.log(error);
+        if (error.name === 'AbortError') return;
+        console.error(error);
+        toastr.error(error.message, t`Chat could not be loaded`);
     }
 }
 
 async function getChatResult() {
+    const epoch = activeChatStore.epoch;
     name2 = characters[this_chid].name;
     let freshChat = false;
     if (chat.length === 0) {
@@ -7721,13 +7877,14 @@ async function getChatResult() {
         await saveChatConditional();
     }
     await loadItemizedPrompts(getCurrentChatId());
+    if (epoch !== activeChatStore.epoch) return;
     await printMessages();
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
     if (freshChat) await eventSource.emit(event_types.CHAT_CREATED);
 
-    if (chat.length === 1) {
+    if (chat.length === 1 && (!activeChatStore.scope || activeChatStore.total <= 1)) {
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, 'first_message');
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, 'first_message');
@@ -8272,6 +8429,10 @@ function messageEditAuto(div) {
  * @param {number} editMessageId The ID of the message to edit
  */
 export async function messageEdit(editMessageId) {
+    if (isChatWindowChanging()) {
+        toastr.info(t`Wait for the chat window to finish loading before editing a message.`);
+        return;
+    }
     const editMessage = chat[editMessageId];
     if (!editMessage) {
         console.warn(`Message with id ${editMessageId} not found in chat array.`);
@@ -9264,7 +9425,7 @@ export function getOverswipeBehavior(messageId, message = undefined) {
     message ??= chat[messageId];
 
     const isPristine = !chat_metadata?.tainted;
-    const isGreeting = messageId === 0;
+    const isGreeting = messageId === 0 && (!activeChatStore.scope || activeChatStore.start === 0);
 
     //Do not override explicitly set overswipe_behavior.
     if (typeof message?.extra?.overswipe_behavior == 'string') return message.extra.overswipe_behavior;
@@ -9272,6 +9433,8 @@ export function getOverswipeBehavior(messageId, message = undefined) {
     else if (message?.extra?.swipeable === false) return OVERSWIPE_BEHAVIOR.NONE;
     //Small System messages can't be swiped.
     else if (message?.extra?.isSmallSys) return OVERSWIPE_BEHAVIOR.NONE;
+    // Stored swipes remain available on older pages; regeneration uses the tail.
+    else if (activeChatStore.after) return OVERSWIPE_BEHAVIOR.LOOP;
     //The first message in a priistine chat will loop. It's chevrons will always be visible https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
     else if (isGreeting && isPristine) return OVERSWIPE_BEHAVIOR.PRISTINE_GREETING;
     //Non-user and non-prompt hidden messages will regenerate.
@@ -9456,11 +9619,12 @@ export async function saveMetadata() {
  */
 const SAVE_CHAT_HARD_TIMEOUT = 60000;
 
-export async function saveChatConditional() {
+export async function saveChatConditional({ throwOnError = false } = {}) {
     try {
         await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
-    } catch {
+    } catch (error) {
         console.warn('Timeout waiting for chat to save');
+        if (throwOnError) throw error;
         return;
     }
 
@@ -9491,6 +9655,7 @@ export async function saveChatConditional() {
         saveItemizedPrompts(getCurrentChatId());
     } catch (error) {
         console.error('Error saving chat', error);
+        if (throwOnError) throw error;
     } finally {
         isChatSaving = false;
     }
@@ -9527,7 +9692,7 @@ export function updateViewMessageIds(startIndex = null) {
 
     chatElement.find('.mes').each(function (index, element) {
         $(element).attr('mesid', minId + index);
-        $(element).find('.mesIDDisplay').text(`#${minId + index}`);
+        $(element).find('.mesIDDisplay').text(`#${minId + index + (activeChatStore.scope ? activeChatStore.start : 0)}`);
     });
 
     chatElement.find('.mes').removeClass('last_mes');
@@ -9966,7 +10131,7 @@ export async function createOrEditCharacter(e) {
                 message.mes &&
                 !selected_group &&
                 !chat_metadata.tainted &&
-                (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
+                (!activeChatStore.scope || activeChatStore.start === 0) && (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
 
             if (shouldRegenerateMessage) {
                 chat.splice(0, chat.length, message);
@@ -10982,6 +11147,7 @@ export async function newAssistantChat({ temporary = false } = {}) {
     if (!temporary) {
         return openPermanentAssistantChat();
     }
+    activeChatStore.reset();
     chat.splice(0, chat.length);
     chat_metadata = {};
     setCharacterName(neutralCharacterName);
@@ -11780,6 +11946,13 @@ jQuery(async function () {
         });
 
         if (this_del_mes >= 0) {
+            if (activeChatStore.after) {
+                toastr.info(t`Show newer messages until you reach the latest page before deleting the rest of this chat.`);
+                this_del_mes = -1;
+                is_delete_mode = false;
+                showSwipeButtons();
+                return;
+            }
             for (let i = (chat.length - 1); i >= this_del_mes; i--) {
                 deleteItemizedPromptForMessage(i);
             }
@@ -12638,6 +12811,20 @@ jQuery(async function () {
         event.stopPropagation();
         event.preventDefault();
         await showMoreMessages();
+    });
+
+    $(document).on('click', '#show_newer_messages', async function (event) {
+        event.stopPropagation();
+        event.preventDefault();
+        await navigateChatWindow('newer');
+    });
+
+    let loadingOlderMessages = false;
+    chatElement.on('wheel', async event => {
+        if (!activeChatStore.scope || loadingOlderMessages || chatElement.scrollTop() > 20 || event.originalEvent.deltaY >= 0) return;
+        if (!chatElement.children('#show_more_messages').length) return;
+        loadingOlderMessages = true;
+        try { await showMoreMessages(); } finally { loadingOlderMessages = false; }
     });
 
     $(document).on('click', '.open_characters_library', async function () {

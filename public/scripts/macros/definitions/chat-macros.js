@@ -1,3 +1,4 @@
+import { activeChatStore } from '../../chat-store.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { chat, chat_metadata } from '../../../script.js';
 
@@ -18,7 +19,7 @@ export function registerChatMacros() {
         description: 'Index of the last message in the chat.',
         returns: 'Index of the last message in the chat.',
         returnType: MacroValueType.INTEGER,
-        handler: () => String(getLastMessageId() ?? ''),
+        handler: () => { const id = getLastMessageId(); return id === null ? '' : String(id + (activeChatStore.scope ? activeChatStore.start : 0)); },
     });
 
     MacroRegistry.registerMacro('lastUserMessage', {
@@ -75,7 +76,7 @@ export function registerChatMacros() {
             if (!Array.isArray(chat) || chat.length === 0) {
                 return '';
             }
-            return `0-${chat.length - 1}`;
+            return `0-${(activeChatStore.scope ? activeChatStore.total : chat.length) - 1}`;
         },
     });
 }
@@ -124,7 +125,7 @@ function getFirstDisplayedMessageId() {
     const mesElement = document.querySelector('#chat .mes');
     const mesId = Number(mesElement?.getAttribute('mesid'));
     if (!Number.isNaN(mesId) && mesId >= 0) {
-        return mesId;
+        return mesId + (activeChatStore.scope ? activeChatStore.start : 0);
     }
     return null;
 }

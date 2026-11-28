@@ -1,3 +1,4 @@
+import { activeChatStore } from './chat-store.js';
 import {
     activateSendButtons,
     addOneMessage,
@@ -141,6 +142,9 @@ export function getContext() {
         customProviders: { apiVersion: CUSTOM_PROVIDER_API_VERSION, register: registerCustomProviderFromContext, get: getCustomProvider, list: listCustomProviders, select: selectCustomProvider, active: getActiveCustomProviderId, controls: CUSTOM_PROVIDER_CONTROLS },
         accountStorage,
         chat,
+        chatWindow: activeChatStore.snapshot(),
+        getChatMessageRef: message => activeChatStore.messageRef(message),
+        readChatMessages: ids => activeChatStore.readByIds(ids),
         characters,
         groups,
         name1,

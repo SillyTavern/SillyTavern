@@ -1,7 +1,7 @@
 import {
     moment,
 } from '../lib.js';
-import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
+import { chat, isChatWindowChanging, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getCurrentLocale, t, translate } from './i18n.js';
 import { macros, MacroCategory } from './macros/macro-system.js';
@@ -1255,6 +1255,10 @@ function setReasoningEventHandlers() {
     $(document).on('click', '.mes_reasoning_edit', function (e) {
         e.stopPropagation();
         e.preventDefault();
+        if (isChatWindowChanging()) {
+            toastr.info(t`Wait for the chat window to finish loading before editing a message.`);
+            return;
+        }
         const { message, messageBlock } = getMessageFromJquery(this);
         if (!message?.extra) {
             return;
