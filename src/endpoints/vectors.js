@@ -16,7 +16,7 @@ import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors
 import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
 import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
 import { getOllamaVector, getOllamaBatchVector } from '../vectors/ollama-vectors.js';
-import { withVectorStore, purgeVectorStores } from '../vectors/disk-index.js';
+import { withVectorWorker, purgeVectorWorker } from '../vectors/disk-worker-client.js';
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -290,7 +290,7 @@ function getProfile(sourceSettings, requestProfile = '') {
 }
 
 async function useIndex(directories, collectionId, source, sourceSettings, profile, callback) {
-    return withVectorStore(directories.vectors, collectionId, source, getProfile(sourceSettings, profile), callback);
+    return withVectorWorker(directories.vectors, collectionId, source, getProfile(sourceSettings, profile), callback);
 }
 
 async function insertVectorItems(directories, collectionId, source, sourceSettings, items, profile) {
@@ -439,7 +439,7 @@ router.post('/delete', async (req, res) => {
 
 router.post('/purge-all', async (req, res) => {
     try {
-        await purgeVectorStores(req.user.directories.vectors);
+        await purgeVectorWorker(req.user.directories.vectors);
         for (const source of SOURCES) {
             const sourcePath = path.join(req.user.directories.vectors, sanitize(source));
             if (!fs.existsSync(sourcePath)) {
@@ -463,7 +463,7 @@ router.post('/purge', async (req, res) => {
         }
 
         const collectionId = String(req.body.collectionId);
-        await purgeVectorStores(req.user.directories.vectors, collectionId);
+        await purgeVectorWorker(req.user.directories.vectors, collectionId);
 
         for (const source of SOURCES) {
             const sourcePath = path.join(req.user.directories.vectors, sanitize(source), sanitize(collectionId));
