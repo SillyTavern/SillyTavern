@@ -144,7 +144,7 @@ export class ChatStore {
     }
 
     /** Replaces the view with another bounded page after persisting its edits. */
-    async navigate(messages, header, { direction = 'older', limit = 100, before } = {}) {
+    async navigate(messages, header, { direction = 'older', limit = 100, before, beforeAdopt = () => {} } = {}) {
         const epoch = this.epoch;
         await this.save(messages, header);
         this.assertEpoch(epoch);
@@ -158,15 +158,18 @@ export class ChatStore {
         }, epoch);
         if (page.revision !== this.revision) throw new Error('Chat changed while navigating. Reload it before saving.');
         if (snapshot !== JSON.stringify({ header, messages })) throw new Error('A message was edited while loading. Save the edit and navigate again.');
+        beforeAdopt();
         return this.adopt(page, messages);
     }
 
     /** Fetch only enough recent bodies to fill the model's context budget. */
-    async ensureContext(messages, header, budget, countTokens, limit = 100) {
+    async ensureContext(messages, header, budget, countTokens, limit = 100, assertWindowChange = () => {}) {
+        assertWindowChange();
         const epoch = this.epoch;
         await this.save(messages, header);
         this.assertEpoch(epoch);
-        if (this.after) await this.navigate(messages, header, { direction: 'latest', limit });
+        assertWindowChange();
+        if (this.after) await this.navigate(messages, header, { direction: 'latest', limit, beforeAdopt: assertWindowChange });
         const persisted = JSON.parse(this.saved);
         const baseline = new Map(this.ids.map((id, index) => [id, persisted.messages[index]]));
         const target = Math.max(1, Number(budget) || 4096);
@@ -176,6 +179,7 @@ export class ChatStore {
             tokens += await countTokens(messages[--firstNeeded]);
         }
         this.assertEpoch(epoch);
+        assertWindowChange();
         if (JSON.stringify({ header, messages }) !== this.saved) throw new Error('A message was edited while preparing context. Save it and generate again.');
         // Discard already-saved bodies outside the next prompt/UI budget. This
         // changes the base window, not the messages stored on the server.
@@ -189,6 +193,7 @@ export class ChatStore {
         while (this.start > 0 && tokens < target) {
             const page = await this.request('page', { ...this.scope, before: this.start, limit: this.pageSize(limit) });
             if (page.revision !== this.revision) throw new Error('Chat changed while loading context. Reload it before generating.');
+            assertWindowChange();
             const previous = page.messages.map(envelope => {
                 baseline.set(envelope.id, structuredClone(envelope.message));
                 this.refs.set(envelope.message, { id: envelope.id, revision: envelope.revision, seq: envelope.seq });
@@ -210,6 +215,7 @@ export class ChatStore {
             const page = await this.request('page', { ...this.scope, before: this.start, limit: 1 }, epoch);
             const envelope = page.messages.at(-1);
             if (!envelope?.message?.is_system || !Array.isArray(envelope.message.extra?.tool_invocations)) break;
+            assertWindowChange();
             this.refs.set(envelope.message, { id: envelope.id, revision: envelope.revision, seq: envelope.seq });
             baseline.set(envelope.id, structuredClone(envelope.message));
             messages.unshift(envelope.message);

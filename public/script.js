@@ -611,6 +611,7 @@ let deleteToolCallsInDeleteMode = true;
 let this_edit_mes_chname = '';
 /** @type {number|undefined} */
 let this_edit_mes_id = undefined;
+let chatWindowChangeDepth = 0;
 
 //settings
 export let settings;
@@ -1511,41 +1512,73 @@ function getChatWindowHeader(metadata = chat_metadata) {
     return { chat_metadata: metadata, user_name: 'unused', character_name: 'unused' };
 }
 
+export function isChatWindowChanging() {
+    return chatWindowChangeDepth > 0;
+}
+
+function assertChatWindowEditorClosed() {
+    if (this_edit_mes_id >= 0 || chatElement.find('.edit_textarea, .reasoning_edit_textarea').length) {
+        throw new Error(t`Finish or cancel your message edit before loading another chat window.`);
+    }
+}
+
+async function withChatWindowChange(action) {
+    assertChatWindowEditorClosed();
+    chatWindowChangeDepth++;
+    try {
+        return await action();
+    } finally {
+        chatWindowChangeDepth--;
+    }
+}
+
 /** Fetch a bounded page containing a global zero-based message sequence. */
 export async function loadChatWindowAround(sequence) {
     if (!activeChatStore.scope) return sequence;
     if (!Number.isInteger(sequence) || sequence < 0 || sequence >= activeChatStore.total) throw new Error('Message index is outside the chat.');
     const local = sequence - activeChatStore.start;
     if (local >= 0 && local < chat.length && chatElement.children(`.mes[mesid="${local}"]`).length) return local;
-    await activeChatStore.navigate(chat, getChatWindowHeader(), { direction: 'older', before: sequence + 1, limit: power_user.chat_truncation });
-    chat.forEach(ensureMessageMediaIsArray);
-    chatElement.children().remove();
-    await printMessages();
-    return sequence - activeChatStore.start;
+    return withChatWindowChange(async () => {
+        await activeChatStore.navigate(chat, getChatWindowHeader(), {
+            direction: 'older', before: sequence + 1, limit: power_user.chat_truncation,
+            beforeAdopt: assertChatWindowEditorClosed,
+        });
+        chat.forEach(ensureMessageMediaIsArray);
+        chatElement.children().remove();
+        await printMessages();
+        return sequence - activeChatStore.start;
+    });
 }
 
 export async function ensureLatestChatWindow() {
     if (!activeChatStore.after) return;
-    await activeChatStore.navigate(chat, getChatWindowHeader(), { direction: 'latest', limit: power_user.chat_truncation });
-    chat.forEach(ensureMessageMediaIsArray);
-    chatElement.children().remove();
-    await printMessages();
-}
-
-async function navigateChatWindow(direction, limit = null) {
-    if (this_edit_mes_id >= 0 || is_send_press || is_group_generating) return;
-    const epoch = activeChatStore.epoch;
-    try {
-        const page = await activeChatStore.navigate(chat, getChatWindowHeader(), {
-            direction, limit: limit || power_user.chat_truncation,
-            ...(direction === 'older' ? { before: activeChatStore.start + Number(chatElement.children('.mes').first().attr('mesid') || 0) } : {}),
+    return withChatWindowChange(async () => {
+        await activeChatStore.navigate(chat, getChatWindowHeader(), {
+            direction: 'latest', limit: power_user.chat_truncation, beforeAdopt: assertChatWindowEditorClosed,
         });
-        if (!page || epoch !== activeChatStore.epoch) return;
         chat.forEach(ensureMessageMediaIsArray);
         chatElement.children().remove();
         await printMessages();
-        if (direction === 'older') chatElement.scrollTop(0);
-        await eventSource.emit(event_types.MORE_MESSAGES_LOADED);
+    });
+}
+
+async function navigateChatWindow(direction, limit = null) {
+    if (is_send_press || is_group_generating) return;
+    const epoch = activeChatStore.epoch;
+    try {
+        await withChatWindowChange(async () => {
+            const page = await activeChatStore.navigate(chat, getChatWindowHeader(), {
+                direction, limit: limit || power_user.chat_truncation,
+                ...(direction === 'older' ? { before: activeChatStore.start + Number(chatElement.children('.mes').first().attr('mesid') || 0) } : {}),
+                beforeAdopt: assertChatWindowEditorClosed,
+            });
+            if (!page || epoch !== activeChatStore.epoch) return;
+            chat.forEach(ensureMessageMediaIsArray);
+            chatElement.children().remove();
+            await printMessages();
+            if (direction === 'older') chatElement.scrollTop(0);
+            await eventSource.emit(event_types.MORE_MESSAGES_LOADED);
+        });
     } catch (error) {
         if (error.name !== 'AbortError') {
             console.error(error);
@@ -4364,30 +4397,37 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     await unshallowCharacter(this_chid);
 
     if (activeChatStore.scope) {
-        const previousStart = activeChatStore.start;
-        const countContextTokens = createContextTokenCounter({
-            countTokens: getTokenCountAsync,
-            reasoning: new PromptReasoning(),
-            type,
-            canUseTools: ToolManager.isToolCallingSupported(),
-            groupCharacter: selected_group ? name2 : null,
-            formatMessage: async (message, depth) => {
-                const placement = message.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
-                let text = getRegexedString(message.mes || '', placement, { isPrompt: true, depth });
-                text = await appendFileContent(message, text);
-                const titles = [];
-                if (message.extra?.append_title && message.extra?.title) titles.push(message.extra.title);
-                if (Array.isArray(message.extra?.media)) {
-                    for (const media of message.extra.media) if (media.append_title && media.title) titles.push(media.title);
+        try {
+            await withChatWindowChange(async () => {
+                const previousStart = activeChatStore.start;
+                const countContextTokens = createContextTokenCounter({
+                    countTokens: getTokenCountAsync,
+                    reasoning: new PromptReasoning(),
+                    type,
+                    canUseTools: ToolManager.isToolCallingSupported(),
+                    groupCharacter: selected_group ? name2 : null,
+                    formatMessage: async (message, depth) => {
+                        const placement = message.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+                        let text = getRegexedString(message.mes || '', placement, { isPrompt: true, depth });
+                        text = await appendFileContent(message, text);
+                        const titles = [];
+                        if (message.extra?.append_title && message.extra?.title) titles.push(message.extra.title);
+                        if (Array.isArray(message.extra?.media)) {
+                            for (const media of message.extra.media) if (media.append_title && media.title) titles.push(media.title);
+                        }
+                        return titles.length ? `${text}\n\n${titles.join('\n\n')}` : text;
+                    },
+                    formatReasoning: (message, depth) => getRegexedString(String(message.extra?.reasoning || ''), regex_placement.REASONING, { isPrompt: true, depth }),
+                });
+                await activeChatStore.ensureContext(chat, getChatWindowHeader(), getMaxPromptTokens(), countContextTokens, power_user.chat_truncation, assertChatWindowEditorClosed);
+                if (previousStart !== activeChatStore.start) {
+                    chatElement.children().remove();
+                    await printMessages();
                 }
-                return titles.length ? `${text}\n\n${titles.join('\n\n')}` : text;
-            },
-            formatReasoning: (message, depth) => getRegexedString(String(message.extra?.reasoning || ''), regex_placement.REASONING, { isPrompt: true, depth }),
-        });
-        await activeChatStore.ensureContext(chat, getChatWindowHeader(), getMaxPromptTokens(), countContextTokens, power_user.chat_truncation);
-        if (previousStart !== activeChatStore.start) {
-            chatElement.children().remove();
-            await printMessages();
+            });
+        } catch (error) {
+            unblockGeneration(type);
+            throw error;
         }
     }
 
@@ -8355,6 +8395,10 @@ function messageEditAuto(div) {
  * @param {number} editMessageId The ID of the message to edit
  */
 export async function messageEdit(editMessageId) {
+    if (isChatWindowChanging()) {
+        toastr.info(t`Wait for the chat window to finish loading before editing a message.`);
+        return;
+    }
     const editMessage = chat[editMessageId];
     if (!editMessage) {
         console.warn(`Message with id ${editMessageId} not found in chat array.`);
