@@ -1,0 +1,3102 @@
+{
+  "date": "2026-11-28",
+  "baselineCommit": "82b64a45c34facbc98ff4b9f33c067d3ccab6a17",
+  "browserBaseline": {
+    "environment": {
+      "mode": "baseline",
+      "fixture": "bench-heavy-9000rounds",
+      "expectedMessages": 18000,
+      "pageSize": 100,
+      "browser": "156.0.8078.4",
+      "node": "v26.13.1",
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpu": "Apple M5 Pro",
+      "ramGiB": 24,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "cache": "Fresh browser context per trial; OS file cache is not flushed.",
+      "instrumentation": "Real getChat(), no source overrides; resource/long-task/CDP heap metrics."
+    },
+    "trials": [
+      {
+        "repetition": 1,
+        "loadUntilReturnedMs": 1230.9000000059605,
+        "loadUntilTwoFramesMs": 1258.2000000029802,
+        "storedMessages": 18000,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 148,
+        "requests": [
+          {
+            "path": "/api/chats/get",
+            "durationMs": 942.6000000014901,
+            "transferBytes": 17613896,
+            "decodedBytes": 254328389
+          }
+        ],
+        "decodedChatBytes": 254328389,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 214.08716201782227,
+        "domNodes": 70153,
+        "errors": []
+      },
+      {
+        "repetition": 2,
+        "loadUntilReturnedMs": 1243.5,
+        "loadUntilTwoFramesMs": 1248.7999999970198,
+        "storedMessages": 18000,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 146,
+        "requests": [
+          {
+            "path": "/api/chats/get",
+            "durationMs": 936.5999999940395,
+            "transferBytes": 17613896,
+            "decodedBytes": 254328389
+          }
+        ],
+        "decodedChatBytes": 254328389,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 214.0858268737793,
+        "domNodes": 70153,
+        "errors": []
+      },
+      {
+        "repetition": 3,
+        "loadUntilReturnedMs": 1197.2000000029802,
+        "loadUntilTwoFramesMs": 1226.1000000014901,
+        "storedMessages": 18000,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 151,
+        "requests": [
+          {
+            "path": "/api/chats/get",
+            "durationMs": 904.8999999985099,
+            "transferBytes": 17613896,
+            "decodedBytes": 254328389
+          }
+        ],
+        "decodedChatBytes": 254328389,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 214.08700561523438,
+        "domNodes": 70153,
+        "errors": []
+      },
+      {
+        "repetition": 4,
+        "loadUntilReturnedMs": 1198,
+        "loadUntilTwoFramesMs": 1221.5,
+        "storedMessages": 18000,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 149,
+        "requests": [
+          {
+            "path": "/api/chats/get",
+            "durationMs": 913.0999999940395,
+            "transferBytes": 17613896,
+            "decodedBytes": 254328389
+          }
+        ],
+        "decodedChatBytes": 254328389,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 214.18114852905273,
+        "domNodes": 70153,
+        "errors": []
+      },
+      {
+        "repetition": 5,
+        "loadUntilReturnedMs": 1228.9000000059605,
+        "loadUntilTwoFramesMs": 1252,
+        "storedMessages": 18000,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 152,
+        "requests": [
+          {
+            "path": "/api/chats/get",
+            "durationMs": 936.7000000029802,
+            "transferBytes": 17613896,
+            "decodedBytes": 254328389
+          }
+        ],
+        "decodedChatBytes": 254328389,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 214.10726928710938,
+        "domNodes": 70304,
+        "errors": []
+      }
+    ]
+  },
+  "browserOptimized": {
+    "environment": {
+      "mode": "optimized",
+      "fixture": "bench-heavy-9000rounds",
+      "expectedMessages": 18000,
+      "pageSize": 100,
+      "browser": "156.0.8078.4",
+      "node": "v26.13.1",
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpu": "Apple M5 Pro",
+      "ramGiB": 24,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "cache": "Fresh browser context per trial; OS file cache is not flushed.",
+      "instrumentation": "Real getChat(), no source overrides; resource/long-task/CDP heap metrics."
+    },
+    "trials": [
+      {
+        "repetition": 1,
+        "loadUntilReturnedMs": 157.89999999850988,
+        "loadUntilTwoFramesMs": 179.5,
+        "storedMessages": 100,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 118,
+        "requests": [
+          {
+            "path": "/api/chats/page",
+            "durationMs": 11.800000004470348,
+            "transferBytes": 103286,
+            "decodedBytes": 1424374
+          }
+        ],
+        "decodedChatBytes": 1424374,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 20.50524139404297,
+        "domNodes": 70163,
+        "errors": []
+      },
+      {
+        "repetition": 2,
+        "loadUntilReturnedMs": 159.39999999850988,
+        "loadUntilTwoFramesMs": 191.19999999552965,
+        "storedMessages": 100,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 117,
+        "requests": [
+          {
+            "path": "/api/chats/page",
+            "durationMs": 11.200000002980232,
+            "transferBytes": 103286,
+            "decodedBytes": 1424374
+          }
+        ],
+        "decodedChatBytes": 1424374,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 20.503559112548828,
+        "domNodes": 70163,
+        "errors": []
+      },
+      {
+        "repetition": 3,
+        "loadUntilReturnedMs": 153.89999999850988,
+        "loadUntilTwoFramesMs": 176,
+        "storedMessages": 100,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 116,
+        "requests": [
+          {
+            "path": "/api/chats/page",
+            "durationMs": 10.699999995529652,
+            "transferBytes": 103286,
+            "decodedBytes": 1424374
+          }
+        ],
+        "decodedChatBytes": 1424374,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 20.507003784179688,
+        "domNodes": 70163,
+        "errors": []
+      },
+      {
+        "repetition": 4,
+        "loadUntilReturnedMs": 156.20000000298023,
+        "loadUntilTwoFramesMs": 177,
+        "storedMessages": 100,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 118,
+        "requests": [
+          {
+            "path": "/api/chats/page",
+            "durationMs": 11.099999994039536,
+            "transferBytes": 103286,
+            "decodedBytes": 1424374
+          }
+        ],
+        "decodedChatBytes": 1424374,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 20.500347137451172,
+        "domNodes": 70163,
+        "errors": []
+      },
+      {
+        "repetition": 5,
+        "loadUntilReturnedMs": 164.40000000596046,
+        "loadUntilTwoFramesMs": 192.5,
+        "storedMessages": 100,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 124,
+        "requests": [
+          {
+            "path": "/api/chats/page",
+            "durationMs": 13.299999997019768,
+            "transferBytes": 103286,
+            "decodedBytes": 1424374
+          }
+        ],
+        "decodedChatBytes": 1424374,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 20.50833511352539,
+        "domNodes": 70163,
+        "errors": []
+      }
+    ]
+  },
+  "browserFirstIndex": {
+    "environment": {
+      "mode": "optimized",
+      "fixture": "bench-heavy-9000rounds",
+      "expectedMessages": 18000,
+      "pageSize": 100,
+      "browser": "156.0.8078.4",
+      "node": "v26.13.1",
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpu": "Apple M5 Pro",
+      "ramGiB": 24,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "cache": "Fresh browser context per trial; OS file cache is not flushed.",
+      "instrumentation": "Real getChat(), no source overrides; resource/long-task/CDP heap metrics."
+    },
+    "trials": [
+      {
+        "repetition": 1,
+        "loadUntilReturnedMs": 1765.1000000014901,
+        "loadUntilTwoFramesMs": 1787.8999999985099,
+        "storedMessages": 100,
+        "renderedMessages": 100,
+        "elementNodes": 12657,
+        "maxLongTaskMs": 111,
+        "requests": [
+          {
+            "path": "/api/chats/page",
+            "durationMs": 1608.2000000029802,
+            "transferBytes": 103286,
+            "decodedBytes": 1424374
+          }
+        ],
+        "decodedChatBytes": 1424374,
+        "firstMessageChars": 500,
+        "lastMessageChars": 3000,
+        "showMoreAvailable": true,
+        "retainedJsHeapMiB": 20.698108673095703,
+        "domNodes": 70309,
+        "errors": []
+      }
+    ]
+  },
+  "chatStorage": {
+    "fixtureBytes": 254328387,
+    "trials": [
+      {
+        "label": "firstIndexAndPage",
+        "elapsedMs": 1616.949542,
+        "importedBytes": 254328387,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.15319061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.974707999999964,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.18444061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.541707999999971,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.18444061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 5.279875000000175,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.20006561279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.587291999999934,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.20006561279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.55945799999995,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.20006561279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.463083999999981,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.21569061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.478208999999879,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.21569061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.621290999999928,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.23131561279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.383291999999983,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.382708999999977,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.299958000000061,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.465874999999869,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.639417000000094,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.28454099999999,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.408040999999912,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.314875000000029,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.355249999999842,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.295959000000039,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.264458000000104,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "indexedPage100",
+        "elapsedMs": 4.272000000000162,
+        "importedBytes": 0,
+        "bodyRowsRead": 100,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.24694061279297
+      },
+      {
+        "label": "selected10Bodies",
+        "elapsedMs": 0.3090420000000904,
+        "importedBytes": 0,
+        "bodyRowsRead": 10,
+        "metadataRowsRead": 0,
+        "rssMiB": 124.34069061279297
+      },
+      {
+        "label": "editOneWithJsonlProjection",
+        "elapsedMs": 777.2642500000002,
+        "importedBytes": 0,
+        "bodyRowsRead": 2,
+        "metadataRowsRead": 0,
+        "rssMiB": 172.13919067382812
+      }
+    ],
+    "cache": "OS file cache is not flushed; sidecar initially absent.",
+    "total": 18000,
+    "sidecarBytes": 262742016,
+    "pageMedianMs": 4.435562499999946,
+    "pageP95Ms": 4.974707999999964,
+    "maxRssMiB": 204.90625,
+    "success": true
+  },
+  "vectorBaseline": {
+    "phase": "baseline",
+    "dimensions": 768,
+    "count": 18000,
+    "queryCount": 20,
+    "topK": 10,
+    "candidateCount": 40,
+    "trials": [
+      {
+        "index": 0,
+        "elapsedMs": 462.31291699999997,
+        "hashes": [
+          124,
+          5372,
+          4540,
+          12604,
+          7356,
+          15868,
+          4668,
+          4988,
+          10300,
+          6140
+        ],
+        "bodyBytes": 79082,
+        "heapUsedMiB": 202.61688232421875,
+        "rssMiB": 1197.7981033325195
+      },
+      {
+        "index": 1,
+        "elapsedMs": 404.31291699999997,
+        "hashes": [
+          8043,
+          14379,
+          8811,
+          619,
+          6379,
+          1387,
+          1003,
+          9835,
+          12523,
+          14251
+        ],
+        "bodyBytes": 13204,
+        "heapUsedMiB": 197.72403717041016,
+        "rssMiB": 1198.5637512207031
+      },
+      {
+        "index": 2,
+        "elapsedMs": 405.507292,
+        "hashes": [
+          15962,
+          9882,
+          7898,
+          17882,
+          5082,
+          8602,
+          7770,
+          538,
+          6874,
+          6938
+        ],
+        "bodyBytes": 78968,
+        "heapUsedMiB": 195.19930267333984,
+        "rssMiB": 1198.6575241088867
+      },
+      {
+        "index": 3,
+        "elapsedMs": 398.74808399999984,
+        "hashes": [
+          5881,
+          4729,
+          3513,
+          11129,
+          4089,
+          8761,
+          6265,
+          14713,
+          14649,
+          10617
+        ],
+        "bodyBytes": 13164,
+        "heapUsedMiB": 195.2474822998047,
+        "rssMiB": 1197.8137512207031
+      },
+      {
+        "index": 4,
+        "elapsedMs": 404.1346249999999,
+        "hashes": [
+          13800,
+          16680,
+          808,
+          5480,
+          13928,
+          11560,
+          12712,
+          14440,
+          3368,
+          2920
+        ],
+        "bodyBytes": 79046,
+        "heapUsedMiB": 195.01660919189453,
+        "rssMiB": 1197.8449783325195
+      },
+      {
+        "index": 5,
+        "elapsedMs": 403.1268749999999,
+        "hashes": [
+          3719,
+          7623,
+          6983,
+          14407,
+          3975,
+          14919,
+          16455,
+          10439,
+          13319,
+          7175
+        ],
+        "bodyBytes": 13148,
+        "heapUsedMiB": 195.82508087158203,
+        "rssMiB": 1197.8606262207031
+      },
+      {
+        "index": 6,
+        "elapsedMs": 396.0297499999997,
+        "hashes": [
+          11638,
+          4918,
+          16758,
+          13686,
+          8182,
+          4854,
+          1974,
+          16950,
+          5110,
+          2998
+        ],
+        "bodyBytes": 79032,
+        "heapUsedMiB": 195.82154083251953,
+        "rssMiB": 1197.8606262207031
+      },
+      {
+        "index": 7,
+        "elapsedMs": 406.82412499999964,
+        "hashes": [
+          1557,
+          1941,
+          14229,
+          5973,
+          4501,
+          12181,
+          3605,
+          2645,
+          13653,
+          11669
+        ],
+        "bodyBytes": 13192,
+        "heapUsedMiB": 195.95411682128906,
+        "rssMiB": 1197.9231491088867
+      },
+      {
+        "index": 8,
+        "elapsedMs": 416.707625,
+        "hashes": [
+          9476,
+          17540,
+          13252,
+          10116,
+          17732,
+          14724,
+          13316,
+          10820,
+          13700,
+          7812
+        ],
+        "bodyBytes": 78934,
+        "heapUsedMiB": 195.91890716552734,
+        "rssMiB": 1197.9231491088867
+      },
+      {
+        "index": 9,
+        "elapsedMs": 415.24095799999986,
+        "hashes": [
+          17395,
+          15027,
+          2867,
+          9843,
+          16371,
+          1331,
+          3123,
+          6707,
+          11379,
+          13171
+        ],
+        "bodyBytes": 13216,
+        "heapUsedMiB": 195.55199432373047,
+        "rssMiB": 1197.9231491088867
+      },
+      {
+        "index": 10,
+        "elapsedMs": 411.6512499999999,
+        "hashes": [
+          7314,
+          8594,
+          17106,
+          6738,
+          914,
+          12242,
+          16978,
+          17938,
+          15826,
+          5330
+        ],
+        "bodyBytes": 78986,
+        "heapUsedMiB": 195.10387420654297,
+        "rssMiB": 1197.9387969970703
+      },
+      {
+        "index": 11,
+        "elapsedMs": 403.53800000000047,
+        "hashes": [
+          15233,
+          10305,
+          513,
+          17793,
+          11905,
+          6785,
+          1665,
+          8577,
+          17409,
+          4033
+        ],
+        "bodyBytes": 13212,
+        "heapUsedMiB": 195.96881103515625,
+        "rssMiB": 1197.954444885254
+      },
+      {
+        "index": 12,
+        "elapsedMs": 404.5207500000006,
+        "hashes": [
+          5152,
+          10656,
+          4896,
+          16096,
+          8160,
+          12256,
+          5792,
+          544,
+          4128,
+          9568
+        ],
+        "bodyBytes": 79048,
+        "heapUsedMiB": 195.92642211914062,
+        "rssMiB": 1197.954444885254
+      },
+      {
+        "index": 13,
+        "elapsedMs": 406.5379580000008,
+        "hashes": [
+          13071,
+          8975,
+          15119,
+          17487,
+          4751,
+          15887,
+          5007,
+          4559,
+          14671,
+          11855
+        ],
+        "bodyBytes": 13200,
+        "heapUsedMiB": 195.97440338134766,
+        "rssMiB": 1197.954444885254
+      },
+      {
+        "index": 14,
+        "elapsedMs": 404.2591250000005,
+        "hashes": [
+          2990,
+          6126,
+          12654,
+          1390,
+          5358,
+          2670,
+          15854,
+          7598,
+          17774,
+          17134
+        ],
+        "bodyBytes": 78962,
+        "heapUsedMiB": 195.92689514160156,
+        "rssMiB": 1197.9700927734375
+      },
+      {
+        "index": 15,
+        "elapsedMs": 405.588291,
+        "hashes": [
+          10909,
+          14109,
+          1053,
+          989,
+          15965,
+          11549,
+          5853,
+          12829,
+          17565,
+          10269
+        ],
+        "bodyBytes": 13230,
+        "heapUsedMiB": 195.6195526123047,
+        "rssMiB": 1197.985740661621
+      },
+      {
+        "index": 16,
+        "elapsedMs": 417.20579199999975,
+        "hashes": [
+          828,
+          15804,
+          12924,
+          124,
+          3644,
+          2108,
+          4796,
+          700,
+          6268,
+          9020
+        ],
+        "bodyBytes": 79186,
+        "heapUsedMiB": 195.07801818847656,
+        "rssMiB": 1197.985740661621
+      },
+      {
+        "index": 17,
+        "elapsedMs": 422.354292,
+        "hashes": [
+          8747,
+          4011,
+          16491,
+          15851,
+          11947,
+          10603,
+          16299,
+          17899,
+          14827,
+          10347
+        ],
+        "bodyBytes": 13174,
+        "heapUsedMiB": 195.98450469970703,
+        "rssMiB": 1198.001365661621
+      },
+      {
+        "index": 18,
+        "elapsedMs": 400.34450000000015,
+        "hashes": [
+          16666,
+          17562,
+          3866,
+          16154,
+          17946,
+          3034,
+          17882,
+          5850,
+          6938,
+          1882
+        ],
+        "bodyBytes": 79006,
+        "heapUsedMiB": 195.9281005859375,
+        "rssMiB": 1198.001365661621
+      },
+      {
+        "index": 19,
+        "elapsedMs": 395.8734579999991,
+        "hashes": [
+          6585,
+          4793,
+          8761,
+          5113,
+          4857,
+          16057,
+          10617,
+          1465,
+          11961,
+          17017
+        ],
+        "bodyBytes": 13190,
+        "heapUsedMiB": 195.9762725830078,
+        "rssMiB": 1198.0170135498047
+      }
+    ],
+    "syntheticVectors": "64 seeded clusters with noise; not semantic embeddings; cosine baseline is exact.",
+    "medianMs": 405.507292,
+    "p95Ms": 422.354292,
+    "elapsedMs": 8273.746792,
+    "maxRssMiB": 1216.625
+  },
+  "vectorOptimized": {
+    "dimensions": 768,
+    "count": 18000,
+    "candidateCount": 40,
+    "repeats": 5,
+    "settings": {
+      "search_l": 512,
+      "insert_l": 70,
+      "compress_neighbors": "float8",
+      "alpha": 1.2
+    },
+    "trials": [
+      {
+        "repeat": 0,
+        "index": 0,
+        "elapsedMs": 20.008124999999993,
+        "recall": 1,
+        "hashes": [
+          124,
+          5372,
+          4540,
+          12604,
+          7356,
+          15868,
+          4668,
+          4988,
+          10300,
+          6140
+        ],
+        "bodyBytes": 79082,
+        "heapUsedMiB": 7.5093994140625,
+        "rssMiB": 28.23755645751953
+      },
+      {
+        "repeat": 0,
+        "index": 1,
+        "elapsedMs": 20.028417000000005,
+        "recall": 1,
+        "hashes": [
+          8043,
+          14379,
+          8811,
+          619,
+          6379,
+          1387,
+          1003,
+          9835,
+          12523,
+          14251
+        ],
+        "bodyBytes": 13204,
+        "heapUsedMiB": 7.519142150878906,
+        "rssMiB": 28.39380645751953
+      },
+      {
+        "repeat": 0,
+        "index": 2,
+        "elapsedMs": 20.016500000000008,
+        "recall": 1,
+        "hashes": [
+          15962,
+          9882,
+          7898,
+          17882,
+          5082,
+          8602,
+          7770,
+          538,
+          6874,
+          6938
+        ],
+        "bodyBytes": 78968,
+        "heapUsedMiB": 7.5175018310546875,
+        "rssMiB": 28.42505645751953
+      },
+      {
+        "repeat": 0,
+        "index": 3,
+        "elapsedMs": 18.17687500000001,
+        "recall": 1,
+        "hashes": [
+          5881,
+          4729,
+          3513,
+          11129,
+          4089,
+          8761,
+          6265,
+          14713,
+          14649,
+          10617
+        ],
+        "bodyBytes": 13164,
+        "heapUsedMiB": 7.506614685058594,
+        "rssMiB": 28.42505645751953
+      },
+      {
+        "repeat": 0,
+        "index": 4,
+        "elapsedMs": 23.36904199999998,
+        "recall": 1,
+        "hashes": [
+          13800,
+          16680,
+          808,
+          5480,
+          13928,
+          11560,
+          12712,
+          14440,
+          3368,
+          2920
+        ],
+        "bodyBytes": 79046,
+        "heapUsedMiB": 7.519134521484375,
+        "rssMiB": 28.47193145751953
+      },
+      {
+        "repeat": 0,
+        "index": 5,
+        "elapsedMs": 19.29724999999999,
+        "recall": 1,
+        "hashes": [
+          3719,
+          7623,
+          6983,
+          14407,
+          3975,
+          14919,
+          16455,
+          10439,
+          13319,
+          7175
+        ],
+        "bodyBytes": 13148,
+        "heapUsedMiB": 7.519981384277344,
+        "rssMiB": 28.47193145751953
+      },
+      {
+        "repeat": 0,
+        "index": 6,
+        "elapsedMs": 18.438208000000003,
+        "recall": 1,
+        "hashes": [
+          11638,
+          4918,
+          16758,
+          13686,
+          8182,
+          4854,
+          1974,
+          16950,
+          5110,
+          2998
+        ],
+        "bodyBytes": 79032,
+        "heapUsedMiB": 7.529205322265625,
+        "rssMiB": 28.47193145751953
+      },
+      {
+        "repeat": 0,
+        "index": 7,
+        "elapsedMs": 16.86687500000002,
+        "recall": 1,
+        "hashes": [
+          1557,
+          1941,
+          14229,
+          5973,
+          4501,
+          12181,
+          3605,
+          2645,
+          13653,
+          11669
+        ],
+        "bodyBytes": 13192,
+        "heapUsedMiB": 7.563789367675781,
+        "rssMiB": 28.48755645751953
+      },
+      {
+        "repeat": 0,
+        "index": 8,
+        "elapsedMs": 19.04808299999999,
+        "recall": 1,
+        "hashes": [
+          9476,
+          17540,
+          13252,
+          10116,
+          17732,
+          14724,
+          13316,
+          10820,
+          13700,
+          7812
+        ],
+        "bodyBytes": 78934,
+        "heapUsedMiB": 7.69677734375,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 9,
+        "elapsedMs": 21.047125000000023,
+        "recall": 1,
+        "hashes": [
+          17395,
+          15027,
+          2867,
+          9843,
+          16371,
+          1331,
+          3123,
+          6707,
+          11379,
+          13171
+        ],
+        "bodyBytes": 13216,
+        "heapUsedMiB": 7.57879638671875,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 10,
+        "elapsedMs": 18.698874999999987,
+        "recall": 1,
+        "hashes": [
+          7314,
+          8594,
+          17106,
+          6738,
+          914,
+          12242,
+          16978,
+          17938,
+          15826,
+          5330
+        ],
+        "bodyBytes": 78986,
+        "heapUsedMiB": 7.57635498046875,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 11,
+        "elapsedMs": 18.53916700000002,
+        "recall": 1,
+        "hashes": [
+          15233,
+          10305,
+          513,
+          17793,
+          11905,
+          6785,
+          1665,
+          8577,
+          17409,
+          4033
+        ],
+        "bodyBytes": 13212,
+        "heapUsedMiB": 7.576484680175781,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 12,
+        "elapsedMs": 17.271624999999972,
+        "recall": 1,
+        "hashes": [
+          5152,
+          10656,
+          4896,
+          16096,
+          8160,
+          12256,
+          5792,
+          544,
+          4128,
+          9568
+        ],
+        "bodyBytes": 79048,
+        "heapUsedMiB": 7.577117919921875,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 13,
+        "elapsedMs": 16.950874999999996,
+        "recall": 1,
+        "hashes": [
+          13071,
+          8975,
+          15119,
+          17487,
+          4751,
+          15887,
+          5007,
+          4559,
+          14671,
+          11855
+        ],
+        "bodyBytes": 13200,
+        "heapUsedMiB": 7.576911926269531,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 14,
+        "elapsedMs": 19.191750000000013,
+        "recall": 1,
+        "hashes": [
+          2990,
+          6126,
+          12654,
+          1390,
+          5358,
+          2670,
+          15854,
+          7598,
+          17774,
+          17134
+        ],
+        "bodyBytes": 78962,
+        "heapUsedMiB": 7.577690124511719,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 15,
+        "elapsedMs": 19.071041999999977,
+        "recall": 1,
+        "hashes": [
+          10909,
+          14109,
+          1053,
+          989,
+          15965,
+          11549,
+          5853,
+          12829,
+          17565,
+          10269
+        ],
+        "bodyBytes": 13230,
+        "heapUsedMiB": 7.577415466308594,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 16,
+        "elapsedMs": 16.94995799999998,
+        "recall": 1,
+        "hashes": [
+          828,
+          15804,
+          12924,
+          124,
+          3644,
+          2108,
+          4796,
+          700,
+          6268,
+          9020
+        ],
+        "bodyBytes": 79186,
+        "heapUsedMiB": 7.5781402587890625,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 17,
+        "elapsedMs": 19.954458000000045,
+        "recall": 1,
+        "hashes": [
+          8747,
+          4011,
+          16491,
+          15851,
+          11947,
+          10603,
+          16299,
+          17899,
+          14827,
+          10347
+        ],
+        "bodyBytes": 13174,
+        "heapUsedMiB": 7.578010559082031,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 18,
+        "elapsedMs": 19.10008399999998,
+        "recall": 1,
+        "hashes": [
+          16666,
+          17562,
+          3866,
+          16154,
+          17946,
+          3034,
+          17882,
+          5850,
+          6938,
+          1882
+        ],
+        "bodyBytes": 79006,
+        "heapUsedMiB": 7.578849792480469,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 0,
+        "index": 19,
+        "elapsedMs": 18.59491700000001,
+        "recall": 1,
+        "hashes": [
+          6585,
+          4793,
+          8761,
+          5113,
+          4857,
+          16057,
+          10617,
+          1465,
+          11961,
+          17017
+        ],
+        "bodyBytes": 13190,
+        "heapUsedMiB": 7.57867431640625,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 1,
+        "index": 0,
+        "elapsedMs": 23.557416999999987,
+        "recall": 1,
+        "hashes": [
+          124,
+          5372,
+          4540,
+          12604,
+          7356,
+          15868,
+          4668,
+          4988,
+          10300,
+          6140
+        ],
+        "bodyBytes": 79082,
+        "heapUsedMiB": 7.5917816162109375,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 1,
+        "index": 1,
+        "elapsedMs": 19.565583000000004,
+        "recall": 1,
+        "hashes": [
+          8043,
+          14379,
+          8811,
+          619,
+          6379,
+          1387,
+          1003,
+          9835,
+          12523,
+          14251
+        ],
+        "bodyBytes": 13204,
+        "heapUsedMiB": 7.592506408691406,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 1,
+        "index": 2,
+        "elapsedMs": 19.25233300000002,
+        "recall": 1,
+        "hashes": [
+          15962,
+          9882,
+          7898,
+          17882,
+          5082,
+          8602,
+          7770,
+          538,
+          6874,
+          6938
+        ],
+        "bodyBytes": 78968,
+        "heapUsedMiB": 7.592338562011719,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 1,
+        "index": 3,
+        "elapsedMs": 18.218458000000055,
+        "recall": 1,
+        "hashes": [
+          5881,
+          4729,
+          3513,
+          11129,
+          4089,
+          8761,
+          6265,
+          14713,
+          14649,
+          10617
+        ],
+        "bodyBytes": 13164,
+        "heapUsedMiB": 7.5920867919921875,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 1,
+        "index": 4,
+        "elapsedMs": 19.169667000000004,
+        "recall": 1,
+        "hashes": [
+          13800,
+          16680,
+          808,
+          5480,
+          13928,
+          11560,
+          12712,
+          14440,
+          3368,
+          2920
+        ],
+        "bodyBytes": 79046,
+        "heapUsedMiB": 7.592826843261719,
+        "rssMiB": 28.50318145751953
+      },
+      {
+        "repeat": 1,
+        "index": 5,
+        "elapsedMs": 19.365542000000005,
+        "recall": 1,
+        "hashes": [
+          3719,
+          7623,
+          6983,
+          14407,
+          3975,
+          14919,
+          16455,
+          10439,
+          13319,
+          7175
+        ],
+        "bodyBytes": 13148,
+        "heapUsedMiB": 7.592521667480469,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 6,
+        "elapsedMs": 18.48554200000001,
+        "recall": 1,
+        "hashes": [
+          11638,
+          4918,
+          16758,
+          13686,
+          8182,
+          4854,
+          1974,
+          16950,
+          5110,
+          2998
+        ],
+        "bodyBytes": 79032,
+        "heapUsedMiB": 7.593345642089844,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 7,
+        "elapsedMs": 16.409916000000067,
+        "recall": 1,
+        "hashes": [
+          1557,
+          1941,
+          14229,
+          5973,
+          4501,
+          12181,
+          3605,
+          2645,
+          13653,
+          11669
+        ],
+        "bodyBytes": 13192,
+        "heapUsedMiB": 7.593170166015625,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 8,
+        "elapsedMs": 18.71916699999997,
+        "recall": 1,
+        "hashes": [
+          9476,
+          17540,
+          13252,
+          10116,
+          17732,
+          14724,
+          13316,
+          10820,
+          13700,
+          7812
+        ],
+        "bodyBytes": 78934,
+        "heapUsedMiB": 7.593910217285156,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 9,
+        "elapsedMs": 21.88645800000006,
+        "recall": 1,
+        "hashes": [
+          17395,
+          15027,
+          2867,
+          9843,
+          16371,
+          1331,
+          3123,
+          6707,
+          11379,
+          13171
+        ],
+        "bodyBytes": 13216,
+        "heapUsedMiB": 7.5936737060546875,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 10,
+        "elapsedMs": 20.27491699999996,
+        "recall": 1,
+        "hashes": [
+          7314,
+          8594,
+          17106,
+          6738,
+          914,
+          12242,
+          16978,
+          17938,
+          15826,
+          5330
+        ],
+        "bodyBytes": 78986,
+        "heapUsedMiB": 7.594367980957031,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 11,
+        "elapsedMs": 20.060375000000022,
+        "recall": 1,
+        "hashes": [
+          15233,
+          10305,
+          513,
+          17793,
+          11905,
+          6785,
+          1665,
+          8577,
+          17409,
+          4033
+        ],
+        "bodyBytes": 13212,
+        "heapUsedMiB": 7.596473693847656,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 12,
+        "elapsedMs": 16.250541999999996,
+        "recall": 1,
+        "hashes": [
+          5152,
+          10656,
+          4896,
+          16096,
+          8160,
+          12256,
+          5792,
+          544,
+          4128,
+          9568
+        ],
+        "bodyBytes": 79048,
+        "heapUsedMiB": 7.596138000488281,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 13,
+        "elapsedMs": 18.55504200000007,
+        "recall": 1,
+        "hashes": [
+          13071,
+          8975,
+          15119,
+          17487,
+          4751,
+          15887,
+          5007,
+          4559,
+          14671,
+          11855
+        ],
+        "bodyBytes": 13200,
+        "heapUsedMiB": 7.595916748046875,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 14,
+        "elapsedMs": 21.016542000000072,
+        "recall": 1,
+        "hashes": [
+          2990,
+          6126,
+          12654,
+          1390,
+          5358,
+          2670,
+          15854,
+          7598,
+          17774,
+          17134
+        ],
+        "bodyBytes": 78962,
+        "heapUsedMiB": 7.596710205078125,
+        "rssMiB": 28.53443145751953
+      },
+      {
+        "repeat": 1,
+        "index": 15,
+        "elapsedMs": 15.911208999999985,
+        "recall": 1,
+        "hashes": [
+          10909,
+          14109,
+          1053,
+          989,
+          15965,
+          11549,
+          5853,
+          12829,
+          17565,
+          10269
+        ],
+        "bodyBytes": 13230,
+        "heapUsedMiB": 7.644416809082031,
+        "rssMiB": 28.61255645751953
+      },
+      {
+        "repeat": 1,
+        "index": 16,
+        "elapsedMs": 17.366499999999974,
+        "recall": 1,
+        "hashes": [
+          828,
+          15804,
+          12924,
+          124,
+          3644,
+          2108,
+          4796,
+          700,
+          6268,
+          9020
+        ],
+        "bodyBytes": 79186,
+        "heapUsedMiB": 7.6439056396484375,
+        "rssMiB": 28.61255645751953
+      },
+      {
+        "repeat": 1,
+        "index": 17,
+        "elapsedMs": 19.580957999999896,
+        "recall": 1,
+        "hashes": [
+          8747,
+          4011,
+          16491,
+          15851,
+          11947,
+          10603,
+          16299,
+          17899,
+          14827,
+          10347
+        ],
+        "bodyBytes": 13174,
+        "heapUsedMiB": 7.6432342529296875,
+        "rssMiB": 28.61255645751953
+      },
+      {
+        "repeat": 1,
+        "index": 18,
+        "elapsedMs": 19.607167000000004,
+        "recall": 1,
+        "hashes": [
+          16666,
+          17562,
+          3866,
+          16154,
+          17946,
+          3034,
+          17882,
+          5850,
+          6938,
+          1882
+        ],
+        "bodyBytes": 79006,
+        "heapUsedMiB": 7.6437530517578125,
+        "rssMiB": 28.61255645751953
+      },
+      {
+        "repeat": 1,
+        "index": 19,
+        "elapsedMs": 20.186792000000082,
+        "recall": 1,
+        "hashes": [
+          6585,
+          4793,
+          8761,
+          5113,
+          4857,
+          16057,
+          10617,
+          1465,
+          11961,
+          17017
+        ],
+        "bodyBytes": 13190,
+        "heapUsedMiB": 7.643699645996094,
+        "rssMiB": 28.62818145751953
+      },
+      {
+        "repeat": 2,
+        "index": 0,
+        "elapsedMs": 18.763374999999996,
+        "recall": 1,
+        "hashes": [
+          124,
+          5372,
+          4540,
+          12604,
+          7356,
+          15868,
+          4668,
+          4988,
+          10300,
+          6140
+        ],
+        "bodyBytes": 79082,
+        "heapUsedMiB": 7.64520263671875,
+        "rssMiB": 28.62818145751953
+      },
+      {
+        "repeat": 2,
+        "index": 1,
+        "elapsedMs": 19.19749999999999,
+        "recall": 1,
+        "hashes": [
+          8043,
+          14379,
+          8811,
+          619,
+          6379,
+          1387,
+          1003,
+          9835,
+          12523,
+          14251
+        ],
+        "bodyBytes": 13204,
+        "heapUsedMiB": 7.6463165283203125,
+        "rssMiB": 28.64380645751953
+      },
+      {
+        "repeat": 2,
+        "index": 2,
+        "elapsedMs": 18.964000000000055,
+        "recall": 1,
+        "hashes": [
+          15962,
+          9882,
+          7898,
+          17882,
+          5082,
+          8602,
+          7770,
+          538,
+          6874,
+          6938
+        ],
+        "bodyBytes": 78968,
+        "heapUsedMiB": 7.650321960449219,
+        "rssMiB": 28.64380645751953
+      },
+      {
+        "repeat": 2,
+        "index": 3,
+        "elapsedMs": 17.92295899999999,
+        "recall": 1,
+        "hashes": [
+          5881,
+          4729,
+          3513,
+          11129,
+          4089,
+          8761,
+          6265,
+          14713,
+          14649,
+          10617
+        ],
+        "bodyBytes": 13164,
+        "heapUsedMiB": 7.648948669433594,
+        "rssMiB": 28.64380645751953
+      },
+      {
+        "repeat": 2,
+        "index": 4,
+        "elapsedMs": 19.119417,
+        "recall": 1,
+        "hashes": [
+          13800,
+          16680,
+          808,
+          5480,
+          13928,
+          11560,
+          12712,
+          14440,
+          3368,
+          2920
+        ],
+        "bodyBytes": 79046,
+        "heapUsedMiB": 7.649848937988281,
+        "rssMiB": 28.64380645751953
+      },
+      {
+        "repeat": 2,
+        "index": 5,
+        "elapsedMs": 19.64366599999994,
+        "recall": 1,
+        "hashes": [
+          3719,
+          7623,
+          6983,
+          14407,
+          3975,
+          14919,
+          16455,
+          10439,
+          13319,
+          7175
+        ],
+        "bodyBytes": 13148,
+        "heapUsedMiB": 7.650901794433594,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 6,
+        "elapsedMs": 18.18958299999997,
+        "recall": 1,
+        "hashes": [
+          11638,
+          4918,
+          16758,
+          13686,
+          8182,
+          4854,
+          1974,
+          16950,
+          5110,
+          2998
+        ],
+        "bodyBytes": 79032,
+        "heapUsedMiB": 7.650367736816406,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 7,
+        "elapsedMs": 19.33654200000001,
+        "recall": 1,
+        "hashes": [
+          1557,
+          1941,
+          14229,
+          5973,
+          4501,
+          12181,
+          3605,
+          2645,
+          13653,
+          11669
+        ],
+        "bodyBytes": 13192,
+        "heapUsedMiB": 7.65032958984375,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 8,
+        "elapsedMs": 21.168457999999987,
+        "recall": 1,
+        "hashes": [
+          9476,
+          17540,
+          13252,
+          10116,
+          17732,
+          14724,
+          13316,
+          10820,
+          13700,
+          7812
+        ],
+        "bodyBytes": 78934,
+        "heapUsedMiB": 7.650932312011719,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 9,
+        "elapsedMs": 20.480415999999877,
+        "recall": 1,
+        "hashes": [
+          17395,
+          15027,
+          2867,
+          9843,
+          16371,
+          1331,
+          3123,
+          6707,
+          11379,
+          13171
+        ],
+        "bodyBytes": 13216,
+        "heapUsedMiB": 7.6508331298828125,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 10,
+        "elapsedMs": 19.513124999999945,
+        "recall": 1,
+        "hashes": [
+          7314,
+          8594,
+          17106,
+          6738,
+          914,
+          12242,
+          16978,
+          17938,
+          15826,
+          5330
+        ],
+        "bodyBytes": 78986,
+        "heapUsedMiB": 7.651390075683594,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 11,
+        "elapsedMs": 17.908208999999943,
+        "recall": 1,
+        "hashes": [
+          15233,
+          10305,
+          513,
+          17793,
+          11905,
+          6785,
+          1665,
+          8577,
+          17409,
+          4033
+        ],
+        "bodyBytes": 13212,
+        "heapUsedMiB": 7.652252197265625,
+        "rssMiB": 28.65943145751953
+      },
+      {
+        "repeat": 2,
+        "index": 12,
+        "elapsedMs": 16.734166999999843,
+        "recall": 1,
+        "hashes": [
+          5152,
+          10656,
+          4896,
+          16096,
+          8160,
+          12256,
+          5792,
+          544,
+          4128,
+          9568
+        ],
+        "bodyBytes": 79048,
+        "heapUsedMiB": 7.654731750488281,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 13,
+        "elapsedMs": 21.93775000000005,
+        "recall": 1,
+        "hashes": [
+          13071,
+          8975,
+          15119,
+          17487,
+          4751,
+          15887,
+          5007,
+          4559,
+          14671,
+          11855
+        ],
+        "bodyBytes": 13200,
+        "heapUsedMiB": 7.652137756347656,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 14,
+        "elapsedMs": 18.66062500000021,
+        "recall": 1,
+        "hashes": [
+          2990,
+          6126,
+          12654,
+          1390,
+          5358,
+          2670,
+          15854,
+          7598,
+          17774,
+          17134
+        ],
+        "bodyBytes": 78962,
+        "heapUsedMiB": 7.652793884277344,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 15,
+        "elapsedMs": 15.820332999999891,
+        "recall": 1,
+        "hashes": [
+          10909,
+          14109,
+          1053,
+          989,
+          15965,
+          11549,
+          5853,
+          12829,
+          17565,
+          10269
+        ],
+        "bodyBytes": 13230,
+        "heapUsedMiB": 7.652641296386719,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 16,
+        "elapsedMs": 17.09345899999994,
+        "recall": 1,
+        "hashes": [
+          828,
+          15804,
+          12924,
+          124,
+          3644,
+          2108,
+          4796,
+          700,
+          6268,
+          9020
+        ],
+        "bodyBytes": 79186,
+        "heapUsedMiB": 7.6610565185546875,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 17,
+        "elapsedMs": 19.426042000000052,
+        "recall": 1,
+        "hashes": [
+          8747,
+          4011,
+          16491,
+          15851,
+          11947,
+          10603,
+          16299,
+          17899,
+          14827,
+          10347
+        ],
+        "bodyBytes": 13174,
+        "heapUsedMiB": 7.659980773925781,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 18,
+        "elapsedMs": 21.95854099999997,
+        "recall": 1,
+        "hashes": [
+          16666,
+          17562,
+          3866,
+          16154,
+          17946,
+          3034,
+          17882,
+          5850,
+          6938,
+          1882
+        ],
+        "bodyBytes": 79006,
+        "heapUsedMiB": 7.660499572753906,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 2,
+        "index": 19,
+        "elapsedMs": 18.102582999999868,
+        "recall": 1,
+        "hashes": [
+          6585,
+          4793,
+          8761,
+          5113,
+          4857,
+          16057,
+          10617,
+          1465,
+          11961,
+          17017
+        ],
+        "bodyBytes": 13190,
+        "heapUsedMiB": 7.6604461669921875,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 0,
+        "elapsedMs": 18.95616700000005,
+        "recall": 1,
+        "hashes": [
+          124,
+          5372,
+          4540,
+          12604,
+          7356,
+          15868,
+          4668,
+          4988,
+          10300,
+          6140
+        ],
+        "bodyBytes": 79082,
+        "heapUsedMiB": 7.6614990234375,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 1,
+        "elapsedMs": 19.195375000000013,
+        "recall": 1,
+        "hashes": [
+          8043,
+          14379,
+          8811,
+          619,
+          6379,
+          1387,
+          1003,
+          9835,
+          12523,
+          14251
+        ],
+        "bodyBytes": 13204,
+        "heapUsedMiB": 7.6611785888671875,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 2,
+        "elapsedMs": 23.804124999999885,
+        "recall": 1,
+        "hashes": [
+          15962,
+          9882,
+          7898,
+          17882,
+          5082,
+          8602,
+          7770,
+          538,
+          6874,
+          6938
+        ],
+        "bodyBytes": 78968,
+        "heapUsedMiB": 7.663032531738281,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 3,
+        "elapsedMs": 17.703040999999985,
+        "recall": 1,
+        "hashes": [
+          5881,
+          4729,
+          3513,
+          11129,
+          4089,
+          8761,
+          6265,
+          14713,
+          14649,
+          10617
+        ],
+        "bodyBytes": 13164,
+        "heapUsedMiB": 7.664878845214844,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 4,
+        "elapsedMs": 18.748291999999992,
+        "recall": 1,
+        "hashes": [
+          13800,
+          16680,
+          808,
+          5480,
+          13928,
+          11560,
+          12712,
+          14440,
+          3368,
+          2920
+        ],
+        "bodyBytes": 79046,
+        "heapUsedMiB": 7.6644287109375,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 5,
+        "elapsedMs": 18.822625000000016,
+        "recall": 1,
+        "hashes": [
+          3719,
+          7623,
+          6983,
+          14407,
+          3975,
+          14919,
+          16455,
+          10439,
+          13319,
+          7175
+        ],
+        "bodyBytes": 13148,
+        "heapUsedMiB": 7.6642608642578125,
+        "rssMiB": 28.67505645751953
+      },
+      {
+        "repeat": 3,
+        "index": 6,
+        "elapsedMs": 18.085542000000032,
+        "recall": 1,
+        "hashes": [
+          11638,
+          4918,
+          16758,
+          13686,
+          8182,
+          4854,
+          1974,
+          16950,
+          5110,
+          2998
+        ],
+        "bodyBytes": 79032,
+        "heapUsedMiB": 7.679374694824219,
+        "rssMiB": 28.95630645751953
+      },
+      {
+        "repeat": 3,
+        "index": 7,
+        "elapsedMs": 16.44316600000002,
+        "recall": 1,
+        "hashes": [
+          1557,
+          1941,
+          14229,
+          5973,
+          4501,
+          12181,
+          3605,
+          2645,
+          13653,
+          11669
+        ],
+        "bodyBytes": 13192,
+        "heapUsedMiB": 7.67193603515625,
+        "rssMiB": 28.95630645751953
+      },
+      {
+        "repeat": 3,
+        "index": 8,
+        "elapsedMs": 19.14783299999999,
+        "recall": 1,
+        "hashes": [
+          9476,
+          17540,
+          13252,
+          10116,
+          17732,
+          14724,
+          13316,
+          10820,
+          13700,
+          7812
+        ],
+        "bodyBytes": 78934,
+        "heapUsedMiB": 7.6718597412109375,
+        "rssMiB": 28.95630645751953
+      },
+      {
+        "repeat": 3,
+        "index": 9,
+        "elapsedMs": 19.308415999999852,
+        "recall": 1,
+        "hashes": [
+          17395,
+          15027,
+          2867,
+          9843,
+          16371,
+          1331,
+          3123,
+          6707,
+          11379,
+          13171
+        ],
+        "bodyBytes": 13216,
+        "heapUsedMiB": 7.671760559082031,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 10,
+        "elapsedMs": 22.44808399999988,
+        "recall": 1,
+        "hashes": [
+          7314,
+          8594,
+          17106,
+          6738,
+          914,
+          12242,
+          16978,
+          17938,
+          15826,
+          5330
+        ],
+        "bodyBytes": 78986,
+        "heapUsedMiB": 7.6723175048828125,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 11,
+        "elapsedMs": 18.822374999999965,
+        "recall": 1,
+        "hashes": [
+          15233,
+          10305,
+          513,
+          17793,
+          11905,
+          6785,
+          1665,
+          8577,
+          17409,
+          4033
+        ],
+        "bodyBytes": 13212,
+        "heapUsedMiB": 7.674583435058594,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 12,
+        "elapsedMs": 16.37608299999988,
+        "recall": 1,
+        "hashes": [
+          5152,
+          10656,
+          4896,
+          16096,
+          8160,
+          12256,
+          5792,
+          544,
+          4128,
+          9568
+        ],
+        "bodyBytes": 79048,
+        "heapUsedMiB": 7.674949645996094,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 13,
+        "elapsedMs": 17.067416999999978,
+        "recall": 1,
+        "hashes": [
+          13071,
+          8975,
+          15119,
+          17487,
+          4751,
+          15887,
+          5007,
+          4559,
+          14671,
+          11855
+        ],
+        "bodyBytes": 13200,
+        "heapUsedMiB": 7.67486572265625,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 14,
+        "elapsedMs": 20.107500000000073,
+        "recall": 1,
+        "hashes": [
+          2990,
+          6126,
+          12654,
+          1390,
+          5358,
+          2670,
+          15854,
+          7598,
+          17774,
+          17134
+        ],
+        "bodyBytes": 78962,
+        "heapUsedMiB": 7.677467346191406,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 15,
+        "elapsedMs": 19.947082999999793,
+        "recall": 1,
+        "hashes": [
+          10909,
+          14109,
+          1053,
+          989,
+          15965,
+          11549,
+          5853,
+          12829,
+          17565,
+          10269
+        ],
+        "bodyBytes": 13230,
+        "heapUsedMiB": 7.676994323730469,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 16,
+        "elapsedMs": 17.47208300000011,
+        "recall": 1,
+        "hashes": [
+          828,
+          15804,
+          12924,
+          124,
+          3644,
+          2108,
+          4796,
+          700,
+          6268,
+          9020
+        ],
+        "bodyBytes": 79186,
+        "heapUsedMiB": 7.6775970458984375,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 17,
+        "elapsedMs": 19.934541999999965,
+        "recall": 1,
+        "hashes": [
+          8747,
+          4011,
+          16491,
+          15851,
+          11947,
+          10603,
+          16299,
+          17899,
+          14827,
+          10347
+        ],
+        "bodyBytes": 13174,
+        "heapUsedMiB": 7.677589416503906,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 18,
+        "elapsedMs": 19.002958000000035,
+        "recall": 1,
+        "hashes": [
+          16666,
+          17562,
+          3866,
+          16154,
+          17946,
+          3034,
+          17882,
+          5850,
+          6938,
+          1882
+        ],
+        "bodyBytes": 79006,
+        "heapUsedMiB": 7.678108215332031,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 3,
+        "index": 19,
+        "elapsedMs": 19.690667000000076,
+        "recall": 1,
+        "hashes": [
+          6585,
+          4793,
+          8761,
+          5113,
+          4857,
+          16057,
+          10617,
+          1465,
+          11961,
+          17017
+        ],
+        "bodyBytes": 13190,
+        "heapUsedMiB": 7.6780548095703125,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 0,
+        "elapsedMs": 19.261624999999867,
+        "recall": 1,
+        "hashes": [
+          124,
+          5372,
+          4540,
+          12604,
+          7356,
+          15868,
+          4668,
+          4988,
+          10300,
+          6140
+        ],
+        "bodyBytes": 79082,
+        "heapUsedMiB": 7.678871154785156,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 1,
+        "elapsedMs": 20.364459000000124,
+        "recall": 1,
+        "hashes": [
+          8043,
+          14379,
+          8811,
+          619,
+          6379,
+          1387,
+          1003,
+          9835,
+          12523,
+          14251
+        ],
+        "bodyBytes": 13204,
+        "heapUsedMiB": 7.678550720214844,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 2,
+        "elapsedMs": 19.308416999999963,
+        "recall": 1,
+        "hashes": [
+          15962,
+          9882,
+          7898,
+          17882,
+          5082,
+          8602,
+          7770,
+          538,
+          6874,
+          6938
+        ],
+        "bodyBytes": 78968,
+        "heapUsedMiB": 7.6791229248046875,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 3,
+        "elapsedMs": 18.17924999999991,
+        "recall": 1,
+        "hashes": [
+          5881,
+          4729,
+          3513,
+          11129,
+          4089,
+          8761,
+          6265,
+          14713,
+          14649,
+          10617
+        ],
+        "bodyBytes": 13164,
+        "heapUsedMiB": 7.679450988769531,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 4,
+        "elapsedMs": 18.945874999999887,
+        "recall": 1,
+        "hashes": [
+          13800,
+          16680,
+          808,
+          5480,
+          13928,
+          11560,
+          12712,
+          14440,
+          3368,
+          2920
+        ],
+        "bodyBytes": 79046,
+        "heapUsedMiB": 7.681053161621094,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 5,
+        "elapsedMs": 19.419542000000092,
+        "recall": 1,
+        "hashes": [
+          3719,
+          7623,
+          6983,
+          14407,
+          3975,
+          14919,
+          16455,
+          10439,
+          13319,
+          7175
+        ],
+        "bodyBytes": 13148,
+        "heapUsedMiB": 7.6798858642578125,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 6,
+        "elapsedMs": 17.964917000000014,
+        "recall": 1,
+        "hashes": [
+          11638,
+          4918,
+          16758,
+          13686,
+          8182,
+          4854,
+          1974,
+          16950,
+          5110,
+          2998
+        ],
+        "bodyBytes": 79032,
+        "heapUsedMiB": 7.680572509765625,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 7,
+        "elapsedMs": 16.888625000000047,
+        "recall": 1,
+        "hashes": [
+          1557,
+          1941,
+          14229,
+          5973,
+          4501,
+          12181,
+          3605,
+          2645,
+          13653,
+          11669
+        ],
+        "bodyBytes": 13192,
+        "heapUsedMiB": 7.680534362792969,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 8,
+        "elapsedMs": 19.089291999999887,
+        "recall": 1,
+        "hashes": [
+          9476,
+          17540,
+          13252,
+          10116,
+          17732,
+          14724,
+          13316,
+          10820,
+          13700,
+          7812
+        ],
+        "bodyBytes": 78934,
+        "heapUsedMiB": 7.6811370849609375,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 9,
+        "elapsedMs": 18.877083999999968,
+        "recall": 1,
+        "hashes": [
+          17395,
+          15027,
+          2867,
+          9843,
+          16371,
+          1331,
+          3123,
+          6707,
+          11379,
+          13171
+        ],
+        "bodyBytes": 13216,
+        "heapUsedMiB": 7.681037902832031,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 10,
+        "elapsedMs": 18.867541000000074,
+        "recall": 1,
+        "hashes": [
+          7314,
+          8594,
+          17106,
+          6738,
+          914,
+          12242,
+          16978,
+          17938,
+          15826,
+          5330
+        ],
+        "bodyBytes": 78986,
+        "heapUsedMiB": 7.6815948486328125,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 11,
+        "elapsedMs": 18.668791000000056,
+        "recall": 1,
+        "hashes": [
+          15233,
+          10305,
+          513,
+          17793,
+          11905,
+          6785,
+          1665,
+          8577,
+          17409,
+          4033
+        ],
+        "bodyBytes": 13212,
+        "heapUsedMiB": 7.681541442871094,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 12,
+        "elapsedMs": 16.437832999999955,
+        "recall": 1,
+        "hashes": [
+          5152,
+          10656,
+          4896,
+          16096,
+          8160,
+          12256,
+          5792,
+          544,
+          4128,
+          9568
+        ],
+        "bodyBytes": 79048,
+        "heapUsedMiB": 7.6820526123046875,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 13,
+        "elapsedMs": 17.38470899999993,
+        "recall": 1,
+        "hashes": [
+          13071,
+          8975,
+          15119,
+          17487,
+          4751,
+          15887,
+          5007,
+          4559,
+          14671,
+          11855
+        ],
+        "bodyBytes": 13200,
+        "heapUsedMiB": 7.681968688964844,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 14,
+        "elapsedMs": 20.14954200000011,
+        "recall": 1,
+        "hashes": [
+          2990,
+          6126,
+          12654,
+          1390,
+          5358,
+          2670,
+          15854,
+          7598,
+          17774,
+          17134
+        ],
+        "bodyBytes": 78962,
+        "heapUsedMiB": 7.682624816894531,
+        "rssMiB": 28.97193145751953
+      },
+      {
+        "repeat": 4,
+        "index": 15,
+        "elapsedMs": 19.263333000000102,
+        "recall": 1,
+        "hashes": [
+          10909,
+          14109,
+          1053,
+          989,
+          15965,
+          11549,
+          5853,
+          12829,
+          17565,
+          10269
+        ],
+        "bodyBytes": 13230,
+        "heapUsedMiB": 7.682472229003906,
+        "rssMiB": 28.98755645751953
+      },
+      {
+        "repeat": 4,
+        "index": 16,
+        "elapsedMs": 17.465208000000075,
+        "recall": 1,
+        "hashes": [
+          828,
+          15804,
+          12924,
+          124,
+          3644,
+          2108,
+          4796,
+          700,
+          6268,
+          9020
+        ],
+        "bodyBytes": 79186,
+        "heapUsedMiB": 7.683074951171875,
+        "rssMiB": 28.98755645751953
+      },
+      {
+        "repeat": 4,
+        "index": 17,
+        "elapsedMs": 19.22375000000011,
+        "recall": 1,
+        "hashes": [
+          8747,
+          4011,
+          16491,
+          15851,
+          11947,
+          10603,
+          16299,
+          17899,
+          14827,
+          10347
+        ],
+        "bodyBytes": 13174,
+        "heapUsedMiB": 7.683067321777344,
+        "rssMiB": 28.98755645751953
+      },
+      {
+        "repeat": 4,
+        "index": 18,
+        "elapsedMs": 18.965167000000065,
+        "recall": 1,
+        "hashes": [
+          16666,
+          17562,
+          3866,
+          16154,
+          17946,
+          3034,
+          17882,
+          5850,
+          6938,
+          1882
+        ],
+        "bodyBytes": 79006,
+        "heapUsedMiB": 7.683586120605469,
+        "rssMiB": 28.98755645751953
+      },
+      {
+        "repeat": 4,
+        "index": 19,
+        "elapsedMs": 21.634000000000015,
+        "recall": 1,
+        "hashes": [
+          6585,
+          4793,
+          8761,
+          5113,
+          4857,
+          16057,
+          10617,
+          1465,
+          11961,
+          17017
+        ],
+        "bodyBytes": 13190,
+        "heapUsedMiB": 7.68353271484375,
+        "rssMiB": 28.98755645751953
+      }
+    ],
+    "syntheticVectors": "64 seeded clusters with noise; not semantic embeddings; cosine baseline is exact.",
+    "note": "Same seeded query vectors and exact Vectra top-10 baseline. Random DiskANN start node differs per search. No semantic/embedding-quality claim.",
+    "eventLoopProtocol": "Before each timed operation: setImmediate, optional GC, setImmediate; closed native handles can finalize between requests as on the HTTP worker.",
+    "databaseBytes": 1449701376,
+    "indexSql": "CREATE INDEX records_ann ON records(libsql_vector_idx(embedding, 'metric=cosine', 'search_l=512', 'insert_l=70', 'compress_neighbors=float8', 'alpha=1.2'))",
+    "averageRecall": 1,
+    "minimumRecall": 1,
+    "repeatsSummary": [
+      {
+        "repeat": 0,
+        "averageRecall": 1,
+        "minimumRecall": 1
+      },
+      {
+        "repeat": 1,
+        "averageRecall": 1,
+        "minimumRecall": 1
+      },
+      {
+        "repeat": 2,
+        "averageRecall": 1,
+        "minimumRecall": 1
+      },
+      {
+        "repeat": 3,
+        "averageRecall": 1,
+        "minimumRecall": 1
+      },
+      {
+        "repeat": 4,
+        "averageRecall": 1,
+        "minimumRecall": 1
+      }
+    ],
+    "medianMs": 19.071041999999977,
+    "p95Ms": 21.93775000000005,
+    "elapsedMs": 2024.55575,
+    "maxRssMiB": 66.84375,
+    "maxQueryRssMiB": 28.98755645751953
+  },
+  "validation": {
+    "jestTests": 480,
+    "jestSuites": 26,
+    "nodeTests": 30,
+    "browserFunctional": [
+      "Single chat opens only the latest 100 bodies",
+      "Visible message numbers remain global",
+      "Jumping to another page preserves an unsubmitted editor draft",
+      "Prompt edits use the global message ID",
+      "Saving a tail edit and swipe preserves total history",
+      "Show more loads the preceding bounded page",
+      "Deleting an older message preserves the unloaded continuation",
+      "Returning to the latest page preserves the edited stable message",
+      "Appending uses the actual chat tail",
+      "Branching uses a stable cutoff without changing the source",
+      "A summary saves to an unloaded stable ID without moving the UI",
+      "A subsequent tail save preserves the earlier summary",
+      "Explicit compatibility checkbox loads the complete chat",
+      "Compatibility saves persist and disabling it restores bounded paging",
+      "Group open, edit, older page and latest page preserve all 200 messages",
+      "JSONL files independently confirm unloaded prefix/suffix, branch cutoff, swipe, summary and group integrity"
+    ],
+    "browserPageErrors": []
+  }
+}

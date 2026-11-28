@@ -1,3 +1,4 @@
+/* eslint-disable playwright/expect-expect, playwright/no-conditional-in-test -- Node tests use strict assertions and injected asynchronous collaborators. */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
