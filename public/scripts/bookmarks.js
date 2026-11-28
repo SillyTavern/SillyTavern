@@ -14,7 +14,9 @@ import {
     saveItemizedPrompts,
     setActiveGroup,
     getCurrentChatDetails,
+    loadChatWindowAround,
 } from '../script.js';
+import { activeChatStore } from './chat-store.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import {
     DEFAULT_AUTO_MODE_DELAY,
@@ -329,6 +331,10 @@ async function backToMainChat() {
 }
 
 export async function convertSoloToGroupChat() {
+    if (activeChatStore.scope) {
+        toastr.info('Enable "Load complete chat for extension compatibility" in User Settings before converting the complete chat to a group.');
+        return;
+    }
     if (selected_group) {
         console.log('Already in group. No need for conversion');
         return;
@@ -472,6 +478,17 @@ export async function branchChat(mesId, { swipeId = null } = {}) {
 }
 
 function registerBookmarksSlashCommands() {
+    async function resolveMessageId(value, context) {
+        if (!activeChatStore.scope) return Number(value === '' || value === undefined ? getLastMessageId() : value);
+        await saveChatConditional({ throwOnError: true });
+        const sequence = value === '' || value === undefined ? activeChatStore.total - 1 : Number(value);
+        if (!Number.isInteger(sequence) || sequence < 0 || sequence >= activeChatStore.total) {
+            toastr.warning(`Message for id ${sequence} not found`, context);
+            return NaN;
+        }
+        return loadChatWindowAround(sequence);
+    }
+
     /**
      * Validates a message ID. (Is a number, exists as a message)
      *
@@ -495,7 +512,7 @@ function registerBookmarksSlashCommands() {
         name: 'branch-create',
         returns: 'Name of the new branch',
         callback: async (args, text) => {
-            const mesId = Number(args.mesId ?? text ?? getLastMessageId());
+            const mesId = await resolveMessageId(args.mesId ?? text, 'Create Branch');
             if (!validateMessageId(mesId, 'Create Branch')) return '';
 
             const branchName = await branchChat(mesId);
@@ -524,7 +541,7 @@ function registerBookmarksSlashCommands() {
         name: 'checkpoint-create',
         returns: 'Name of the new checkpoint',
         callback: async (args, text) => {
-            const mesId = Number(args.mesId ?? getLastMessageId());
+            const mesId = await resolveMessageId(args.mesId, 'Create Checkpoint');
             if (!validateMessageId(mesId, 'Create Checkpoint')) return '';
 
             if (typeof text !== 'string') {
@@ -577,7 +594,7 @@ function registerBookmarksSlashCommands() {
         name: 'checkpoint-go',
         returns: 'Name of the checkpoint',
         callback: async (args, text) => {
-            const mesId = Number(args.mesId ?? text ?? getLastMessageId());
+            const mesId = await resolveMessageId(args.mesId ?? text, 'Open Checkpoint');
             if (!validateMessageId(mesId, 'Open Checkpoint')) return '';
 
             const checkPointName = chat[mesId].extra?.bookmark_link;
@@ -631,7 +648,7 @@ function registerBookmarksSlashCommands() {
         name: 'checkpoint-get',
         returns: 'Name of the chat',
         callback: async (args, text) => {
-            const mesId = Number(args.mesId ?? text ?? getLastMessageId());
+            const mesId = await resolveMessageId(args.mesId ?? text, 'Get Checkpoint');
             if (!validateMessageId(mesId, 'Get Checkpoint')) return '';
 
             const checkPointName = chat[mesId].extra?.bookmark_link;
@@ -655,6 +672,17 @@ function registerBookmarksSlashCommands() {
         returns: 'JSON array of all existing checkpoints in this chat, as an array',
         /** @param {{links?: string}} args @returns {Promise<string>} */
         callback: async (args, _) => {
+            if (activeChatStore.scope) {
+                await saveChatConditional({ throwOnError: true });
+                const result = [];
+                // This explicit complete-chat query walks bounded body pages;
+                // only checkpoint IDs/links survive beyond each page.
+                for await (const envelope of activeChatStore.messagesAfter(-1, activeChatStore.total)) {
+                    const link = envelope.message.extra?.bookmark_link;
+                    if (link) result.push(isTrueBoolean(args.links) ? link : envelope.seq);
+                }
+                return JSON.stringify(result);
+            }
             const result = Object.entries(chat)
                 .filter(([_, message]) => message.extra?.bookmark_link)
                 .map(([mesId, message]) => isTrueBoolean(args.links) ? message.extra.bookmark_link : Number(mesId));

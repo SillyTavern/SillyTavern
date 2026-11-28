@@ -1,3 +1,4 @@
+import { activeChatStore } from './chat-store.js';
 import {
     activateSendButtons,
     addOneMessage,
@@ -116,6 +117,9 @@ export function getContext() {
     return {
         accountStorage,
         chat,
+        chatWindow: activeChatStore.snapshot(),
+        getChatMessageRef: message => activeChatStore.messageRef(message),
+        readChatMessages: ids => activeChatStore.readByIds(ids),
         characters,
         groups,
         name1,

@@ -131,6 +131,7 @@ export const power_user = {
     },
     markdown_escape_strings: '',
     chat_truncation: 100,
+    chat_full_history: false,
     streaming_fps: 30,
     smooth_streaming: false,
     smooth_streaming_no_think: false,
@@ -1746,6 +1747,7 @@ export async function loadPowerUserSettings(settings, data) {
 
     $('#chat_truncation').val(power_user.chat_truncation);
     $('#chat_truncation_counter').val(power_user.chat_truncation);
+    $('#chat_full_history').prop('checked', power_user.chat_full_history);
 
     $('#streaming_fps').val(power_user.streaming_fps);
     $('#streaming_fps_counter').val(power_user.streaming_fps);
@@ -3395,6 +3397,22 @@ jQuery(() => {
         applyChatWidth(applyMode);
         saveSettingsDebounced();
         setHotswapsDebounced();
+    });
+
+    $('#chat_full_history').on('change', async function () {
+        const enabled = this.checked;
+        this.disabled = true;
+        try {
+            await saveChatConditional({ throwOnError: true });
+            power_user.chat_full_history = enabled;
+            saveSettingsDebounced();
+            await reloadCurrentChat();
+        } catch (error) {
+            this.checked = power_user.chat_full_history;
+            toastr.error(error.message, t`Chat mode could not be changed`);
+        } finally {
+            this.disabled = false;
+        }
     });
 
     $('#chat_truncation').on('input', function () {

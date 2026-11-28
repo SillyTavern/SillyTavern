@@ -5333,6 +5333,11 @@
 
                             <div name="ChatMessageHandlingToggles">
                                 <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
+                                <label class="checkbox_label" for="chat_full_history">
+                                    <input type="checkbox" id="chat_full_history">
+                                    <span>Load complete chat for extension compatibility</span>
+                                </label>
+                                <small>Off: load pages on demand. On: download the entire chat and use the original chat array.</small>
                                 <div class="flex-container">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
@@ -5342,7 +5347,7 @@
                                         </small>
                                         <input class="neo-range-slider" type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="5">
                                         <input class="neo-range-input" type="number" min="0" max="1000" step="5" data-for="chat_truncation" id="chat_truncation_counter">
-                                        <small data-i18n="(0 = All)">(0 = All)</small>
+                                        <small>0 = 100 per page; all in compatibility mode</small>
                                     </div>
 
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">

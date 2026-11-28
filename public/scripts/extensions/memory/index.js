@@ -1,3 +1,4 @@
+import { activeChatStore, findChatSummary } from '../../chat-store.js';
 import { getStringHash, debounce, waitUntilCondition, extractAllWords, isTrueBoolean } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import {
@@ -355,19 +356,7 @@ function onMaxMessagesPerRequestInput() {
  * @returns {string} Latest memory summary or empty string
  */
 function getLatestMemoryFromChat(chat) {
-    if (!Array.isArray(chat) || !chat.length) {
-        return '';
-    }
-
-    const reversedChat = chat.slice().reverse();
-    reversedChat.shift();
-    for (let mes of reversedChat) {
-        if (mes.extra && mes.extra.memory) {
-            return mes.extra.memory;
-        }
-    }
-
-    return '';
+    return findChatSummary(chat).memory;
 }
 
 /**
@@ -376,19 +365,7 @@ function getLatestMemoryFromChat(chat) {
  * @returns {number} Index of the latest memory summary or -1 if not found
  */
 function getIndexOfLatestChatSummary(chat) {
-    if (!Array.isArray(chat) || !chat.length) {
-        return -1;
-    }
-
-    const reversedChat = chat.slice().reverse();
-    reversedChat.shift();
-    for (let mes of reversedChat) {
-        if (mes.extra && mes.extra.memory) {
-            return chat.indexOf(mes);
-        }
-    }
-
-    return -1;
+    return findChatSummary(chat).index;
 }
 
 /**
@@ -590,14 +567,15 @@ async function getSummaryPromptForNow(context, force) {
         return '';
     }
 
-    let messagesSinceLastSummary = 0;
+    let messagesSinceLastSummary = activeChatStore.scope
+        ? activeChatStore.total - (activeChatStore.latestSummary?.seq ?? -1) - 1 : 0;
     let wordsSinceLastSummary = 0;
     let conditionSatisfied = false;
     for (let i = context.chat.length - 1; i >= 0; i--) {
         if (context.chat[i].extra && context.chat[i].extra.memory) {
             break;
         }
-        messagesSinceLastSummary++;
+        if (!activeChatStore.scope) messagesSinceLastSummary++;
         wordsSinceLastSummary += extractAllWords(context.chat[i].mes).length;
     }
 
@@ -671,7 +649,7 @@ async function summarizeChatWebLLM(context, force) {
             return;
         }
 
-        setMemoryContext(summary, true, lastUsedIndex);
+        await setMemoryContext(summary, true, lastUsedIndex);
         return summary;
     } finally {
         inApiCall = false;
@@ -689,7 +667,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
     let summary = '';
     let index = null;
 
-    if (prompt_builders.DEFAULT === extension_settings.memory.prompt_builder) {
+    if (prompt_builders.DEFAULT === extension_settings.memory.prompt_builder && !activeChatStore.scope) {
         try {
             inApiCall = true;
             /** @type {import('../../../script.js').GenerateQuietPromptParams} */
@@ -704,7 +682,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
         }
     }
 
-    if ([prompt_builders.RAW_BLOCKING, prompt_builders.RAW_NON_BLOCKING].includes(extension_settings.memory.prompt_builder)) {
+    if (activeChatStore.scope || [prompt_builders.RAW_BLOCKING, prompt_builders.RAW_NON_BLOCKING].includes(extension_settings.memory.prompt_builder)) {
         const lock = extension_settings.memory.prompt_builder === prompt_builders.RAW_BLOCKING;
         try {
             inApiCall = true;
@@ -748,7 +726,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
         return;
     }
 
-    setMemoryContext(summary, true, index);
+    await setMemoryContext(summary, true, index);
     return summary;
 }
 
@@ -782,17 +760,29 @@ async function getRawSummaryPrompt(context, prompt) {
         return stringBuilder.join(delimiter).trim();
     }
 
+    if (activeChatStore.scope) {
+        await activeChatStore.save(context.chat, { chat_metadata: context.chatMetadata, user_name: 'unused', character_name: 'unused' });
+    }
     const chat = context.chat.slice();
-    const latestSummary = getLatestMemoryFromChat(chat);
+    const latestSummary = activeChatStore.scope ? (activeChatStore.latestSummary?.memory || '') : getLatestMemoryFromChat(chat);
     const latestSummaryIndex = getIndexOfLatestChatSummary(chat);
     chat.pop(); // We always exclude the last message from the buffer
     const chatBuffer = [];
     const PADDING = 64;
     const PROMPT_SIZE = await getSourceContextSize();
     let latestUsedMessage = null;
+    let latestUsedReference = null;
 
-    for (let index = latestSummaryIndex + 1; index < chat.length; index++) {
-        const message = chat[index];
+    async function* sourceMessages() {
+        if (activeChatStore.scope) {
+            yield* activeChatStore.messagesAfter(activeChatStore.latestSummary?.seq ?? -1);
+        } else {
+            for (let index = latestSummaryIndex + 1; index < chat.length; index++) yield { message: chat[index] };
+        }
+    }
+
+    for await (const envelope of sourceMessages()) {
+        const message = envelope.message;
 
         if (!message) {
             break;
@@ -813,18 +803,31 @@ async function getRawSummaryPrompt(context, prompt) {
         }
 
         latestUsedMessage = message;
+        latestUsedReference = envelope.id ? envelope : null;
 
         if (extension_settings.memory.maxMessagesPerRequest > 0 && chatBuffer.length >= extension_settings.memory.maxMessagesPerRequest) {
             break;
         }
     }
 
-    const lastUsedIndex = context.chat.indexOf(latestUsedMessage);
+    const lastUsedIndex = latestUsedReference ?? context.chat.indexOf(latestUsedMessage);
     const rawPrompt = getMemoryString(false);
     return { rawPrompt, lastUsedIndex };
 }
 
 async function summarizeChatExtras(context) {
+    if (activeChatStore.scope) {
+        const { rawPrompt, lastUsedIndex } = await getRawSummaryPrompt(context, '');
+        if (lastUsedIndex === -1 || !rawPrompt) return;
+        inApiCall = true;
+        try {
+            const summary = await callExtrasSummarizeAPI(rawPrompt);
+            if (summary && !isContextChanged(context)) await setMemoryContext(summary, true, lastUsedIndex);
+            return summary;
+        } finally {
+            inApiCall = false;
+        }
+    }
     function getMemoryString() {
         return (longMemory + '\n\n' + memoryBuffer.slice().reverse().join('\n\n')).trim();
     }
@@ -961,7 +964,7 @@ function reinsertMemory() {
  * @param {boolean} saveToMessage Should the summary be saved to the chat message extra
  * @param {number|null} index Index of the chat message to save the summary to. If null, the pre-last message is used.
  */
-function setMemoryContext(value, saveToMessage, index = null) {
+async function setMemoryContext(value, saveToMessage, index = null) {
     setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, extension_settings.memory.scan, extension_settings.memory.role);
     $('#memory_contents').val(value);
 
@@ -972,6 +975,11 @@ function setMemoryContext(value, saveToMessage, index = null) {
 
     const context = getContext();
     if (saveToMessage && context.chat.length) {
+        if (index && typeof index === 'object' && activeChatStore.scope) {
+            await activeChatStore.saveSummary(context.chat,
+                { chat_metadata: context.chatMetadata, user_name: 'unused', character_name: 'unused' }, index, value);
+            return;
+        }
         const idx = index ?? context.chat.length - 2;
         const mes = context.chat[idx < 0 ? 0 : idx];
 

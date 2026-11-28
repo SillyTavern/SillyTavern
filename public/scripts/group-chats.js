@@ -1,4 +1,5 @@
 import { Fuse } from '../lib.js';
+import { activeChatStore } from './chat-store.js';
 
 import {
     shuffle,
@@ -79,6 +80,7 @@ import {
     unshallowCharacter,
     chatElement,
     ensureMessageMediaIsArray,
+    ensureLatestChatWindow,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -165,6 +167,7 @@ async function _save(group, reload = true) {
 
 // Group chats
 async function regenerateGroup() {
+    await ensureLatestChatWindow();
     let generationId = getLastMessageGenerationId();
 
     while (chat.length > 0) {
@@ -264,21 +267,43 @@ export async function getGroupChat(groupId, reload = false) {
     await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
-    const data = await loadGroupChat(chat_id);
-    const metadata = data?.[0]?.chat_metadata ?? {};
-    const freshChat = !metadata.tainted && (!Array.isArray(data) || !data.length);
-
-    // Remove chat file header if present
-    if (Array.isArray(data) && data.length && Object.hasOwn(data[0], 'chat_metadata')) {
-        data.shift();
+    if (selected_group !== groupId) return;
+    activeChatStore.headers = getRequestHeaders;
+    let page;
+    try {
+        if (power_user.chat_full_history) {
+            activeChatStore.reset();
+            const epoch = activeChatStore.epoch;
+            const data = await activeChatStore.request('group/get', { id: chat_id }, epoch);
+            if (selected_group !== groupId || group.chat_id !== chat_id) return;
+            const header = Array.isArray(data) && Object.hasOwn(data[0] || {}, 'chat_metadata') ? data.shift() : {};
+            chat.splice(0, chat.length, ...(Array.isArray(data) ? data : []));
+            page = { header, total: chat.length };
+        } else {
+            page = await activeChatStore.open({ is_group: true, id: chat_id }, chat, power_user.chat_truncation);
+        }
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error(error);
+            toastr.error(error.message, t`Group chat could not be loaded`);
+        }
+        return;
     }
+    if (selected_group !== groupId || group.chat_id !== chat_id) return;
+    const metadata = page.header?.chat_metadata ?? {};
+    const freshChat = !metadata.tainted && page.total === 0;
+    const data = chat;
 
     // Add integrity slug if missing
     if (!metadata.integrity) {
         metadata.integrity = uuidv4();
     }
 
+    updateChatMetadata(metadata, true);
+    const epoch = activeChatStore.epoch;
+    const isCurrentGroup = () => epoch === activeChatStore.epoch && selected_group === groupId && group.chat_id === chat_id;
     await loadItemizedPrompts(getCurrentChatId());
+    if (!isCurrentGroup()) return;
 
     if (group && Array.isArray(group.members) && freshChat) {
         chat.splice(0, chat.length);
@@ -290,6 +315,7 @@ export async function getGroupChat(groupId, reload = false) {
             }
 
             const mes = await getFirstCharacterMessage(character);
+            if (!isCurrentGroup()) return;
 
             // No first message
             if (!(mes?.mes)) {
@@ -298,17 +324,21 @@ export async function getGroupChat(groupId, reload = false) {
 
             chat.push(mes);
             await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1), 'first_message');
+            if (!isCurrentGroup()) return;
             addOneMessage(mes);
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
+            if (!isCurrentGroup()) return;
         }
         await saveGroupChat(groupId, false);
+        if (!isCurrentGroup()) return;
     } else if (Array.isArray(data) && data.length) {
-        chat.splice(0, chat.length, ...data);
         chat.forEach(ensureMessageMediaIsArray);
         chatElement.find('.mes').remove();
         await printMessages();
+        if (!isCurrentGroup()) return;
     }
 
+    if (!isCurrentGroup()) return;
     updateChatMetadata(metadata, true);
 
     if (reload) {
@@ -316,6 +346,7 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+    if (!isCurrentGroup()) return;
     if (freshChat) await eventSource.emit(event_types.GROUP_CHAT_CREATED);
 }
 
@@ -634,6 +665,19 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
         user_name: 'unused',
         character_name: 'unused',
     };
+    if (activeChatStore.scope) {
+        if (!activeChatStore.matches({ is_group: true, id: chatId })) {
+            throw new Error('Group chat changed before saving. Reload the current chat.');
+        }
+        try {
+            await activeChatStore.save(chat, chatHeader);
+        } catch (error) {
+            if (error.name !== 'AbortError') toastr.error(error.message, t`Group chat could not be saved`);
+            throw error;
+        }
+        if (shouldSaveGroup) await editGroup(groupId, false, false);
+        return;
+    }
     const saveGroupChatRequest = await compressRequest({
         method: 'POST',
         headers: getRequestHeaders(),
@@ -943,6 +987,7 @@ function getGroupChatNames(groupId) {
  * @returns {Promise<string|void>} Generated text or nothing if no generation occurred
  */
 async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
+    await ensureLatestChatWindow();
     function throwIfAborted() {
         if (params.signal instanceof AbortSignal && params.signal.aborted) {
             throw new Error('AbortSignal was fired. Group generation stopped');
@@ -2363,14 +2408,23 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
         return;
     }
 
-    group.chats.push(name);
-
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata, ...(metadata || {}) },
         user_name: 'unused',
         character_name: 'unused',
     };
+
+    if (activeChatStore.scope) {
+        if (!activeChatStore.matches({ is_group: true, id: group.chat_id })) throw new Error('Group chat changed before branching.');
+        const sourceHeader = { chat_metadata, user_name: 'unused', character_name: 'unused' };
+        await activeChatStore.fork(chat, sourceHeader, { is_group: true, id: name }, chatHeader,
+            mesId, Array.isArray(chatData) ? chatData.at(-1) : undefined);
+        group.chats.push(name);
+        await editGroup(groupId, true, false);
+        return;
+    }
+    group.chats.push(name);
 
     /** @type {ChatMessage[]} */
     const trimmedChat = Array.isArray(chatData)

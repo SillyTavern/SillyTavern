@@ -8,6 +8,7 @@ import { isMobile } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { getFriendlyTokenizerName, getTokenCountAsync } from './tokenizers.js';
 import { copyText } from './utils.js';
+import { toGlobalMessageId } from './chat-store.js';
 
 let PromptArrayItemForRawPromptDisplay;
 let priorPromptArrayItemForRawPromptDisplay;
@@ -26,7 +27,9 @@ export async function loadItemizedPrompts(chatId) {
             return;
         }
 
-        itemizedPrompts = await promptStorage.getItem(chatId);
+        const storedPrompts = await promptStorage.getItem(chatId);
+        if (getCurrentChatId() !== chatId) return;
+        itemizedPrompts = storedPrompts;
 
         if (!itemizedPrompts) {
             itemizedPrompts = [];
@@ -63,6 +66,7 @@ export async function saveItemizedPrompts(chatId) {
  * @returns
  */
 export async function replaceItemizedPromptText(mesId, promptText) {
+    mesId = toGlobalMessageId(mesId);
     if (!Array.isArray(itemizedPrompts)) {
         itemizedPrompts = [];
     }
@@ -249,7 +253,7 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
     console.log('PROMPT ITEMIZE ENTERED');
     var incomingMesId = Number(requestedMesId);
     console.debug(`looking for MesId ${incomingMesId}`);
-    var thisPromptSet = findItemizedPromptSet(itemizedPrompts, incomingMesId);
+    var thisPromptSet = findItemizedPromptSet(itemizedPrompts, toGlobalMessageId(incomingMesId));
 
     if (thisPromptSet === undefined) {
         console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
@@ -363,6 +367,8 @@ export function initItemizedPrompts() {
  * @param {number} targetMessageId Target message ID
  */
 export function swapItemizedPrompts(sourceMessageId, targetMessageId) {
+    sourceMessageId = toGlobalMessageId(sourceMessageId);
+    targetMessageId = toGlobalMessageId(targetMessageId);
     if (!Array.isArray(itemizedPrompts)) {
         return;
     }
@@ -387,6 +393,7 @@ export function swapItemizedPrompts(sourceMessageId, targetMessageId) {
  * @param {number} messageId Message ID to delete itemized prompt for
  */
 export function deleteItemizedPromptForMessage(messageId) {
+    messageId = toGlobalMessageId(messageId);
     if (!Array.isArray(itemizedPrompts)) {
         return;
     }
@@ -395,5 +402,13 @@ export function deleteItemizedPromptForMessage(messageId) {
 
     for (const prompt of itemizedPrompts.filter(x => x.mesId > messageId)) {
         prompt.mesId -= 1;
+    }
+}
+
+/** Preserve cached prompts for the unloaded suffix after a local insertion. */
+export function shiftItemizedPromptsFrom(localIndex, count = 1) {
+    const globalIndex = toGlobalMessageId(localIndex);
+    for (const prompt of itemizedPrompts || []) {
+        if (prompt.mesId >= globalIndex) prompt.mesId += count;
     }
 }
