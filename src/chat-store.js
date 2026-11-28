@@ -10,6 +10,7 @@ import { createClient } from '@libsql/client';
 const PAGE_LIMIT = 500;
 const BATCH_SIZE = 64;
 const PAGE_BYTES = 4 * 1024 * 1024;
+const WINDOW_LIMIT = 50_000;
 const stores = new Map();
 const locks = new Map();
 
@@ -90,9 +91,9 @@ function decodeCursor(value, revision, total) {
     } catch {
         throw new ChatStoreError('Invalid cursor.');
     }
+    if (decoded.revision !== revision) conflict('The chat changed. Reload the page before continuing.');
     integer(decoded.position, 'cursor position', total);
     if (!['before', 'after'].includes(decoded.direction)) throw new ChatStoreError('Invalid cursor direction.');
-    if (decoded.revision !== revision) conflict('The chat changed. Reload the page before continuing.');
     return decoded;
 }
 
@@ -225,7 +226,9 @@ export class ChatStore {
 
     async pageResult(state, start, count) {
         const messages = await this.envelopes(this.client, start, count);
-        const summary = await this.client.execute('SELECT id, seq, memory FROM messages WHERE memory IS NOT NULL ORDER BY seq DESC LIMIT 1');
+        // Match the memory extension: the final message's summary is not yet a
+        // summary of the preceding conversation used for this generation.
+        const summary = await this.client.execute({ sql: 'SELECT id, seq, memory FROM messages WHERE memory IS NOT NULL AND seq < ? ORDER BY seq DESC LIMIT 1', args: [state.total - 1] });
         const latest = summary.rows[0];
         const end = start + messages.length;
         return {
@@ -303,13 +306,21 @@ export class ChatStore {
         return withChatFileLock(this.filePath, async () => {
             const state = await this.ensureCurrent();
             if (options.expectedRevision !== undefined && options.expectedRevision !== state.revision) conflict('The chat changed. Restart the metadata scan.');
+            if (options.ids !== undefined && (!Array.isArray(options.ids) || options.ids.length > PAGE_LIMIT || options.ids.some(id => typeof id !== 'string' || id.length > 100))) throw new ChatStoreError('Invalid message IDs.');
             const after = options.after === undefined || options.after === -1 ? -1 : integer(options.after, 'after');
             const limit = limitValue(options.limit, 100);
-            const result = await this.client.execute({ sql: 'SELECT id, seq, revision, hash, is_system FROM messages WHERE seq > ? ORDER BY seq LIMIT ?', args: [after, limit] });
+            if (options.ids?.length === 0) return { revision: state.revision, total: state.total, items: [], next: null };
+            const result = await this.client.execute(options.ids
+                ? { sql: `SELECT id, seq, revision, hash, is_system FROM messages WHERE id IN (${options.ids.map(() => '?').join(',')})`, args: options.ids }
+                : { sql: 'SELECT id, seq, revision, hash, is_system FROM messages WHERE seq > ? ORDER BY seq LIMIT ?', args: [after, limit] });
             this.stats.metadataRowsRead += result.rows.length;
-            const items = result.rows.map(row => ({ id: String(row.id), revision: Number(row.revision), seq: Number(row.seq), hash: String(row.hash), is_system: !!row.is_system }));
+            let items = result.rows.map(row => ({ id: String(row.id), revision: Number(row.revision), seq: Number(row.seq), hash: String(row.hash), is_system: !!row.is_system }));
+            if (options.ids) {
+                const byId = new Map(items.map(item => [item.id, item]));
+                items = options.ids.map(id => byId.get(id)).filter(Boolean);
+            }
             const last = items.at(-1)?.seq;
-            return { revision: state.revision, total: state.total, items, next: last !== undefined && last + 1 < state.total ? last : null };
+            return { revision: state.revision, total: state.total, items, next: !options.ids && last !== undefined && last + 1 < state.total ? last : null };
         });
     }
 
@@ -320,8 +331,8 @@ export class ChatStore {
             if (!payload.expectedRevision || payload.expectedRevision !== state.revision) conflict('The chat changed. Reload before saving.');
             const start = integer(payload.window?.start, 'window start', state.total);
             const ids = payload.window?.ids;
-            if (!Array.isArray(ids) || ids.length > 2000 || start + ids.length > state.total || ids.some(id => typeof id !== 'string')) throw new ChatStoreError('Invalid base window.');
-            if (!Array.isArray(payload.messages) || payload.messages.length > 2000) throw new ChatStoreError('Invalid replacement messages.');
+            if (!Array.isArray(ids) || ids.length > WINDOW_LIMIT || start + ids.length > state.total || ids.some(id => typeof id !== 'string')) throw new ChatStoreError('Invalid base window.');
+            if (!Array.isArray(payload.messages) || payload.messages.length > WINDOW_LIMIT) throw new ChatStoreError('Invalid replacement messages.');
             const originals = await this.envelopes(this.client, start, ids.length);
             if (originals.length !== ids.length || originals.some((message, index) => message.id !== ids[index])) conflict('The base message window no longer matches the chat.');
             const originalById = new Map(originals.map(message => [message.id, message]));
@@ -357,6 +368,7 @@ export class ChatStore {
                 await transaction.execute({ sql: 'DELETE FROM messages WHERE seq >= ? AND seq < ?', args: [start, end] });
                 for (let index = 0; index < replacement.length; index += BATCH_SIZE) {
                     await transaction.batch(replacement.slice(index, index + BATCH_SIZE).flatMap(message => this.insertStatements(message.id, message.seq, message.revision, message.message)));
+                    await setImmediate();
                 }
                 if (delta) await transaction.execute({ sql: 'UPDATE messages SET seq = -seq - 1 + ? WHERE seq < 0', args: [delta] });
                 const next = { revision: crypto.randomUUID(), total: state.total + replacement.length - ids.length, header };
@@ -384,24 +396,24 @@ export class ChatStore {
     }
 
     /** Write the compatibility file without materializing all message bodies. */
-    async writeProjection(executor, tempPath, headerJson) {
+    async writeProjection(executor, tempPath, headerJson, through = Number.MAX_SAFE_INTEGER, lastMessage) {
         const handle = await fs.promises.open(tempPath, 'wx', 0o600);
         try {
             await handle.writeFile(headerJson);
             let after = -1;
             while (true) {
-                const metadata = await executor.execute({ sql: 'SELECT seq, body_bytes FROM messages WHERE seq > ? ORDER BY seq LIMIT ?', args: [after, BATCH_SIZE] });
+                const metadata = await executor.execute({ sql: 'SELECT seq, body_bytes FROM messages WHERE seq > ? AND seq <= ? ORDER BY seq LIMIT ?', args: [after, through, BATCH_SIZE] });
                 if (!metadata.rows.length) break;
                 let bytes = 0;
-                let through = after;
+                let batchEnd = after;
                 for (const row of metadata.rows) {
-                    if (through !== after && bytes + Number(row.body_bytes) > PAGE_BYTES) break;
+                    if (batchEnd !== after && bytes + Number(row.body_bytes) > PAGE_BYTES) break;
                     bytes += Number(row.body_bytes);
-                    through = Number(row.seq);
+                    batchEnd = Number(row.seq);
                 }
-                const result = await executor.execute({ sql: 'SELECT m.seq, b.json FROM messages m JOIN message_bodies b ON b.id = m.id WHERE m.seq > ? AND m.seq <= ? ORDER BY m.seq', args: [after, through] });
+                const result = await executor.execute({ sql: 'SELECT m.seq, b.json FROM messages m JOIN message_bodies b ON b.id = m.id WHERE m.seq > ? AND m.seq <= ? ORDER BY m.seq', args: [after, batchEnd] });
                 // Count is bounded, including during the necessary full-file projection.
-                await handle.writeFile(result.rows.map(row => `\n${row.json}`).join(''));
+                await handle.writeFile(result.rows.map(row => `\n${lastMessage && Number(row.seq) === through ? JSON.stringify(lastMessage) : row.json}`).join(''));
                 after = Number(result.rows.at(-1).seq);
                 await setImmediate();
             }
@@ -414,6 +426,43 @@ export class ChatStore {
     close() {
         this.client?.close();
         this.client = null;
+    }
+
+    /** Explicitly branch a prefix into another compatible JSONL file. */
+    async fork(targetPath, options) {
+        targetPath = path.resolve(targetPath);
+        if (targetPath === this.filePath) throw new ChatStoreError('The branch target must be a different chat.');
+        const paths = [this.filePath, targetPath].sort();
+        return withChatFileLock(paths[0], () => withChatFileLock(paths[1], async () => {
+            const state = await this.ensureCurrent();
+            if (!options.expectedRevision || options.expectedRevision !== state.revision) conflict('The chat changed. Reload before branching.');
+            if (await fingerprint(targetPath) !== 'missing') conflict('The branch target already exists.');
+            let through = -1;
+            if (options.throughId !== null) {
+                if (typeof options.throughId !== 'string') throw new ChatStoreError('Invalid branch message ID.');
+                const result = await this.client.execute({ sql: 'SELECT seq FROM messages WHERE id = ?', args: [options.throughId] });
+                if (!result.rows.length) conflict('The branch message no longer exists.');
+                through = Number(result.rows[0].seq);
+            }
+            if (options.lastMessage !== undefined) jsonObject(options.lastMessage, 'last message');
+            const headerJson = jsonObject(options.header ?? state.header, 'chat header');
+            await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+            const tempPath = `${targetPath}.ondemand-${crypto.randomUUID()}.tmp`;
+            try {
+                await this.writeProjection(this.client, tempPath, headerJson, through, options.lastMessage);
+                if (await fingerprint(this.filePath) !== state.fingerprint) conflict('The source chat changed during branching.');
+                // An exclusive hard link publishes the complete file atomically,
+                // without overwriting a concurrently created branch target.
+                await fs.promises.link(tempPath, targetPath);
+                await discardChatStore(targetPath);
+                return { ok: true, total: through + 1 };
+            } catch (error) {
+                if (error.code === 'EEXIST') conflict('The branch target already exists.');
+                throw error;
+            } finally {
+                await fs.promises.rm(tempPath, { force: true });
+            }
+        }));
     }
 }
 

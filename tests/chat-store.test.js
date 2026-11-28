@@ -65,6 +65,7 @@ describe('indexed ChatStore', () => {
         const data = messages(100);
         data[2].extra.memory = 'A synthetic earlier summary';
         data[60].extra.memory = 'A synthetic latest summary';
+        data[99].extra.memory = 'Excluded last message summary';
         writeChat(data);
         const page = await store.page({ limit: 2 });
         expect(page.latestSummary).toEqual({ id: expect.any(String), seq: 60, memory: 'A synthetic latest summary' });
@@ -238,6 +239,10 @@ describe('indexed ChatStore', () => {
         expect(Buffer.byteLength(JSON.stringify(tail))).toBeLessThan(4 * 1024 * 1024 + 4096);
         const older = await store.page({ limit: 6, cursor: tail.before });
         expect(older.start + older.messages.length).toBe(tail.start);
+        writeChat([{ mes: 'x'.repeat(5 * 1024 * 1024) }]);
+        const oversized = await store.page({ limit: 6 });
+        expect(oversized.messages).toHaveLength(1);
+        expect(oversized.messages[0].message.mes).toHaveLength(5 * 1024 * 1024);
     });
 
     test('rejects malformed or out-of-range cursors and invalid paging limits', async () => {
@@ -248,5 +253,22 @@ describe('indexed ChatStore', () => {
         await expect(store.page({ cursor: '' })).rejects.toMatchObject({ status: 400 });
         await expect(store.page({ before: 4 })).rejects.toMatchObject({ status: 400 });
         await expect(store.page({ limit: 501 })).rejects.toMatchObject({ status: 400 });
+    });
+
+    test('forks an explicit prefix without hydrating it into the page or changing the source', async () => {
+        writeChat(messages(100));
+        const metadata = await store.metadata({ limit: 100 });
+        const original = fs.readFileSync(filePath);
+        const target = path.join(directory, 'branch.jsonl');
+        const result = await store.fork(target, { expectedRevision: metadata.revision, throughId: metadata.items[79].id, header, lastMessage: { mes: 'Explicit swipe branch' } });
+        expect(result).toEqual({ ok: true, total: 80 });
+        expect(store.stats.bodyRowsRead).toBe(0);
+        const branch = fs.readFileSync(target, 'utf8').split('\n').map(line => JSON.parse(line));
+        expect(branch).toHaveLength(81);
+        expect(branch[80]).toEqual({ mes: 'Explicit swipe branch' });
+        expect(branch.slice(1, 80)).toEqual(messages(100).slice(0, 79));
+        expect(fs.readFileSync(filePath)).toEqual(original);
+        await expect(store.fork(target, { expectedRevision: metadata.revision, throughId: null })).rejects.toMatchObject({ status: 409 });
+        await expect(store.fork(path.join(directory, 'stale.jsonl'), { expectedRevision: 'stale', throughId: null })).rejects.toMatchObject({ status: 409 });
     });
 });
